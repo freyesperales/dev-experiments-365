@@ -1,0 +1,13 @@
+{
+  "last_number": 1,
+  "entries": [
+    {
+      "n": 1,
+      "date": "2026-07-09",
+      "title": "mcp-preflight — static migration-readiness checker for the MCP 2026-07-28 spec",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-001",
+      "mode": "per-repo",
+      "status": "completed"
+    }
+  ]
+}
