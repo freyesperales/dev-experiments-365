@@ -13,3 +13,4 @@ numbering — never edit it by hand unless repairing a failed run.
 |---|------|-------|------|------|
 | 001 | 2026-07-09 | mcp-preflight — static migration-readiness checker for the MCP 2026-07-28 spec | [dev-experiment-001](https://github.com/freyesperales/dev-experiment-001) | per-repo |
 | 002 | 2026-07-09 | mcp-chaos — fault-injecting MCP proxy and agent resilience scorer | [dev-experiment-002](https://github.com/freyesperales/dev-experiment-002) | per-repo |
+| 003 | 2026-07-12 | skill-collider — LLM-free static routing-collision analyzer for Agent Skills (SKILL.md) | [dev-experiment-003](https://github.com/freyesperales/dev-experiment-003) | per-repo |

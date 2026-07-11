@@ -1,5 +1,5 @@
 {
-  "last_number": 2,
+  "last_number": 3,
   "entries": [
     {
       "n": 1,
@@ -14,6 +14,14 @@
       "date": "2026-07-09",
       "title": "mcp-chaos — fault-injecting MCP proxy and agent resilience scorer",
       "repo_url": "https://github.com/freyesperales/dev-experiment-002",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 3,
+      "date": "2026-07-12",
+      "title": "skill-collider — LLM-free static routing-collision analyzer for Agent Skills (SKILL.md)",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-003",
       "mode": "per-repo",
       "status": "completed"
     }
