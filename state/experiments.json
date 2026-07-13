@@ -1,5 +1,5 @@
 {
-  "last_number": 3,
+  "last_number": 4,
   "entries": [
     {
       "n": 1,
@@ -22,6 +22,14 @@
       "date": "2026-07-12",
       "title": "skill-collider — LLM-free static routing-collision analyzer for Agent Skills (SKILL.md)",
       "repo_url": "https://github.com/freyesperales/dev-experiment-003",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 4,
+      "date": "2026-07-13",
+      "title": "context-xray - LLM-free static perception-gap scanner for MCP tool manifests & Agent Skills (invisible-Unicode smuggling, hidden markup, injection intent)",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-004",
       "mode": "per-repo",
       "status": "completed"
     }
