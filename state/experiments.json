@@ -1,5 +1,5 @@
 {
-  "last_number": 4,
+  "last_number": 5,
   "entries": [
     {
       "n": 1,
@@ -30,6 +30,14 @@
       "date": "2026-07-13",
       "title": "context-xray - LLM-free static perception-gap scanner for MCP tool manifests & Agent Skills (invisible-Unicode smuggling, hidden markup, injection intent)",
       "repo_url": "https://github.com/freyesperales/dev-experiment-004",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 5,
+      "date": "2026-07-14",
+      "title": "forkpoint - LLM-free behavioral fork-point analyzer that localizes where AI agents diverge across repeated same-task runs (OpenTelemetry gen_ai traces)",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-005",
       "mode": "per-repo",
       "status": "completed"
     }
