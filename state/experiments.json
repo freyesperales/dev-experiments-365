@@ -1,5 +1,5 @@
 {
-  "last_number": 5,
+  "last_number": 6,
   "entries": [
     {
       "n": 1,
@@ -38,6 +38,14 @@
       "date": "2026-07-14",
       "title": "forkpoint - LLM-free behavioral fork-point analyzer that localizes where AI agents diverge across repeated same-task runs (OpenTelemetry gen_ai traces)",
       "repo_url": "https://github.com/freyesperales/dev-experiment-005",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 6,
+      "date": "2026-07-15",
+      "title": "loadout - LLM-free budget-constrained progressive-disclosure planner for MCP tool manifests & Agent Skills (models eager-vs-deferred tool loading as a token-budget knapsack over static keep-eager signals; emits a deployable defer_loading plan + CI gate)",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-006",
       "mode": "per-repo",
       "status": "completed"
     }

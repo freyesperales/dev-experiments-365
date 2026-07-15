@@ -16,3 +16,4 @@ numbering — never edit it by hand unless repairing a failed run.
 | 003 | 2026-07-12 | skill-collider — LLM-free static routing-collision analyzer for Agent Skills (SKILL.md) | [dev-experiment-003](https://github.com/freyesperales/dev-experiment-003) | per-repo |
 | 004 | 2026-07-13 | context-xray - LLM-free static perception-gap scanner for MCP tool manifests & Agent Skills | [dev-experiment-004](https://github.com/freyesperales/dev-experiment-004) | per-repo |
 | 005 | 2026-07-14 | forkpoint - LLM-free behavioral fork-point analyzer (localizes where agents diverge across repeated runs; OTel gen_ai traces) | [dev-experiment-005](https://github.com/freyesperales/dev-experiment-005) | per-repo |
+| 006 | 2026-07-15 | loadout - LLM-free budget-constrained progressive-disclosure planner for MCP tools & Agent Skills (token-budget knapsack -> deployable defer_loading plan + CI gate) | [dev-experiment-006](https://github.com/freyesperales/dev-experiment-006) | per-repo |
