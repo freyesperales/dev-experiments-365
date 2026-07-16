@@ -1,5 +1,5 @@
 {
-  "last_number": 7,
+  "last_number": 8,
   "entries": [
     {
       "n": 1,
@@ -54,6 +54,14 @@
       "date": "2026-07-16",
       "title": "overreach - LLM-free static annotation-integrity auditor for MCP tool manifests (flags tools whose declared safety hints readOnlyHint/destructiveHint/idempotentHint/openWorldHint under-state actual behavior; emits per-tool auto-approval policy + trust score + CI gate)",
       "repo_url": "https://github.com/freyesperales/dev-experiment-007",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 8,
+      "date": "2026-07-17",
+      "title": "contravene - LLM-free variance-aware breaking-change classifier for MCP tool contracts (classifies inputSchema/outputSchema evolution as MAJOR/MINOR/PATCH using input-contravariance vs output-covariance; computes required semver bump and fails CI when the declared version bump under-states it; also flags safety-hint downgrades and the outputSchema-vs-error-result validation collision)",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-008",
       "mode": "per-repo",
       "status": "completed"
     }
