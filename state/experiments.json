@@ -1,5 +1,5 @@
 {
-  "last_number": 9,
+  "last_number": 10,
   "entries": [
     {
       "n": 1,
@@ -70,6 +70,14 @@
       "date": "2026-07-18",
       "title": "trifecta - LLM-free static lethal-trifecta capability-flow analyzer for MCP toolsets (classifies each tool by direction x locus into the private/untrusted/exfil legs, detects when a toolset or cross-server bundle closes the exfiltration channel, computes the minimum-cost set of tools to gate to break it, emits provably trifecta-free per-task catalogs + risk score + CI gate)",
       "repo_url": "https://github.com/freyesperales/dev-experiment-009",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 10,
+      "date": "2026-07-19",
+      "title": "capsule - LLM-free content-addressed lockfile + supply-chain mutability auditor for agent capabilities (content-hashes Agent Skills SKILL.md bundles & MCP server configs into capsule.lock.json, statically flags unpinned npx/pip/npm installs, curl|sh RCE, mutable git/container refs, insecure http and @latest tag pins; fails CI on drift as static rug-pull detection and on hazards above a severity threshold)",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-010",
       "mode": "per-repo",
       "status": "completed"
     }
