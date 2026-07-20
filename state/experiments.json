@@ -1,5 +1,5 @@
 {
-  "last_number": 10,
+  "last_number": 11,
   "entries": [
     {
       "n": 1,
@@ -78,6 +78,14 @@
       "date": "2026-07-19",
       "title": "capsule - LLM-free content-addressed lockfile + supply-chain mutability auditor for agent capabilities (content-hashes Agent Skills SKILL.md bundles & MCP server configs into capsule.lock.json, statically flags unpinned npx/pip/npm installs, curl|sh RCE, mutable git/container refs, insecure http and @latest tag pins; fails CI on drift as static rug-pull detection and on hazards above a severity threshold)",
       "repo_url": "https://github.com/freyesperales/dev-experiment-010",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 11,
+      "date": "2026-07-21",
+      "title": "gauntlet - offline, LLM-free MCP tool-contract conformance fuzzer (the series' first DYNAMIC entry: executes each MCP tool over real stdio through schema-derived valid + adversarial inputs and grades live responses against MCP result-shape invariants - outputSchema conformance, structuredContent<->TextContent mirroring (SEP-1624), isError semantics, crash/timeout/stdout-pollution, silent-accept of schema-invalid input; emits a scored report + CI exit-code gate; pure stdlib, ships a conformant reference server that scores 100/100 and a buggy server exhibiting six ground-truth bug classes)",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-011",
       "mode": "per-repo",
       "status": "completed"
     }
