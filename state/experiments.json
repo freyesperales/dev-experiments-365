@@ -1,5 +1,5 @@
 {
-  "last_number": 14,
+  "last_number": 15,
   "entries": [
     {
       "n": 1,
@@ -110,6 +110,14 @@
       "date": "2026-07-23",
       "title": "askance - offline, LLM-free elicitation-safety & conformance auditor for MCP elicitation/create (the series first entry on the human-in-the-loop elicitation channel): audits captured elicitation exchanges against the MCP 2025-06-18 elicitation contract with a 32-rule catalog in 5 families - schema legality (flat primitive-only requestedSchema subset: nesting/arrays/refs/bad formats/inconsistent enums/unknown required), the sensitive-data MUST-NOT (flags credential/PII field names + phishing messages), perception & injection (zero-width/bidi Unicode, injection markers, homoglyph field names), usability (renderable-form defects), and response-vs-schema conformance (invalid action, accept-without-content, missing required, type/enum/bounds mismatch); scored report + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a buggy capture with 24 ground-truth defects, 82 tests",
       "repo_url": "https://github.com/freyesperales/dev-experiment-014",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 15,
+      "date": "2026-07-24",
+      "title": "understudy - offline, LLM-free safety & conformance auditor for the MCP sampling channel (sampling/createMessage): the server->client 'borrow the client's LLM' inversion and structural inverse of #014's elicitation. Audits captured sampling exchanges against the 2026-07-28 contract via a 15-rule / ~30-check catalog in 6 families - deprecation & capability (SEP-2577 sampling-deprecation advisory + SEP-2596 includeContext/tools capability gating), schema & structure (required/positive maxTokens, roles/content types, tool_result no-mixing + tool_use<->tool_result balance), context confidentiality (allServers/thisServer cross-server exfiltration), injection & perception (Unit 42 injection/covert-tool signatures, zero-width/bidi Unicode, homoglyph tool names), resource abuse (maxTokens token-bomb, expensive-model steering), and human-in-the-loop & result conformance - scored report + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a malicious capture with 27 ground-truth rule defects, 46 tests",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-015",
       "mode": "per-repo",
       "status": "completed"
     }
