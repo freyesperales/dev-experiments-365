@@ -1,5 +1,5 @@
 {
-  "last_number": 16,
+  "last_number": 17,
   "entries": [
     {
       "n": 1,
@@ -126,6 +126,14 @@
       "date": "2026-07-26",
       "title": "deputy - offline, LLM-free authorization-flow safety & conformance auditor for the MCP authorization spec (2025-11-25): the series' first entry on the OAuth 2.1 / transport layer (every prior entry audits a message/content channel). Passively audits a captured MCP authorization handshake against a 29-rule catalog in 6 families - discovery & metadata (RFC 9728 Protected Resource Metadata / RFC 8414 AS-metadata / S256 advertisement), PKCE & auth-code (OAuth 2.1 mandatory S256, cryptographic code_verifier<->code_challenge check using the RFC 7636 vector, no implicit flow), resource indicators & audience (RFC 8707) incl. the flagship confused-deputy pair C6 audience-validation-failure (server honors a token whose aud is another service) + C7 token-passthrough (client token forwarded verbatim downstream), token transport & hygiene (bearer-header/no-query-string, expired-token-accepted, short-lived, scope minimization), redirect & transport security (HTTPS-only AS endpoints, loopback-or-https redirect_uri, javascript:/data:/file: URL rejection, plaintext-token exposure), and SSRF/metadata hygiene (private/cloud-metadata IPs in discovery URLs) - severity-weighted score + grade + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a malicious confused-deputy-proxy capture with 20 ground-truth defects incl. a confirmed token-passthrough exfiltration exploit to a Drive-like API, 47 tests",
       "repo_url": "https://github.com/freyesperales/dev-experiment-016",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 17,
+      "date": "2026-07-27",
+      "title": "cordon - offline, LLM-free filesystem/URI boundary-confinement auditor for the MCP roots channel (the series first entry on the roots capability - the client->server declaration of filesystem operating boundaries; every prior entry audited a message/content channel). Passively replays a captured session and grades whether the server stayed confined within the client-declared roots via a 25-rule catalog in 6 families - declaration legality (non-file:// scheme, non-absolute, empty set, overlap, in-root traversal, filesystem-root over-breadth, non-local authority), containment (a segment-boundary prefix check that rejects the EscapeRoute CVE-2025-53109 /allow_dir_sensitive string-prefix bug; the flagship out-of-root read = CRITICAL), traversal & encoding (dot-segments, percent-encoded/double-encoded traversal, backslash-on-POSIX, NUL/control chars), normalization bypass (Unicode look-alike separators, trailing dot/space, device & UNC paths, drive-relative, 8.3 short names), scheme confusion (non-file SSRF/exfil, file:// network authority) and dynamic-root lifecycle (stale/removed-root use after roots/list_changed, access-before-declared, list_changed-not-honored, capability-absent access) - severity-weighted score + grade + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a malicious root-escape capture with 32 findings across 21 rules incl. a confirmed /etc/passwd read outside the declared root, 80 tests",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-017",
       "mode": "per-repo",
       "status": "completed"
     }
