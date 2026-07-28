@@ -1,5 +1,5 @@
 {
-  "last_number": 17,
+  "last_number": 18,
   "entries": [
     {
       "n": 1,
@@ -134,6 +134,14 @@
       "date": "2026-07-27",
       "title": "cordon - offline, LLM-free filesystem/URI boundary-confinement auditor for the MCP roots channel (the series first entry on the roots capability - the client->server declaration of filesystem operating boundaries; every prior entry audited a message/content channel). Passively replays a captured session and grades whether the server stayed confined within the client-declared roots via a 25-rule catalog in 6 families - declaration legality (non-file:// scheme, non-absolute, empty set, overlap, in-root traversal, filesystem-root over-breadth, non-local authority), containment (a segment-boundary prefix check that rejects the EscapeRoute CVE-2025-53109 /allow_dir_sensitive string-prefix bug; the flagship out-of-root read = CRITICAL), traversal & encoding (dot-segments, percent-encoded/double-encoded traversal, backslash-on-POSIX, NUL/control chars), normalization bypass (Unicode look-alike separators, trailing dot/space, device & UNC paths, drive-relative, 8.3 short names), scheme confusion (non-file SSRF/exfil, file:// network authority) and dynamic-root lifecycle (stale/removed-root use after roots/list_changed, access-before-declared, list_changed-not-honored, capability-absent access) - severity-weighted score + grade + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a malicious root-escape capture with 32 findings across 21 rules incl. a confirmed /etc/passwd read outside the declared root, 80 tests",
       "repo_url": "https://github.com/freyesperales/dev-experiment-017",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 18,
+      "date": "2026-07-28",
+      "title": "prompter - offline, LLM-free safety & conformance auditor for the MCP prompts channel (prompts/list, prompts/get) and its companion completion channel (completion/complete): the series' first entry on the prompts capability - the one channel MCP frames as 'user-controlled', yet whose template body, argument-interpolated output, name/title/description and embedded resources are entirely server-authored and injected into the conversation under the user's (or assistant's) name as a trusted slash command. Passively replays a captured JSON-RPC session and grades whether the server weaponized the channel via a 42-rule catalog in 6 families - CAP (capability & declaration legality: prompts/completions declared before use, listChanged coherence, duplicate/empty/non-string names), ARG (argument-schema legality: duplicate args, non-boolean required, undeclared-argument acceptance, required-argument enforcement / owed -32602), INJ (interpolation & injection safety: server-authored injection markers attributed to the template via argument-residue subtraction rather than the user's typed arg, injection in name/title/description = prompt-channel tool-poisoning, a user argument echoed into an assistant-role message = words in the model's mouth, unsubstituted {{placeholder}} leaks), PERC (perception & concealment: zero-width/bidi/control/Unicode TAG-block payloads, and homoglyph prompt-name shadowing of a trusted slash command /dеploy->/deploy or of another prompt), RES (embedded-content & exfiltration: argument-steered outbound resource URIs = exfil/SSRF, off-origin & javascript:/data: schemes, malformed embedded resources, oversized blob/text token bombs, invalid roles/content-types) and CMP (completion channel & result conformance: secret/credential leakage in completion values, injection-in-suggestion, the spec's 100-value cap, total/hasMore incoherence, unknown-prompt/undeclared-argument references) - severity-weighted score + grade + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a trojaned 'acmedeploy' capture with 32 findings across 29 rules and all six families incl. 4 CRITICALs (assistant-mouth injection, /deploy command-shadow, argument-steered exfil URL, AWS-key leak in a completion), 52 tests",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-018",
       "mode": "per-repo",
       "status": "completed"
     }
