@@ -1,5 +1,5 @@
 {
-  "last_number": 37,
+  "last_number": 38,
   "entries": [
     {
       "n": 1,
@@ -294,6 +294,14 @@
       "date": "2026-08-24",
       "title": "entrepot - offline, LLM-free, dependency-free (pure-stdlib) EMERGENT-RISK auditor for the MCP AGGREGATION/FEDERATION PLANE: the first entry whose unit of analysis is the composition rather than a component. Replays the merge bottom-up and reports what the aggregation boundary destroyed (shadowed names, laundered annotations, erased provenance, flattened identity) plus the lethal trifecta assembled across upstreams none of which carries all three legs alone",
       "repo_url": "https://github.com/freyesperales/dev-experiment-037",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 38,
+      "date": "2026-08-25",
+      "title": "reprise - offline, LLM-free, dependency-free (pure-stdlib) RE-EXECUTION SAFETY MODEL CHECKER for agent tool stacks: the series first entry on the RETRY / RE-DISPATCH plane. Given a declarative retry profile (tool manifest + nested retry layers + idempotency key derivation + Tasks retention TTL) it proves, per (tool x fault class), how many times an external side effect can actually COMMIT - splitting faults into DEFINITIVE (never dispatched, retry is free) vs AMBIGUOUS (dispatched, outcome unknown, retry duplicates), multiplying nested attempt budgets, and evaluating idempotency-key survival PER LAYER BOUNDARY (a content key stops a transport replay but not an agent replan that re-derives args). Grades key sources STABLE/VOLATILE/BUCKETED/SUSPECT to catch dedup schemes that are inert at runtime, flags key collisions that silently drop a real call, models the MCP MRTR input_required re-send as a pseudo-layer no retry budget caps, and catches retry budgets that outlive Tasks result retention. 14 rules, counterexample schedule per finding, CI gate.",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-038",
       "mode": "per-repo",
       "status": "completed"
     }
