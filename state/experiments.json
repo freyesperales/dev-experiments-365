@@ -1,5 +1,5 @@
 {
-  "last_number": 53,
+  "last_number": 54,
   "entries": [
     {
       "n": 1,
@@ -422,6 +422,14 @@
       "date": "2026-09-22",
       "title": "ullage - offline, dependency-free (pure-stdlib) PRICE-FIRST CARTONISATION ENGINE for 2026 US parcel tariffs: the series' first entry in the E-COMMERCE / PARCEL-LOGISTICS lane and its first CONSTRUCTIVE OPTIMISER (every prior entry analyses or audits an artefact; this one emits a plan a warehouse executes). The 2026 rules made parcel price a STEP FUNCTION of the carton's outer box - each dimension rounded up to the next whole inch (UPS/FedEx 2025-08-18, USPS 2026-07-12), DIM divisor cut 166->139 (USPS 2026-07-12), and hard cubic-inch cliffs at 1,728 in3 (dimensional weight starts applying), 10,368 in3 (additional handling) and 17,280 in3 / 110 lb (large package) - yet every open-source cartoniser still minimises WASTED VOLUME, a continuous proxy for a discontinuous objective, so it reliably picks boxes sitting a few cubic inches on the expensive side of a cliff. Key insight: PRICE IS COMPUTABLE BEFORE GEOMETRY (it depends only on carton outer dims + gross weight, never on the arrangement), so cartons can be sorted by exact price and the expensive packer called only until the first feasible one - a provably cheapest choice using FEWER packing calls than volume-first selection, validated against an independent brute-force reference. Ships: a declarative JSON tariff model (rounding mode, divisor, dim threshold, rate bands, 7 surcharge condition types, unknown condition keys rejected loudly rather than silently disabling a fee); an extreme-point 3D packer enforcing containment, 80% static SUPPORT and contact-area-proportional CRUSH LOAD (max_stack_weight / this_side_up / non_stackable) so the plans are physically executable, re-verified by an independent invariant checker before any plan is printed (a plan violating its own constraints is refused, not shipped); a bounded split search that reports optimality honestly as exact / heuristic / capped; and a 4-family CLIFF ANALYSER (rounding / threshold / shave / air) whose savings are exact rate-band counterfactuals, aggregated with max() per parcel because the three addressable kinds describe ONE overcharge from three angles - plus a catalogue advisor that re-plans the whole order book per candidate box size to price a lineup change. Flagship inversion in the shipped data: cube-12 has a LARGER cavity (1622 in3 vs 1540 in3) and costs MORE to buy than box-l, yet ships cheaper because its outer is exactly 12x12x12 = 1728 in3 and stays on the exempt side of the cubic-foot line, while box-l measures 1644 in3 but is BILLED 1980 in3 after round-up; order A-1048 is billed 15 lb for 2.2 lb of foam, and splitting A-1045 into two parcels beats shipping it as one. 4 CLI commands (plan / cliffs / catalogue / quote) plus multi-profile comparison that prices the 166->139 divisor change at $3.57 on the sample order book, text + JSON schema v1 + SVG three-projection load diagrams with a numbered loading sequence for the packing bench, CI exit-code gates (--max-total, --fail-on-findings); 186 tests, pure stdlib verified under python -I -S",
       "repo_url": "https://github.com/freyesperales/dev-experiment-053",
+      "mode": "per-repo",
+      "status": "completed"
+    },
+    {
+      "n": 54,
+      "date": "2026-09-23",
+      "title": "concord - offline, LLM-free, dependency-free (pure-stdlib) ARITHMETIC-PROOF TABLE RECONSTRUCTOR for human-formatted spreadsheet exports (CSV): proves which rows are aggregates by checking that a contiguous block of rows actually sums to them across every measure column simultaneously, instead of matching the word 'Total'; emits tidy detail-only data with merged-cell labels recovered and the roll-up path preserved, a JSON proof ledger carrying one checkable equation per aggregate per column, and findings that localize labelled totals which do not add up. The series' first entry in the DATA-PREPARATION / MESSY-EXPORT lane.",
+      "repo_url": "https://github.com/freyesperales/dev-experiment-054",
       "mode": "per-repo",
       "status": "completed"
     }
