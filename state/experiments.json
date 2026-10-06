@@ -1,5 +1,5 @@
 {
- "last_number": 59,
+ "last_number": 64,
  "entries": [
   {
    "n": 1,
@@ -470,6 +470,46 @@
    "date": "2026-10-01",
    "title": "lectern - zero-install, offline, dependency-free IN-BROWSER READING SURFACE for unfamiliar C codebases: click any function call and its definition is set INTO the text where you are reading, recursively, without ever losing your place. A deliberate double break from the series' shape - 001-044 audit the MCP/agent ecosystem and 045-057 are offline pure-stdlib PYTHON CLIs that read an artefact and emit findings with CI exit codes; this is the series' first BROWSER APPLICATION, first JAVASCRIPT deliverable, first with a designed interface rather than a text report, and first whose subject is a PERSON'S COMPREHENSION rather than an artefact's correctness. It emits no findings and has no exit codes, because nothing here is wrong - the reader is just new. THE DEMAND IS UNUSUALLY LITERAL: an 'Ask HN: what developer tool do you wish existed in 2026' commenter asked for it almost to the feature, wanting to 'open a function in window A (window A now shows ONLY this function with all function calls and structs highlighted)', click through to callees, see struct definitions in a panel - explicitly for reading the xv6 kernel, and explicitly as something 'like VSCode Peek definition but free and available on Linux'. Sourcetrail, the free cross-platform interactive source explorer, was discontinued in 2021 and five years on the alternatives listings for it (G2, libhunt, AlternativeTo) offer IDEs, SonarQube, PMD, semgrep and a diagram DSL - the category emptied out and nobody refilled it. THE INSIGHT: every tool that exists makes you JUMP, and the cost is not the lookup, it is the loss of place, paid once per lookup, hundreds of times an afternoon. So everyone built the CALL-GRAPH DIAGRAM (CGraph, Logic X-Ray, CodeFlow-Explorer, Doxygen, egypt) because it demos well, and nobody built the unglamorous half - RECURSIVE INLINE EXPANSION - because it only pays off ten minutes into a real file. lectern renders the callee as an interlinear GLOSS inset into the text with a rubric rule, nested as deep as you like, which is also where the name and the whole visual language come from (a critical edition of a codebase, not a dark-mode IDE). FOUR CANDIDATE IDEAS WERE KILLED FIRST, all by competitive checking rather than taste: in-browser true PDF redaction (strongest raw demand found - 17% of 72 published 'redacted' PDFs still leaked text, 31% of US federal ones - but Offline-PDF-Redactor, pdkef, OpenRedact and Quire already cover it), WCAG 2.3.1 photosensitive-flash analysis for video (PEAT is retired, but video-audit.com, EA's IRIS and FlashDetect already do it free and client-side), cut-list/panel nesting (OpenCutList, CutListCalc, CutOptim), and an offline GDPR/Takeout export viewer (TakeoutReader, 4n6, Backstory, Data Reclaim - and unverifiable without real archives). The pattern worth recording: in 2026 the generic privacy-first browser utility is a SOLVED, CROWDED space, so the only opening left is a tool whose core is an actual algorithm. FOUR STAGES, all pure functions with no DOM so they are testable from node: a FULL-COVERAGE LEXER (every byte lands in exactly one token, so joining them reproduces the file byte for byte - which is also why the syntax highlighter and the indexer read the SAME token stream and cannot drift apart, there being no second regex highlighter); a declaration indexer walking brace depth 0; name resolution under C's real linkage rules (a file-scope static shadows anything external, a definition beats a bare prototype, two external definitions of one name raise a diagnostic and the gloss admits which it picked); and Tarjan SCC condensation feeding a topological sort. THE DISTINCTIVE VIEW IS READING ORDER: source files are ordered for the compiler, so lectern re-sorts the whole project so that NOTHING IS USED BEFORE IT IS DEFINED - types and macros first, then what builds on them - and because mutual recursion makes a strict order impossible, those groups are condensed, listed together, and every reference that still points forward is counted and shown rather than hidden. It is a reading list for a codebase you have never seen. THE EXPLICIT DESIGN CHOICE, stated in the README: a real front end (clang via WebAssembly) would give exact types and correct macro expansion at the cost of a 20 MB download, a compile_commands.json and every system header - and would fail on exactly the code you most want to read, the project that does not configure on your machine. lectern indexes NAMES instead, like ctags, for the reason ctags outlived its competitors: for READING, name-level resolution is almost always right, and when it is wrong the failure is visible and local rather than silent. The discipline that makes that honest is that nothing is ever guessed - an unplaceable name is greyed out, says why on hover, and is counted in the Index tab; a call through a struct member is drawn dashed and says it will not guess which function runs. 131 tests, node --test, no dependencies, green in CI, including a lexer round-trip property across unterminated comments, escaped quotes, line continuations inside string literals and pp-numbers; Tarjan against hand-checked graphs plus 60,000-node chains and cycles to prove the iterative formulation does not blow the stack; and the DEFINE-BEFORE-USE PROPERTY - for every edge in the dependency graph, either the target is read earlier or the edge is reported as a back edge, never neither. Four real bugs were caught only because CI could run the suite when the sandbox could not: the lexer recorded each token's END offset instead of its start; dropping trivia made consecutive #define lines an unbroken run of preprocessor tokens so one directive swallowed the next; references in a function's PARAMETER LIST were never scanned because the walk started at the opening brace; and the fuzzy matcher's contiguity bonus was comparing a cursor against itself and so was always true, scoring position rather than adjacency. Ships a real ~950-line C program (arena allocator + recursive-descent JSON parser, with a genuine parse_value/parse_array/parse_object cycle for the SCC pass to find) as both the zero-click demo and the end-to-end fixture, compiled in CI with -Wall -Wextra -Werror and round-tripped; CI also regenerates the embedded copy and fails if it differs, so the demo can never drift. Honest limits in the README: no preprocessor, name resolution not type resolution, C first with C++ only tolerated, no K&R definitions, a practical ceiling around a few hundred thousand lines, no persisted reading state, and no automated tests for the DOM layer - CI parse-checks it and the rest is manual",
    "repo_url": "https://github.com/freyesperales/lectern",
+   "mode": "per-repo",
+   "status": "completed"
+  },
+  {
+   "n": 60,
+   "date": "2026-10-06",
+   "title": "TrueRedact — in-browser PDF redaction that actually deletes the text (rasterize + rebuild), with a verify panel; nothing uploaded. First batch-of-5 swarm build.",
+   "repo_url": "https://github.com/freyesperales/trueredact",
+   "mode": "per-repo",
+   "status": "completed"
+  },
+  {
+   "n": 61,
+   "date": "2026-10-06",
+   "title": "sweep — cross-ecosystem dev-disk reclaimer: find & trash node_modules/.venv/target/build caches across all projects, size+age sorted, reversible (to Trash).",
+   "repo_url": "https://github.com/freyesperales/sweep",
+   "mode": "per-repo",
+   "status": "completed"
+  },
+  {
+   "n": 62,
+   "date": "2026-10-06",
+   "title": "LocalStatement — PDF bank/card statements → clean CSV/Excel, 100% in-browser, nothing uploaded, no page limits; editable preview + balance sanity-check.",
+   "repo_url": "https://github.com/freyesperales/localstatement",
+   "mode": "per-repo",
+   "status": "completed"
+  },
+  {
+   "n": 63,
+   "date": "2026-10-06",
+   "title": "contrast-fix — finds every WCAG-failing text/background pair and rewrites each to the nearest passing color (OKLCH minimal shift); web tool + CI CLI, zero deps.",
+   "repo_url": "https://github.com/freyesperales/contrast-fix",
+   "mode": "per-repo",
+   "status": "completed"
+  },
+  {
+   "n": 64,
+   "date": "2026-10-06",
+   "title": "SheetDiff — git diff for spreadsheets in the browser: compare two Excel/CSV matched by KEY column (reordered rows don't show as changes), free, nothing uploaded.",
+   "repo_url": "https://github.com/freyesperales/sheetdiff",
    "mode": "per-repo",
    "status": "completed"
   }
