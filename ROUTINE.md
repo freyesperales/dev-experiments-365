@@ -12,18 +12,32 @@ Read `state/experiments.json` (a ledger: `{last_number, entries[]}`). Compute
 `N = last_number + 1`, zero-padded to NNN. If the last entry's `date` equals
 today (UTC) AND status is `completed`, STOP — today is already done.
 
-## 1 — Research with a SWARM, mine real demand
-Dispatch 4–6 parallel idea-scout subagents (Task tool), each on a DIFFERENT
-lane (devtools, single-file web tools, data/document productivity,
-accessibility/plain-language, AI/LLM dev ecosystem [non-security], business,
-emerging). Each scout: do real web research, MINE REAL DEMAND (Ask-HN "tool you
-wish existed", Reddit pain threads, popular unresolved GitHub issues, awesome-list
-gaps), estimate the audience, check why existing tools fall short, and return
-2–3 candidate solutions with: memorable name + one-line hook, problem & who has
-it, demand evidence (links), the wedge, form factor, a one-run-buildable
-COMPREHENSIVE scope, and a star-potential score. If the Task tool is
-unavailable, EMULATE the swarm yourself: research each lane sequentially and
-produce the same multi-lane shortlist. Then pick ONE winner.
+## 1 — Research with a SWARM: market, tech trends and real demand
+The Task tool IS available in this environment: you MUST dispatch the swarm in
+parallel (do not emulate it unless a Task call actually errors). Launch 6 scouts
+at once, each on a DIFFERENT lane:
+1. **Tech trends** — what is rising THIS month: GitHub Trending (daily/weekly,
+   several languages), Hacker News front page and Show HN, Product Hunt top of the
+   week, new releases/announcements of major platforms (browsers, Node/Python/Rust,
+   AI model and agent ecosystems, Cloudflare/Vercel), and what developers are
+   adopting or complaining about.
+2. **Market & business pain** — small and medium businesses, marketers, e-commerce,
+   freelancers/agencies: recurring tasks they still do by hand (reports, catalogs,
+   spreadsheets, invoices, SEO/GEO checks, WhatsApp/CRM workflows).
+3. **Devtools & single-file web tools** — Ask HN "tool I wish existed", Reddit pain
+   threads, popular unresolved GitHub issues, awesome-list gaps.
+4. **Data/document productivity & accessibility/plain language.**
+5. **AI/LLM practical tooling (non-security)** — what people struggle with when
+   adopting agents, MCP, local models, evaluation, cost control.
+6. **Wildcard / emerging** — anything with a fresh, verifiable spike of interest.
+Each scout does real web research with links and dates, estimates the audience,
+checks why existing tools fall short, and returns 2–3 candidates with: memorable
+name + one-line hook, problem & who has it, demand/trend evidence (links), the
+wedge, form factor, a one-run-buildable COMPREHENSIVE scope, and a star-potential
+score (demand × shareability × repeat use × feasibility).
+Then run a short JUDGE step (one more subagent, or yourself if needed) that scores
+the full shortlist against the hard rules in section 2 and picks ONE winner. Save
+the shortlist and scores in `RESEARCH.md`.
 
 ## 2 — Select a star-worthy idea (hard rules)
 - Read ALL prior ledger titles; be materially novel.
