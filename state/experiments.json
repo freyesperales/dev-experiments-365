@@ -1,5 +1,5 @@
 {
-  "last_number": 66,
+  "last_number": 67,
   "entries": [
     {
       "n": 1,
@@ -528,6 +528,15 @@
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-066",
       "mode": "monorepo",
       "status": "completed"
+    },
+    {
+      "n": 67,
+      "date": "2026-10-08",
+      "title": "chatorder — paste a WhatsApp order chat, get a clean order sheet, pick/production list and print-ready invoices; offline single HTML file + zero-dep CLI, rule-based multilingual parser, nothing uploaded.",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-067",
+      "mode": "monorepo",
+      "status": "completed",
+      "note": "built by the routine on 2026-10-08; published 2026-10-22 (push had failed: GitHub access)"
     }
   ]
 }

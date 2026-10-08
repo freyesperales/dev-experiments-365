@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>chatorder</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1b1f1d;--mute:#667068;--line:#e3e1d8;--acc:#128c4a;--accbg:#e6f5ec;--warn:#b45309;--warnbg:#fdf3e1;--err:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#121513;--card:#1b201d;--ink:#e8ece9;--mute:#97a39b;--line:#2c332f;--acc:#3ecf7f;--accbg:#173323;--warn:#f0b35a;--warnbg:#33290f;--err:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:18px 16px 6px;max-width:1280px;margin:auto}
+h1{margin:0;font-size:24px}h1 span{color:var(--acc)}
+header p{margin:2px 0 0;color:var(--mute)}
+main{max-width:1280px;margin:auto;padding:12px 16px 40px;display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px}
+@media (max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute)}
+textarea,input,select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%}
+textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;resize:vertical}
+label{display:block;font-size:12px;color:var(--mute);margin:8px 0 2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 12px}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.x{padding:2px 8px;color:var(--err)}
+.stack>*+*{margin-top:12px}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--accbg);border-radius:10px;padding:8px 14px}.stat b{display:block;font-size:20px}.stat span{font-size:12px;color:var(--mute)}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--mute);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+td input{padding:2px 6px;width:80px;text-align:right}
+.cust h3{margin:0 0 6px;font-size:16px;display:flex;justify-content:space-between;gap:8px}
+.raw{color:var(--mute);font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:10px;padding:10px}
+.warn h2{color:var(--warn)}
+.pill{display:inline-block;background:var(--warnbg);color:var(--warn);border-radius:99px;padding:0 8px;font-size:11px}
+.err{color:var(--err)}
+.muted{color:var(--mute)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#print{display:none}
+@media print{
+  body{background:#fff;color:#000}header,main{display:none}
+  #print{display:block}
+  .inv{page-break-after:always;padding:24px;max-width:720px;margin:auto;font-size:13px}
+  .inv:last-child{page-break-after:auto}
+  .inv h1{font-size:22px}.inv table th,.inv table td{border-bottom:1px solid #ccc}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>chat<span>order</span></h1>
+  <p>Paste a WhatsApp order chat → get the order sheet, the baking/pick list and print-ready invoices. Runs 100% in your browser; nothing is uploaded.</p>
+</header>
+<main>
+  <section class="stack">
+    <div class="card">
+      <h2>1 · WhatsApp chat export</h2>
+      <textarea id="chat" rows="11" placeholder="Paste here, or drop the exported chat .txt file on this box…" spellcheck="false"></textarea>
+      <div class="bar" style="margin-top:6px">
+        <input type="file" id="file" accept=".txt,text/plain" style="width:auto">
+        <button id="sample">Load sample</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin:6px 0 0">WhatsApp → chat → ⋮ → More → Export chat → Without media.</p>
+    </div>
+    <div class="card">
+      <h2>2 · Your price list</h2>
+      <textarea id="prices" rows="9" spellcheck="false" placeholder="pan de yuca | yuca, pandeyuca = 5"></textarea>
+      <p class="muted" style="font-size:12px;margin:6px 0 0"><code>name | alias, alias = price</code> — one per line. Saved in this browser.</p>
+      <div id="priceErr" class="err" style="font-size:12px"></div>
+    </div>
+    <div class="card">
+      <h2>3 · Settings</h2>
+      <label>I am the seller (ignore my replies)</label>
+      <select id="seller"><option value="">— nobody —</option></select>
+      <div class="row">
+        <div><label>From date</label><input type="date" id="from"></div>
+        <div><label>To date</label><input type="date" id="to"></div>
+      </div>
+      <div class="row">
+        <div><label>Date order in file</label><select id="dorder"><option value="auto">auto-detect</option><option value="dmy">day/month</option><option value="mdy">month/day</option></select></div>
+        <div><label>Decimals</label><select id="dec"><option value="2">2</option><option value="0">0</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>Business name</label><input id="biz" placeholder="Panadería Luz"></div>
+        <div><label>Currency symbol</label><input id="cur" value="$"></div>
+      </div>
+      <div class="row">
+        <div><label>Tax %</label><input id="tax" type="number" min="0" step="0.1" value="0"></div>
+        <div><label>Delivery fee / order</label><input id="ship" type="number" min="0" step="0.01" value="0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack" id="out"></section>
+</main>
+<div id="print"></div>
+
+<script id="core">
+/* ---------- chatorder core: pure functions, no DOM ---------- */
+const NUMW = {un:1,una:1,uno:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,once:11,doce:12,media:.5,medio:.5,
+  one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,half:.5,
+  um:1,uma:1,dois:2,duas:2,quatro:4,sete:7,oito:8,dez:10};
+const STOP = new Set(['de','del','la','el','los','las','the','of','a','an','un','una','con','para','por','favor','porfa','please','pls']);
+const UNITS = 'kgs?|kilos?|grs?|g|lbs?|libras?|l|lts?|litros?|oz';
+const FILLER = /^(quiero|quisiera|queria|me das|me da|dame|me regalas|me anotas|anotame|anota|apunta|ponme|manda|mandame|i want|i'd like|i would like|can i get|can i have|can i order|please|porfa|por favor|hola|buenas( tardes| dias| noches)?|buenos dias|hi|hello|hey|and|y|also|tambien|plus|add|agrega|agregame|ademas|necesito|i need|pido|pedido|ah)\b[\s,:!.]*/;
+const NOISE = /^(p\.?m|a\.?m|hrs?|hs|horas?|minutos?|min|dias?|days?|hours?|o'?clock|usd|pesos|soles|reales|dolares|personas?)\b/;
+const CANCEL = /\b(cancel\w*|anul\w*|ya no (quiero|lo necesito)|never ?mind|forget it|olvida\w*)\b/;
+const D = '(\\d{1,4}[\\/.\\-]\\d{1,2}[\\/.\\-]\\d{1,4})', T = '(\\d{1,2}[:.]\\d{2}(?::\\d{2})?(?:\\s?[APap]\\.?\\s?[Mm]\\.?)?)';
+const RE_IOS = new RegExp('^\\[' + D + ',?\\s+' + T + '\\]\\s+(.*)$');
+const RE_AND = new RegExp('^' + D + ',?\\s+' + T + '\\s+-\\s+(.*)$');
+const RE_QTY_NUM = new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(?:[x×*]\\s+|\\*\\s*|x(?=\\s))?(?:(?:' + UNITS + ')\\b\\.?\\s*(?:de\\s+)?)?(.+)$');
+const RE_QTY_WORD = new RegExp('^(' + Object.keys(NUMW).join('|') + ')\\s+(?:(?:' + UNITS + ')\\b\\.?\\s*(?:de\\s+)?)?(.+)$');
+
+const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const stem = w => (w.length > 3 ? w.replace(/(es|s)$/, '') : w);
+const toks = s => norm(s).replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+const meaningful = s => toks(s).filter(t => !STOP.has(t)).map(stem);
+
+function lev(a, b) {
+  const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  let prev = Array.from({length: n + 1}, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+function near(a, b) {
+  if (a === b) return true;
+  const L = Math.min(a.length, b.length);
+  const tol = L >= 8 ? 2 : L >= 5 ? 1 : 0;
+  return tol > 0 && lev(a, b) <= tol;
+}
+
+/* "1.234,50" "1,234.50" "5,50" "2.500" "5" -> number */
+function parseMoney(str) {
+  let s = String(str).replace(/[^\d.,]/g, '');
+  if (!s) return NaN;
+  const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
+  if (lc >= 0 && ld >= 0) {
+    const dec = lc > ld ? ',' : '.', th = dec === ',' ? '.' : ',';
+    return parseFloat(s.split(th).join('').replace(dec, '.'));
+  }
+  const sep = lc >= 0 ? ',' : ld >= 0 ? '.' : null;
+  if (!sep) return parseFloat(s);
+  const parts = s.split(sep);
+  if (parts.length > 2) return parseFloat(parts.join(''));
+  if (parts[1].length === 3 && parts[0].length <= 3 && parts[0] !== '0' && parts[0] !== '') return parseFloat(parts.join(''));
+  return parseFloat(parts[0] + '.' + parts[1]);
+}
+
+/* ---------- price list ---------- */
+function parsePriceList(text) {
+  const items = [], errors = [];
+  String(text).split(/\r?\n/).forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) return;
+    const m = line.match(/^(.*?)[\s=:|\-–—]*[$€£]?\s*(\d[\d.,]*)\s*[$€£]?\s*$/);
+    const price = m ? parseMoney(m[2]) : NaN;
+    const namePart = m ? m[1].replace(/[\s=:\-–—]+$/, '') : '';
+    if (!m || !namePart || !isFinite(price)) { errors.push({line: i + 1, text: raw}); return; }
+    const [name, ...rest] = namePart.split('|').map(s => s.trim());
+    const aliases = rest.join(',').split(',').map(s => s.trim()).filter(Boolean);
+    if (!name) { errors.push({line: i + 1, text: raw}); return; }
+    const variants = [name, ...aliases].map(v => ({text: v, t: meaningful(v)})).filter(v => v.t.length);
+    items.push({name, aliases, price, variants});
+  });
+  const protect = [];
+  for (const it of items) for (const v of it.variants) {
+    if (/(^|\s)(y|and|e)(\s|$)|&|\+/.test(norm(v.text))) protect.push(norm(v.text));
+  }
+  return {items, errors, protect};
+}
+
+/* best catalog item for a free-text fragment */
+function findItem(text, catalog) {
+  const T_ = meaningful(text);
+  if (!T_.length) return {item: null, reason: 'empty'};
+  const scored = [];
+  for (const it of catalog.items) {
+    let best = 0;
+    for (const v of it.variants) {
+      const covV = v.t.filter(x => T_.some(t => near(t, x))).length;
+      const covT = T_.filter(t => v.t.some(x => near(t, x))).length;
+      let s = 0;
+      if (covV === v.t.length) s = 0.7 + 0.3 * covV / Math.max(T_.length, covV);
+      else if (covT === T_.length) s = 0.4 + 0.3 * covT / v.t.length;
+      if (s > best) best = s;
+    }
+    if (best >= 0.45) scored.push({it, s: best});
+  }
+  if (!scored.length) return {item: null, reason: 'not in price list'};
+  scored.sort((a, b) => b.s - a.s);
+  if (scored.length > 1 && scored[0].s - scored[1].s < 0.05)
+    return {item: null, reason: 'ambiguous: ' + scored.slice(0, 3).map(x => x.it.name).join(' / ')};
+  return {item: scored[0].it, score: scored[0].s};
+}
+
+/* ---------- chat parsing ---------- */
+const clean = s => s.replace(/[‎‏‪-‮﻿]/g, '').replace(/[  ]/g, ' ');
+
+function parseChat(raw, opts = {}) {
+  const lines = clean(String(raw)).replace(/\r\n?/g, '\n').split('\n');
+  const msgs = []; let cur = null;
+  for (const line of lines) {
+    const m = line.match(RE_IOS) || line.match(RE_AND);
+    if (m) {
+      const rest = m[3], i = rest.indexOf(': ');
+      if (i < 1 || i > 50) { cur = null; continue; } // system line
+      cur = {dateRaw: m[1], time: m[2], sender: rest.slice(0, i).trim(), text: rest.slice(i + 2)};
+      msgs.push(cur);
+    } else if (cur) cur.text += '\n' + line;
+  }
+  let order = opts.dateOrder && opts.dateOrder !== 'auto' ? opts.dateOrder : null;
+  const split = d => d.split(/[\/.\-]/);
+  if (!order) {
+    order = 'dmy';
+    let dmy = false, mdy = false, ymd = false;
+    for (const m of msgs) {
+      const [a, b] = split(m.dateRaw);
+      if (a.length === 4) ymd = true; else if (+a > 12) dmy = true; else if (+b > 12) mdy = true;
+    }
+    const ampm = msgs.some(m => /[ap]\.?\s?m/i.test(m.time));
+    order = ymd ? 'ymd' : (mdy && !dmy) ? 'mdy' : (!dmy && ampm) ? 'mdy' : 'dmy'; // ambiguous: 12-hour clocks are mostly US (m/d)
+  }
+  const amp = t => { // sortable minutes
+    const m = t.match(/(\d{1,2})[:.](\d{2})(?::\d{2})?\s?([APap])?/); if (!m) return 0;
+    let h = +m[1]; if (m[3]) { h %= 12; if (/p/i.test(m[3])) h += 12; } return h * 60 + +m[2];
+  };
+  for (const m of msgs) {
+    let [a, b, c] = split(m.dateRaw), y, mo, d;
+    if (a.length === 4) { y = a; mo = b; d = c; } else if (order === 'mdy') { mo = a; d = b; y = c; } else { d = a; mo = b; y = c; }
+    if (y.length === 2) y = '20' + y;
+    m.date = `${y.padStart(4, '0')}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    m.minutes = amp(m.time);
+  }
+  return {messages: msgs, dateOrder: order, senders: [...new Set(msgs.map(m => m.sender))]};
+}
+
+/* ---------- message -> order lines ---------- */
+function splitSegments(text, catalog) {
+  let s = norm(text);
+  for (const p of catalog.protect) s = s.split(p).join(p.replace(/\s+/g, '_'));
+  return s.split(/\n|(?<!\d),|,(?!\d)|;|\s+(?:y|and|e|plus)\s+|\s*[+&]\s*/).map(x => x.trim()).filter(Boolean);
+}
+
+function parseSegment(seg, catalog) {
+  let s = seg.trim(), assumed = false, mult = 1;
+  for (let i = 0; i < 3; i++) { const n = s.replace(FILLER, ''); if (n === s) break; s = n; }
+  s = s.replace(/[!.?¡¿]+$/g, '').trim();
+  if (!s) return null;
+  let qty = null, rest = null, m;
+  if ((m = s.match(RE_QTY_NUM))) { qty = parseFloat(m[1].replace(',', '.')); rest = m[2]; }
+  else if ((m = s.match(RE_QTY_WORD))) { qty = NUMW[m[1]]; rest = m[2]; }
+  else if ((m = s.match(/^(.+?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)$/))) { qty = parseFloat(m[2].replace(',', '.')); rest = m[1]; }
+  else if ((m = s.match(/^(.+?)\s+(\d+)$/)) && findItem(m[1], catalog).item) { qty = +m[2]; rest = m[1]; }
+  if (qty === null) {
+    if (toks(s).length > 6) return null;
+    const f = findItem(s, catalog);
+    if (!f.item && !/^ambiguous/.test(f.reason || '')) return null;
+    return {qty: 1, assumed: true, rest: s, found: f};
+  }
+  rest = rest.replace(/^(de|of|a|an)\s+/, '').trim();
+  const dz = rest.match(/^(docenas?|dozens?|doz)\s+(?:de\s+|of\s+)?(.+)$/);
+  if (dz) { mult = 12; rest = dz[2]; }
+  if (!rest || !/[a-z]/.test(rest) || NOISE.test(rest)) return null;
+  if (!(qty > 0) || qty > 10000) return null;
+  return {qty: qty * mult, assumed, rest, found: findItem(rest, catalog)};
+}
+
+function buildOrders(messages, catalog, opts = {}) {
+  const ignore = new Set((opts.ignore || []).map(s => s.trim()).filter(Boolean));
+  const customers = new Map(), unmatched = [], events = [];
+  let lineId = 0;
+  const cust = n => { if (!customers.has(n)) customers.set(n, {name: n, lines: []}); return customers.get(n); };
+  const sorted = messages.map((m, i) => ({m, i})).sort((a, b) => a.m.date.localeCompare(b.m.date) || a.m.minutes - b.m.minutes || a.i - b.i).map(x => x.m);
+  for (const m of sorted) {
+    if (ignore.has(m.sender)) continue;
+    if (opts.from && m.date < opts.from) continue;
+    if (opts.to && m.date > opts.to) continue;
+    if (/omitted|omitido|omitida|<media|<multimedia/i.test(m.text) && m.text.length < 40) continue;
+    const segs = splitSegments(m.text, catalog).map(s => parseSegment(s, catalog)).filter(Boolean);
+    const nm = norm(m.text);
+    if (CANCEL.test(nm) && !segs.some(s => !s.assumed)) {
+      const c = customers.get(m.sender);
+      const stripped = nm.replace(CANCEL, ' ');
+      const f = findItem(stripped, catalog);
+      if (c && c.lines.length) {
+        const before = c.lines.length;
+        c.lines = f.item ? c.lines.filter(l => l.item !== f.item.name) : [];
+        events.push({customer: m.sender, date: m.date, kind: 'cancel', text: f.item ? `cancelled "${f.item.name}"` : 'cancelled the whole order', removed: before - c.lines.length});
+      }
+      continue;
+    }
+    for (const s of segs) {
+      if (s.found.item) {
+        cust(m.sender).lines.push({id: ++lineId, date: m.date, item: s.found.item.name, qty: s.qty, price: s.found.item.price, raw: s.rest, assumed: s.assumed});
+      } else if (!s.assumed || /^ambiguous/.test(s.found.reason || '')) {
+        if (!s.assumed || s.found.reason) unmatched.push({id: ++lineId, customer: m.sender, date: m.date, qty: s.qty, raw: s.rest, reason: s.found.reason || 'not in price list'});
+      }
+    }
+  }
+  for (const [k, c] of customers) if (!c.lines.length) customers.delete(k);
+  return {customers: [...customers.values()], unmatched, events};
+}
+
+/* ---------- totals / export ---------- */
+const round = (n, d) => Math.round((n + Number.EPSILON) * 10 ** d) / 10 ** d;
+function groupLines(lines) {
+  const g = new Map();
+  for (const l of lines) { const k = l.item + '\u0000' + l.price; const e = g.get(k) || {item: l.item, price: l.price, qty: 0}; e.qty += l.qty; g.set(k, e); }
+  return [...g.values()];
+}
+function customerTotals(c, {taxRate = 0, shipping = 0, decimals = 2} = {}) {
+  const sub = round(c.lines.reduce((s, l) => s + l.qty * l.price, 0), decimals);
+  const tax = round(sub * taxRate / 100, decimals);
+  const ship = c.lines.length ? shipping : 0;
+  return {sub, tax, ship, total: round(sub + tax + ship, decimals)};
+}
+function pickList(customers) {
+  const m = new Map();
+  for (const c of customers) for (const l of c.lines) { const e = m.get(l.item) || {item: l.item, qty: 0, customers: new Set()}; e.qty += l.qty; e.customers.add(c.name); m.set(l.item, e); }
+  return [...m.values()].map(e => ({item: e.item, qty: e.qty, orders: e.customers.size})).sort((a, b) => b.qty - a.qty || a.item.localeCompare(b.item));
+}
+const csvCell = v => { const s = String(v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+function toCSV(customers, decimals = 2) {
+  const rows = [['date', 'customer', 'item', 'qty', 'unit_price', 'line_total']];
+  for (const c of customers) for (const l of c.lines) rows.push([l.date, c.name, l.item, l.qty, l.price, round(l.qty * l.price, decimals)]);
+  return rows.map(r => r.map(csvCell).join(',')).join('\n') + '\n';
+}
+if (typeof module !== 'undefined') module.exports = {parseChat, parsePriceList, buildOrders, findItem, parseSegment, splitSegments, parseMoney, customerTotals, pickList, toCSV, groupLines, round};
+</script>
+
+<script id="ui">
+if (typeof document !== 'undefined') (function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+  const store = {get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }};
+  const SAMPLE_CHAT = `12/03/2026, 08:15 - Marta Ríos: Buenos días! quiero 2 pan de yuca y 3 empanadas de pollo
+12/03/2026, 08:16 - Panadería Luz: Claro Marta, anotado
+12/03/2026, 08:20 - Marta Ríos: ah y una docena de brownies
+12/03/2026, 08:31 - +57 300 555 0101: hola, 1 torta de chocolate para las 5 pm
+12/03/2026, 08:32 - +57 300 555 0101: 2x café
+12/03/2026, 08:40 - Diego Paz: dame
+pan de queso x4
+empanada de carne x2
+1 kombucha
+12/03/2026, 09:02 - Ana Gil: tres jugo de naranja, 2 pandeyuca
+12/03/2026, 09:10 - Ana Gil: cancela los jugos
+12/03/2026, 09:12 - Ana Gil: 1 mac y queso y 2 empanadas de pllo`;
+  const SAMPLE_PRICES = `# name | aliases = price
+pan de yuca | pandeyuca, yuca = 5
+pan de queso = 6
+empanada de pollo | empanada, empanadas = 8.5
+empanada de carne = 9
+brownie | brownies = 12
+torta de chocolate | torta = 90
+café | cafe = 4.5
+jugo de naranja | jugo = 7
+mac y queso = 15`;
+
+  let result = {customers: [], unmatched: [], events: []}, parsed = {messages: [], senders: []}, catalog = {items: [], errors: [], protect: []};
+  const cfg = () => ({taxRate: parseFloat($('tax').value) || 0, shipping: parseFloat($('ship').value) || 0, decimals: +$('dec').value, cur: $('cur').value, biz: $('biz').value.trim()});
+  const money = n => { const c = cfg(); return c.cur + Number(n).toLocaleString(undefined, {minimumFractionDigits: c.decimals, maximumFractionDigits: c.decimals}); };
+
+  function parseAll() {
+    store.set('chatorder.prices', $('prices').value);
+    ['biz', 'cur', 'tax', 'ship', 'dec'].forEach(k => store.set('chatorder.' + k, $(k).value));
+    catalog = parsePriceList($('prices').value);
+    $('priceErr').textContent = catalog.errors.length ? 'Could not read line(s): ' + catalog.errors.map(e => e.line).join(', ') : '';
+    parsed = parseChat($('chat').value, {dateOrder: $('dorder').value});
+    const sel = $('seller'), keep = sel.value;
+    sel.innerHTML = '<option value="">— nobody —</option>' + parsed.senders.map(s => `<option>${esc(s)}</option>`).join('');
+    if (parsed.senders.includes(keep)) sel.value = keep;
+    else if (parsed.senders.length) { // guess: the seller is whoever has the most messages
+      const cnt = {}; parsed.messages.forEach(m => cnt[m.sender] = (cnt[m.sender] || 0) + 1);
+      const top = parsed.senders.sort((a, b) => cnt[b] - cnt[a])[0];
+      if (parsed.senders.length > 2 && cnt[top] > parsed.messages.length * 0.5) sel.value = top;
+    }
+    recompute();
+  }
+  function recompute() {
+    result = buildOrders(parsed.messages, catalog, {ignore: [$('seller').value], from: $('from').value, to: $('to').value});
+    render();
+  }
+
+  function render() {
+    const out = $('out'), c = cfg(), t = result.customers.map(x => customerTotals(x, c));
+    if (!$('chat').value.trim()) { out.innerHTML = '<div class="card muted">Paste a chat (or press <b>Load sample</b>) to begin.</div>'; $('print').innerHTML = ''; return; }
+    if (!parsed.messages.length) { out.innerHTML = '<div class="card err">No WhatsApp messages recognised. Use "Export chat" (.txt) — lines should start like <code>12/03/2026, 08:15 - Name: text</code> or <code>[3/12/26, 2:05:11 PM] Name: text</code>.</div>'; return; }
+    const grand = round(t.reduce((s, x) => s + x.total, 0), c.decimals), units = result.customers.reduce((s, x) => s + x.lines.reduce((a, l) => a + l.qty, 0), 0);
+    let h = `<div class="card"><div class="stats">
+      <div class="stat"><b>${result.customers.length}</b><span>customers</span></div>
+      <div class="stat"><b>${units}</b><span>units</span></div>
+      <div class="stat"><b>${money(grand)}</b><span>total incl. tax/delivery</span></div>
+      <div class="stat"><b>${result.unmatched.length}</b><span>need review</span></div></div>
+      <div class="bar" style="margin-top:10px"><button class="primary" id="bPrint">Print / save invoices (PDF)</button><button id="bCsv">Download CSV</button><button id="bCopy">Copy CSV</button></div></div>`;
+    if (result.unmatched.length) {
+      h += `<div class="warn"><h2>Needs review — not added to any total</h2><table>` + result.unmatched.map((u, i) =>
+        `<tr><td><b>${esc(u.customer)}</b><div class="raw">${esc(u.qty)} × ${esc(u.raw)}</div></td><td><span class="pill">${esc(u.reason)}</span></td>
+         <td><select data-asg="${i}"><option value="">assign to item…</option>${catalog.items.map((it, k) => `<option value="${k}">${esc(it.name)}</option>`).join('')}</select></td>
+         <td><button data-add="${i}">Add</button> <button class="x" data-skip="${i}" title="Ignore">✕</button></td></tr>`).join('') + '</table></div>';
+    }
+    if (result.events.length) h += `<div class="card"><h2>Cancellations detected</h2>${result.events.map(e => `<div>${esc(e.customer)}: ${esc(e.text)} <span class="muted">(${e.removed} line${e.removed === 1 ? '' : 's'}, ${esc(e.date)})</span></div>`).join('')}</div>`;
+    const pl = pickList(result.customers);
+    if (pl.length) h += `<div class="card"><h2>Pick / production list</h2><table><tr><th>Item</th><th class="n">Qty</th><th class="n">Orders</th></tr>${pl.map(p => `<tr><td>${esc(p.item)}</td><td class="n"><b>${p.qty}</b></td><td class="n">${p.orders}</td></tr>`).join('')}</table></div>`;
+    result.customers.forEach((cu, ci) => {
+      h += `<div class="card cust"><h3><span>${esc(cu.name)}</span><span>${money(t[ci].total)}</span></h3><table><tr><th>Item</th><th class="n">Qty</th><th class="n">Price</th><th class="n">Total</th><th></th></tr>` +
+        cu.lines.map((l, li) => `<tr><td>${esc(l.item)}${l.assumed ? ' <span class="pill" title="No quantity given, assumed 1">qty?</span>' : ''}<div class="raw">${esc(l.date)}</div></td>
+          <td class="n"><input type="number" min="0" step="any" value="${l.qty}" data-q="${ci}:${li}"></td>
+          <td class="n"><input type="number" min="0" step="any" value="${l.price}" data-p="${ci}:${li}"></td>
+          <td class="n">${money(l.qty * l.price)}</td><td><button class="x" data-del="${ci}:${li}">✕</button></td></tr>`).join('') +
+        `<tr><td colspan="3" class="n muted">Subtotal${c.taxRate ? ' · tax ' + c.taxRate + '%' : ''}${c.shipping ? ' · delivery' : ''}</td><td class="n">${money(t[ci].sub)}${c.taxRate ? '<br>' + money(t[ci].tax) : ''}${c.shipping ? '<br>' + money(t[ci].ship) : ''}</td><td></td></tr></table></div>`;
+    });
+    if (!result.customers.length) h += '<div class="card muted">No orders found. Check the price list covers the items people ask for, and that the seller is selected.</div>';
+    out.innerHTML = h;
+    buildInvoices(t);
+  }
+
+  function buildInvoices(t) {
+    const c = cfg(), today = new Date().toISOString().slice(0, 10);
+    $('print').innerHTML = result.customers.map((cu, i) => {
+      const g = groupLines(cu.lines);
+      return `<div class="inv"><h1>${esc(c.biz || 'Invoice')}</h1><p>Invoice #${today.replace(/-/g, '')}-${String(i + 1).padStart(3, '0')} · ${today}<br>Customer: <b>${esc(cu.name)}</b></p>
+        <table><tr><th>Item</th><th class="n">Qty</th><th class="n">Unit</th><th class="n">Amount</th></tr>${g.map(x => `<tr><td>${esc(x.item)}</td><td class="n">${x.qty}</td><td class="n">${money(x.price)}</td><td class="n">${money(round(x.qty * x.price, c.decimals))}</td></tr>`).join('')}
+        <tr><td colspan="3" class="n">Subtotal</td><td class="n">${money(t[i].sub)}</td></tr>
+        ${c.taxRate ? `<tr><td colspan="3" class="n">Tax ${c.taxRate}%</td><td class="n">${money(t[i].tax)}</td></tr>` : ''}
+        ${c.shipping ? `<tr><td colspan="3" class="n">Delivery</td><td class="n">${money(t[i].ship)}</td></tr>` : ''}
+        <tr><td colspan="3" class="n"><b>Total</b></td><td class="n"><b>${money(t[i].total)}</b></td></tr></table><p>Thank you!</p></div>`;
+    }).join('');
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.del) { const [ci, li] = b.dataset.del.split(':').map(Number); result.customers[ci].lines.splice(li, 1); if (!result.customers[ci].lines.length) result.customers.splice(ci, 1); render(); }
+    else if (b.dataset.skip) { result.unmatched.splice(+b.dataset.skip, 1); render(); }
+    else if (b.dataset.add) {
+      const i = +b.dataset.add, sel = document.querySelector(`[data-asg="${i}"]`); if (sel.value === '') return;
+      const u = result.unmatched[i], it = catalog.items[+sel.value];
+      let cu = result.customers.find(x => x.name === u.customer); if (!cu) { cu = {name: u.customer, lines: []}; result.customers.push(cu); }
+      cu.lines.push({id: u.id, date: u.date, item: it.name, qty: u.qty, price: it.price, raw: u.raw}); result.unmatched.splice(i, 1); render();
+    }
+    else if (b.id === 'bPrint') window.print();
+    else if (b.id === 'bCsv') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toCSV(result.customers, cfg().decimals)], {type: 'text/csv'})); a.download = 'orders.csv'; a.click(); }
+    else if (b.id === 'bCopy') { navigator.clipboard.writeText(toCSV(result.customers, cfg().decimals)).then(() => { b.textContent = 'Copied ✓'; }, () => { b.textContent = 'Copy failed'; }); }
+  });
+  document.addEventListener('change', e => {
+    const q = e.target.dataset.q, p = e.target.dataset.p, v = parseFloat(e.target.value);
+    if ((q || p) && isFinite(v) && v >= 0) { const [ci, li] = (q || p).split(':').map(Number); result.customers[ci].lines[li][q ? 'qty' : 'price'] = v; render(); }
+  });
+
+  let timer; const deb = () => { clearTimeout(timer); timer = setTimeout(parseAll, 200); };
+  ['chat', 'prices', 'dorder'].forEach(id => $(id).addEventListener('input', deb));
+  ['biz', 'cur', 'tax', 'ship', 'dec'].forEach(id => $(id).addEventListener('input', () => { store.set('chatorder.' + id, $(id).value); render(); }));
+  ['seller', 'from', 'to'].forEach(id => $(id).addEventListener('change', recompute));
+  $('sample').onclick = () => { $('chat').value = SAMPLE_CHAT; $('prices').value = SAMPLE_PRICES; $('seller').value = ''; parseAll(); $('seller').value = 'Panadería Luz'; recompute(); };
+  $('file').addEventListener('change', async e => { const f = e.target.files[0]; if (f) { $('chat').value = await f.text(); parseAll(); } });
+  const box = $('chat');
+  box.addEventListener('dragover', e => e.preventDefault());
+  box.addEventListener('drop', async e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) { box.value = await f.text(); parseAll(); } });
+
+  $('prices').value = store.get('chatorder.prices') || '';
+  ['biz', 'cur', 'tax', 'ship', 'dec'].forEach(k => { const v = store.get('chatorder.' + k); if (v !== null) $(k).value = v; });
+  parseAll();
+})();
+</script>
+</body>
+</html>

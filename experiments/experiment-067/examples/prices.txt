@@ -1,0 +1,10 @@
+# name | aliases = price     (one per line; # = comment)
+pan de yuca | pandeyuca, yuca = 5
+pan de queso | pandequeso = 6
+empanada de pollo | empanada, empanadas = 8.5
+empanada de carne = 9
+brownie | brownies = 12
+torta de chocolate | torta, pastel, chocolate cake, cake = 90
+café | cafe, coffee = 4.5
+jugo de naranja | jugo = 7
+mac y queso = 15

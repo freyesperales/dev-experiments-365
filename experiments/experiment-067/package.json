@@ -1,0 +1,1 @@
+{"name":"chatorder","version":"1.0.0","description":"WhatsApp order chat to order sheet, pick list and invoices. Offline, zero deps.","license":"MIT","scripts":{"test":"node --test test/core.test.cjs","demo":"node cli.cjs examples/chat-es.txt examples/prices.txt --seller \"Panadería Luz\"","start":"node -e \"console.log('open index.html in a browser')\""}}

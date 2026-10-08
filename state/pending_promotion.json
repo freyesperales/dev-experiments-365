@@ -8,5 +8,10 @@
     "n": 66,
     "slug": "easyreadify",
     "hook": "Paste plain text, get a printable Easy Read page: one idea per block, big type, a picture slot each."
+  },
+  {
+    "n": 67,
+    "slug": "chatorder",
+    "hook": "Paste a WhatsApp order chat, get a clean order sheet, a baking/pick list and print-ready invoices \u2014 offline, one HTML file, nothing uploaded."
   }
 ]
