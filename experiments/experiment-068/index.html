@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spoolslip - print receipts from .3mf / .gcode</title>
+<style>
+:root{--bg:#f6f4ef;--fg:#1d1b18;--mut:#6d675d;--card:#fff;--line:#ddd7ca;--acc:#d9480f;--ok:#2b8a3e;--bad:#c92a2a}
+@media (prefers-color-scheme:dark){:root{--bg:#171512;--fg:#efebe3;--mut:#9b9488;--card:#211e1a;--line:#38332b;--acc:#ff8a4c;--ok:#69db7c;--bad:#ff8787}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:24px 16px 64px}
+h1{margin:0;font-size:28px;letter-spacing:-.02em}h1 span{color:var(--acc)}
+.sub{color:var(--mut);margin:4px 0 20px}
+#drop{border:2px dashed var(--line);border-radius:14px;padding:34px 16px;text-align:center;background:var(--card);cursor:pointer}
+#drop.over{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--card))}
+#drop b{display:block;font-size:17px}#drop small{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px}
+label{display:block;font-size:12px;color:var(--mut)}
+input{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+summary{cursor:pointer;font-weight:600}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+tbody tr{cursor:pointer}tbody tr:hover,tbody tr.sel{background:color-mix(in srgb,var(--acc) 9%,transparent)}
+tfoot td{font-weight:700;border-bottom:0}
+.scroll{overflow-x:auto}
+.err{color:var(--bad);white-space:normal;text-align:left!important}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button{font:inherit;padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button.p{background:var(--acc);border-color:var(--acc);color:#fff}
+pre{margin:0;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-x:auto}
+.note{color:var(--mut);font-size:13px}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:0 5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+<h1>Spool<span>slip</span></h1>
+<p class="sub">Drop your sliced <code>.3mf</code> / <code>.gcode</code> files. Get time, filament, and what each print actually cost. Nothing leaves this page.</p>
+<div id="drop" tabindex="0" role="button" aria-label="Choose or drop files">
+  <b>Drop .gcode / .gcode.3mf / .3mf files here</b>
+  <small>or click to choose &middot; Bambu Studio, OrcaSlicer, PrusaSlicer, SuperSlicer, Cura</small>
+  <input id="file" type="file" multiple accept=".3mf,.gcode,.gco,.g,.txt" hidden>
+</div>
+<details class="card" id="settings" open>
+  <summary>Prices &amp; machine</summary>
+  <div class="grid" style="margin-top:10px">
+    <div><label for="s-currency">Currency symbol</label><input id="s-currency" value="$"></div>
+    <div><label for="s-price">Filament, per kg</label><input id="s-price" type="number" min="0" step="0.5" value="20"></div>
+    <div><label for="s-kwh">Electricity, per kWh</label><input id="s-kwh" type="number" min="0" step="0.01" value="0.15"></div>
+    <div><label for="s-watts">Average printer draw (W)</label><input id="s-watts" type="number" min="0" step="10" value="120"></div>
+    <div><label for="s-machine">Machine wear, per hour</label><input id="s-machine" type="number" min="0" step="0.1" value="0"></div>
+    <div><label for="s-waste">Purge / failures (%)</label><input id="s-waste" type="number" min="0" step="1" value="0"></div>
+    <div><label for="s-markup">Markup (%)</label><input id="s-markup" type="number" min="0" step="5" value="0"></div>
+  </div>
+  <p class="note" style="margin-bottom:0">Per-material prices: <input id="s-bytype" placeholder="PLA=18, PETG=22, TPU=35" style="max-width:340px;display:inline-block"> &mdash; unlisted materials use the per-kg price above. 120 W is a rough average for an enclosed FDM printer; measure yours with a plug meter.</p>
+</details>
+<div class="card" id="results" hidden>
+  <div class="scroll"><table>
+    <thead><tr><th>File</th><th>Slicer</th><th>Material</th><th>Time</th><th>Filament</th><th>Material cost</th><th>Energy</th><th>Total</th></tr></thead>
+    <tbody id="tbody"></tbody><tfoot id="tfoot"></tfoot>
+  </table></div>
+  <div class="row">
+    <button class="p" id="b-csv">Download CSV</button>
+    <button id="b-copy">Copy receipt</button>
+    <button id="b-clear">Clear</button>
+  </div>
+</div>
+<div class="card" id="rcard" hidden><pre id="receipt"></pre></div>
+<p class="note" style="margin-top:24px">Development Experiment 068 of dev-experiments-365 &middot; MIT &middot; Estimates come from the numbers your slicer wrote; real prints vary with failures, purge and spool tare.</p>
+</main>
+
+<script id="core">
+(function (root) {
+'use strict';
+
+var DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PA: 1.14, PC: 1.20, PVA: 1.23, HIPS: 1.04 };
+
+function parseDuration(s) {
+  if (s == null) return null;
+  s = String(s).trim();
+  if (/^\d+(\.\d+)?$/.test(s)) return Math.round(+s);
+  var t = 0, found = false, m, re = /(\d+(?:\.\d+)?)\s*([dhms])/gi, mul = { d: 86400, h: 3600, m: 60, s: 1 };
+  while ((m = re.exec(s))) { found = true; t += +m[1] * mul[m[2].toLowerCase()]; }
+  return found ? Math.round(t) : null;
+}
+
+function parseNums(s) {
+  if (s == null) return [];
+  return String(s).split(/[,;\s]+/).filter(function (x) { return x !== '' && isFinite(+x); }).map(Number);
+}
+function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+function list(s) { return s == null ? [] : String(s).split(/[;,]/).map(function (x) { return x.trim(); }).filter(Boolean); }
+
+function normType(t) {
+  if (!t) return null;
+  var u = String(t).toUpperCase().replace(/[^A-Z0-9+]/g, '');
+  if (/^PLA/.test(u)) return 'PLA';
+  if (/^PETG/.test(u)) return 'PETG';
+  if (/^PET/.test(u)) return 'PETG';
+  if (/^ABS/.test(u)) return 'ABS';
+  if (/^ASA/.test(u)) return 'ASA';
+  if (/^TPU/.test(u)) return 'TPU';
+  if (/^(PA|NYLON)/.test(u)) return 'PA';
+  if (/^PC/.test(u)) return 'PC';
+  return u || null;
+}
+
+function gramsFromLength(mm, type, diameter, density) {
+  var d = diameter || 1.75, rho = density || DENSITY[normType(type)] || 1.24;
+  return mm * Math.PI * Math.pow(d / 2, 2) / 1000 * rho;
+}
+
+function parseGcodeText(text) {
+  var m;
+  function g(re) { var r = re.exec(text); return r ? r[1].trim() : null; }
+  var job = { kind: 'gcode', slicer: null, printer: null, nozzle: null, layerHeight: null, layers: null, timeS: null, filaments: [], slicerCost: null, objects: [], plates: 1, warnings: [] };
+
+  var gen = g(/^;\s*generated by\s+(.+?)(?:\s+on\s+\d{4}-\d{2}-\d{2}.*)?$/mi);
+  if (!gen && (m = /^;\s*(Bambu\s?Studio|OrcaSlicer|SuperSlicer|PrusaSlicer)\s+([\d.]+)/mi.exec(text))) gen = m[1] + ' ' + m[2];
+  if (!gen) gen = g(/^;\s*Generated with\s+(.+)$/mi);
+  if (!gen) gen = g(/^;\s*Sliced by\s+(.+)$/mi);
+  if (!gen && /^;\s*G-Code generated by Simplify3D/mi.test(text)) gen = 'Simplify3D';
+  job.slicer = gen;
+
+  var time = g(/total estimated time:\s*([^;\r\n]+)/i);
+  if (time == null) time = g(/^;\s*estimated printing time \(normal mode\)\s*=\s*(.+)$/mi);
+  if (time == null) time = g(/^;\s*estimated printing time\s*=\s*(.+)$/mi);
+  if (time == null) time = g(/^;TIME:\s*(\d+)/m);
+  job.timeS = parseDuration(time);
+
+  var gramsTxt = g(/^;\s*filament used \[g\]\s*[:=]\s*([\d.,;\s]+)$/mi);
+  if (gramsTxt == null) gramsTxt = g(/total filament weight \[g\]\s*[:=]\s*([\d.,;\s]+)/i);
+  var gramsL = parseNums(gramsTxt);
+  var mmTxt = g(/^;\s*filament used \[mm\]\s*[:=]\s*([\d.,;\s]+)$/mi);
+  if (mmTxt == null) mmTxt = g(/total filament length \[mm\]\s*[:=]\s*([\d.,;\s]+)/i);
+  var mmL = parseNums(mmTxt);
+  if (!mmL.length && (m = /^;\s*Filament used:\s*([\d.,\s]+)m/mi.exec(text))) mmL = parseNums(m[1]).map(function (x) { return x * 1000; });
+  var types = list(g(/^;\s*filament_type\s*[=:]\s*(.+)$/mi));
+  var dens = parseNums(g(/^;\s*filament_density\s*[=:]\s*(.+)$/mi));
+  var diam = parseNums(g(/^;\s*filament_diameter\s*[=:]\s*(.+)$/mi));
+
+  var n = Math.max(gramsL.length, mmL.length);
+  for (var i = 0; i < n; i++) {
+    var type = normType(types[i] || types[0]);
+    var gr = gramsL[i], mm = mmL[i], est = false;
+    if (gr == null && mm != null) { gr = gramsFromLength(mm, type, diam[i] || diam[0], dens[i] || dens[0]); est = true; }
+    if (gr == null) continue;
+    if (!(mm > 0) && gr >= 0) mm = null;
+    job.filaments.push({ type: type, grams: gr, mm: mm == null ? null : mm, estimated: est });
+  }
+  var cost = parseNums(g(/^;\s*(?:total )?filament cost\s*=\s*([\d.,;\s]+)$/mi));
+  if (cost.length) job.slicerCost = sum(cost);
+  m = /^;\s*(?:layer_height|Layer height)\s*[=:]\s*([\d.]+)/mi.exec(text); if (m) job.layerHeight = +m[1];
+  m = /total layer number:\s*(\d+)/i.exec(text) || /^;LAYER_COUNT:\s*(\d+)/m.exec(text); if (m) job.layers = +m[1];
+  m = /^;\s*nozzle_diameter\s*=\s*([\d.]+)/mi.exec(text); if (m) job.nozzle = +m[1];
+  job.printer = g(/^;\s*printer_model\s*=\s*(.+)$/mi) || g(/^;\s*printer_settings_id\s*=\s*(.+)$/mi);
+  if (!job.filaments.length && job.timeS == null) job.warnings.push('No slicer statistics found in the G-code comments.');
+  return job;
+}
+
+function attrs(s) {
+  var o = {}, m, re = /([\w:.-]+)\s*=\s*"([^"]*)"/g;
+  while ((m = re.exec(s))) o[m[1]] = m[2];
+  return o;
+}
+function unesc(s) { return String(s).replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); }
+
+function parseSliceInfo(xml) {
+  var job = { kind: '3mf', slicer: null, printer: null, nozzle: null, layerHeight: null, layers: null, timeS: null, filaments: [], slicerCost: null, objects: [], plates: 0, warnings: [] };
+  var ver = /<header_item\s+[^>]*key="X-BBL-Client-Version"[^>]*value="([^"]*)"/.exec(xml);
+  if (ver) job.slicer = 'Bambu Studio / Orca ' + ver[1];
+  var re = /<plate>([\s\S]*?)<\/plate>/g, pm, time = 0, anyTime = false;
+  while ((pm = re.exec(xml))) {
+    job.plates++;
+    var body = pm[1], md = {}, mm, mre = /<metadata\s+([^>]*?)\/?>/g;
+    while ((mm = mre.exec(body))) { var a = attrs(mm[1]); if (a.key) md[a.key] = a.value; }
+    if (md.prediction != null && isFinite(+md.prediction)) { time += +md.prediction; anyTime = true; }
+    if (md.printer_model_id && !job.printer) job.printer = md.printer_model_id;
+    if (md.nozzle_diameters && !job.nozzle) job.nozzle = +md.nozzle_diameters || null;
+    var fre = /<filament\s+([^>]*?)\/?>/g, fm, got = false;
+    while ((fm = fre.exec(body))) {
+      var f = attrs(fm[1]); got = true;
+      var gr = +f.used_g, m_ = +f.used_m;
+      job.filaments.push({ type: normType(f.type), color: f.color || null, grams: isFinite(gr) ? gr : 0, mm: isFinite(m_) ? m_ * 1000 : null, estimated: false });
+    }
+    if (!got && md.weight != null && isFinite(+md.weight)) job.filaments.push({ type: null, grams: +md.weight, mm: null, estimated: false });
+    var ore = /<object\s+([^>]*?)\/?>/g, om;
+    while ((om = ore.exec(body))) { var oa = attrs(om[1]); if (oa.name && oa.skipped !== 'true') job.objects.push(unesc(oa.name)); }
+  }
+  if (anyTime) job.timeS = Math.round(time);
+  return job;
+}
+
+/* ---- ZIP ---- */
+function u16(b, o) { return b[o] | (b[o + 1] << 8); }
+function u32(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }
+
+function readZipIndex(b) {
+  var i = b.length - 22, min = Math.max(0, b.length - 22 - 65535);
+  while (i >= min && u32(b, i) !== 0x06054b50) i--;
+  if (i < min) throw new Error('Not a valid ZIP/3MF file (end-of-archive record not found).');
+  var count = u16(b, i + 10), off = u32(b, i + 16);
+  if (count === 0xffff || off === 0xffffffff) throw new Error('ZIP64 archives are not supported.');
+  var entries = {};
+  for (var k = 0; k < count; k++) {
+    if (u32(b, off) !== 0x02014b50) throw new Error('Corrupt ZIP central directory.');
+    var nl = u16(b, off + 28), el = u16(b, off + 30), cl = u16(b, off + 32);
+    var name = new TextDecoder().decode(b.subarray(off + 46, off + 46 + nl));
+    entries[name] = { method: u16(b, off + 10), csize: u32(b, off + 20), usize: u32(b, off + 24), lho: u32(b, off + 42) };
+    off += 46 + nl + el + cl;
+  }
+  return entries;
+}
+
+async function inflateRaw(u8) {
+  if (typeof DecompressionStream === 'undefined') throw new Error('This browser lacks DecompressionStream; use a current Chrome, Edge, Firefox or Safari.');
+  var s = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+
+async function zipRead(b, entries, name) {
+  var e = entries[name];
+  if (u32(b, e.lho) !== 0x04034b50) throw new Error('Corrupt ZIP entry: ' + name);
+  var start = e.lho + 30 + u16(b, e.lho + 26) + u16(b, e.lho + 28);
+  var data = b.subarray(start, start + e.csize);
+  if (e.method === 0) return data;
+  if (e.method === 8) return inflateRaw(data);
+  throw new Error('Unsupported ZIP compression method ' + e.method + ' in ' + name);
+}
+
+var HEAD = 300000, TAIL = 300000;
+function headTail(u8) {
+  var dec = new TextDecoder('utf-8');
+  if (u8.length <= HEAD + TAIL) return dec.decode(u8);
+  return dec.decode(u8.subarray(0, HEAD)) + '\n' + dec.decode(u8.subarray(u8.length - TAIL));
+}
+
+function finish(job, name) {
+  job.file = name;
+  job.gramsTotal = sum(job.filaments.map(function (f) { return f.grams; }));
+  if (job.timeS == null && !job.filaments.length) throw new Error('No print time or filament data found. Is this file sliced?');
+  return job;
+}
+
+async function analyzeBytes(name, u8) {
+  if (u8.length >= 4 && u8[0] === 0x47 && u8[1] === 0x43 && u8[2] === 0x44 && u8[3] === 0x45)
+    throw new Error('Binary G-code (.bgcode) is not supported yet. In PrusaSlicer, turn off "Binary G-code" in Printer Settings > General, or open the .gcode.');
+  if (u8.length >= 4 && u8[0] === 0x50 && u8[1] === 0x4b) {
+    var idx = readZipIndex(u8), names = Object.keys(idx);
+    var si = names.filter(function (n) { return /(^|\/)slice_info\.config$/i.test(n); })[0];
+    var job = null;
+    if (si) {
+      var xml = new TextDecoder().decode(await zipRead(u8, idx, si));
+      var j = parseSliceInfo(xml);
+      if (j.plates > 0 && (j.timeS != null || j.filaments.length)) job = j;
+    }
+    var gnames = names.filter(function (n) { return /\.gcode$/i.test(n) && !/\/$/.test(n); }).sort();
+    if (!job && gnames.length) {
+      job = null;
+      for (var k = 0; k < gnames.length; k++) {
+        var gj = parseGcodeText(headTail(await zipRead(u8, idx, gnames[k])));
+        if (!job) { job = gj; job.kind = '3mf'; job.plates = 1; }
+        else { job.timeS = (job.timeS || 0) + (gj.timeS || 0); job.filaments = job.filaments.concat(gj.filaments); job.plates++; }
+      }
+    } else if (job && gnames.length) {
+      var ex = parseGcodeText(headTail(await zipRead(u8, idx, gnames[0])));
+      job.layerHeight = ex.layerHeight; job.layers = job.plates === 1 ? ex.layers : null; job.nozzle = job.nozzle || ex.nozzle;
+      if (ex.slicer) job.slicer = ex.slicer;
+    }
+    if (!job) throw new Error('This 3MF has no slice data. Slice the plate first, then export "Plate sliced file" (.gcode.3mf); a plain project 3MF only holds the model.');
+    return finish(job, name);
+  }
+  return finish(parseGcodeText(headTail(u8)), name);
+}
+
+function analyzeText(name, text) { return finish(parseGcodeText(text), name); }
+
+/* ---- cost ---- */
+function defaultSettings() {
+  return { currency: '$', pricePerKg: 20, priceByType: {}, kwh: 0.15, watts: 120, machineRate: 0, wastePct: 0, markupPct: 0 };
+}
+function parseByType(s) {
+  var o = {};
+  String(s || '').split(/[,;\n]/).forEach(function (p) {
+    var kv = p.split('='); if (kv.length !== 2) return;
+    var k = normType(kv[0].trim()), v = parseFloat(kv[1]);
+    if (k && isFinite(v) && v >= 0) o[k] = v;
+  });
+  return o;
+}
+function computeCost(job, st) {
+  var waste = 1 + (st.wastePct || 0) / 100, material = 0;
+  job.filaments.forEach(function (f) {
+    var p = f.type && st.priceByType[f.type] != null ? st.priceByType[f.type] : st.pricePerKg;
+    material += f.grams * waste / 1000 * p;
+  });
+  var hours = (job.timeS || 0) / 3600;
+  var kwhUsed = hours * (st.watts || 0) / 1000;
+  var energy = kwhUsed * (st.kwh || 0), machine = hours * (st.machineRate || 0);
+  var subtotal = material + energy + machine, markup = subtotal * (st.markupPct || 0) / 100;
+  return { material: material, energy: energy, machine: machine, subtotal: subtotal, markup: markup, total: subtotal + markup, kwhUsed: kwhUsed, hours: hours };
+}
+
+/* ---- formatting ---- */
+function fmtDur(s) {
+  if (s == null) return '-';
+  s = Math.round(s);
+  var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  if (d) return d + 'd ' + h + 'h ' + m + 'm';
+  if (h) return h + 'h ' + m + 'm';
+  return m + 'm ' + (s % 60) + 's';
+}
+function money(x, c) { return (c == null ? '$' : c) + (Math.round(x * 100) / 100).toFixed(2); }
+function matLabel(job) {
+  var t = []; job.filaments.forEach(function (f) { if (f.type && t.indexOf(f.type) < 0) t.push(f.type); });
+  return t.join('+') || '?';
+}
+function pad(l, r, w) { l = String(l); r = String(r); return l + new Array(Math.max(1, w - l.length - r.length + 1)).join(' ') + r; }
+function receiptText(job, cost, st) {
+  var W = 44, c = st.currency, line = new Array(W + 1).join('-'), out = [];
+  out.push('SPOOLSLIP', line, String(job.file).slice(0, W));
+  var meta = [job.slicer, job.printer, job.nozzle ? job.nozzle + ' mm nozzle' : null, job.layerHeight ? job.layerHeight + ' mm layers' : null].filter(Boolean);
+  if (meta.length) out.push(meta.join(' | ').slice(0, W * 2));
+  if (job.plates > 1) out.push(job.plates + ' plates');
+  if (job.objects.length) out.push('Objects: ' + job.objects.slice(0, 4).join(', ') + (job.objects.length > 4 ? ' +' + (job.objects.length - 4) : ''));
+  out.push(line, pad('Print time', fmtDur(job.timeS), W));
+  job.filaments.forEach(function (f, i) {
+    out.push(pad('Filament ' + (i + 1) + (f.type ? ' ' + f.type : '') + (f.estimated ? ' (est.)' : ''), f.grams.toFixed(2) + ' g', W));
+  });
+  out.push(line, pad('Material', money(cost.material, c), W), pad('Energy (' + cost.kwhUsed.toFixed(2) + ' kWh)', money(cost.energy, c), W));
+  if (cost.machine) out.push(pad('Machine wear', money(cost.machine, c), W));
+  if (cost.markup) out.push(pad('Markup', money(cost.markup, c), W));
+  out.push(line, pad('TOTAL', money(cost.total, c), W));
+  if (job.slicerCost != null) out.push('(slicer own estimate: ' + job.slicerCost.toFixed(2) + ')');
+  job.warnings.forEach(function (w) { out.push('! ' + w); });
+  return out.join('\n');
+}
+function csvCell(v) {
+  v = v == null ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+  return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+function toCSV(rows, st) {
+  var head = ['file', 'slicer', 'material', 'print_time_s', 'print_time', 'filament_g', 'material_cost', 'energy_kwh', 'energy_cost', 'machine_cost', 'markup', 'total'];
+  var lines = [head.join(',')];
+  rows.forEach(function (r) {
+    var j = r.job, c = computeCost(j, st), q = function (x) { return (Math.round(x * 100) / 100).toFixed(2); };
+    lines.push([j.file, j.slicer, matLabel(j), j.timeS == null ? '' : j.timeS, fmtDur(j.timeS), j.gramsTotal.toFixed(2), q(c.material), c.kwhUsed.toFixed(3), q(c.energy), q(c.machine), q(c.markup), q(c.total)].map(csvCell).join(','));
+  });
+  return lines.join('\r\n') + '\r\n';
+}
+
+root.Spoolslip = { parseDuration: parseDuration, parseGcodeText: parseGcodeText, parseSliceInfo: parseSliceInfo, analyzeBytes: analyzeBytes, analyzeText: analyzeText, defaultSettings: defaultSettings, parseByType: parseByType, computeCost: computeCost, fmtDur: fmtDur, money: money, matLabel: matLabel, receiptText: receiptText, toCSV: toCSV, readZipIndex: readZipIndex, HEAD: HEAD, TAIL: TAIL };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+
+<script id="ui">
+(function () {
+'use strict';
+var S = globalThis.Spoolslip, rows = [], sel = -1;
+var $ = function (id) { return document.getElementById(id); };
+var KEYS = { currency: 's-currency', pricePerKg: 's-price', kwh: 's-kwh', watts: 's-watts', machineRate: 's-machine', wastePct: 's-waste', markupPct: 's-markup' };
+
+function settings() {
+  var st = S.defaultSettings();
+  Object.keys(KEYS).forEach(function (k) {
+    var v = $(KEYS[k]).value;
+    if (k === 'currency') st.currency = v.slice(0, 4);
+    else { var n = parseFloat(v); st[k] = isFinite(n) && n >= 0 ? n : st[k]; }
+  });
+  st.priceByType = S.parseByType($('s-bytype').value);
+  return st;
+}
+function saveSettings() { try { localStorage.setItem('spoolslip', JSON.stringify(Object.keys(KEYS).concat(['s-bytype']).reduce(function (o, k) { var id = KEYS[k] || k; o[id] = $(id).value; return o; }, {}))); } catch (e) {} }
+function loadSettings() { try { var o = JSON.parse(localStorage.getItem('spoolslip') || '{}'); Object.keys(o).forEach(function (id) { if ($(id) && typeof o[id] === 'string') $(id).value = o[id]; }); } catch (e) {} }
+
+function td(tr, text, cls) { var c = document.createElement('td'); c.textContent = text; if (cls) c.className = cls; tr.appendChild(c); return c; }
+
+function render() {
+  var st = settings(), tb = $('tbody'), tf = $('tfoot');
+  tb.textContent = ''; tf.textContent = '';
+  $('results').hidden = rows.length === 0;
+  var tot = { t: 0, g: 0, m: 0, e: 0, all: 0 };
+  rows.forEach(function (r, i) {
+    var tr = document.createElement('tr'); if (i === sel) tr.className = 'sel';
+    tr.addEventListener('click', function () { sel = i; render(); });
+    if (r.error) {
+      td(tr, r.name); var c = td(tr, r.error, 'err'); c.colSpan = 7;
+    } else {
+      var j = r.job, c2 = S.computeCost(j, st);
+      td(tr, j.file); td(tr, j.slicer || '?'); td(tr, S.matLabel(j)); td(tr, S.fmtDur(j.timeS));
+      td(tr, j.gramsTotal.toFixed(1) + ' g'); td(tr, S.money(c2.material, st.currency)); td(tr, S.money(c2.energy, st.currency)); td(tr, S.money(c2.total, st.currency));
+      tot.t += j.timeS || 0; tot.g += j.gramsTotal; tot.m += c2.material; tot.e += c2.energy; tot.all += c2.total;
+    }
+    tb.appendChild(tr);
+  });
+  var good = rows.filter(function (r) { return r.job; }).length;
+  if (good > 1) {
+    var f = document.createElement('tr');
+    td(f, 'Total (' + good + ' prints)'); td(f, ''); td(f, ''); td(f, S.fmtDur(tot.t)); td(f, tot.g.toFixed(1) + ' g');
+    td(f, S.money(tot.m, st.currency)); td(f, S.money(tot.e, st.currency)); td(f, S.money(tot.all, st.currency));
+    tf.appendChild(f);
+  }
+  var r = rows[sel];
+  $('rcard').hidden = !(r && r.job);
+  if (r && r.job) $('receipt').textContent = S.receiptText(r.job, S.computeCost(r.job, st), st);
+}
+
+async function readFile(file) {
+  var head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  var isZip = head[0] === 0x50 && head[1] === 0x4b;
+  if (!isZip && file.size > S.HEAD + S.TAIL) {
+    var a = new Uint8Array(await file.slice(0, S.HEAD).arrayBuffer()), b = new Uint8Array(await file.slice(file.size - S.TAIL).arrayBuffer());
+    var u = new Uint8Array(a.length + 1 + b.length); u.set(a); u[a.length] = 10; u.set(b, a.length + 1);
+    return S.analyzeBytes(file.name, u);
+  }
+  return S.analyzeBytes(file.name, new Uint8Array(await file.arrayBuffer()));
+}
+async function addFiles(files) {
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    try { rows.push({ name: f.name, job: await readFile(f) }); }
+    catch (e) { rows.push({ name: f.name, error: e && e.message ? e.message : String(e) }); }
+  }
+  var last = rows.map(function (r) { return !!r.job; }).lastIndexOf(true);
+  sel = last >= 0 ? last : rows.length - 1;
+  render();
+}
+
+function download(name, text, type) {
+  var a = document.createElement('a'), url = URL.createObjectURL(new Blob([text], { type: type }));
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+var drop = $('drop'), input = $('file');
+drop.addEventListener('click', function () { input.click(); });
+drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+input.addEventListener('change', function () { addFiles(Array.from(input.files)); input.value = ''; });
+['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+drop.addEventListener('drop', function (e) { addFiles(Array.from(e.dataTransfer.files)); });
+document.addEventListener('dragover', function (e) { e.preventDefault(); });
+document.addEventListener('drop', function (e) { e.preventDefault(); });
+$('settings').addEventListener('input', function () { saveSettings(); render(); });
+$('b-csv').addEventListener('click', function () { var g = rows.filter(function (r) { return r.job; }); if (g.length) download('spoolslip.csv', S.toCSV(g, settings()), 'text/csv'); });
+$('b-copy').addEventListener('click', function () {
+  var t = $('receipt').textContent; if (!t) return;
+  var b = $('b-copy');
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { b.textContent = 'Copied'; }, function () { b.textContent = 'Select the text and copy'; });
+  setTimeout(function () { b.textContent = 'Copy receipt'; }, 1500);
+});
+$('b-clear').addEventListener('click', function () { rows = []; sel = -1; render(); });
+loadSettings(); render();
+})();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 {
-  "last_number": 67,
+  "last_number": 68,
   "entries": [
     {
       "n": 1,
@@ -537,6 +537,15 @@
       "mode": "monorepo",
       "status": "completed",
       "note": "built by the routine on 2026-10-08; published 2026-10-22 (push had failed: GitHub access)"
+    },
+    {
+      "n": 68,
+      "date": "2026-10-09",
+      "title": "Spoolslip — offline print receipts from .3mf/.gcode (time, filament grams, cost per job); browser + CLI, zero deps",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-068",
+      "mode": "monorepo",
+      "status": "completed",
+      "note": "built by the routine on 2026-10-09; published 2026-10-22 (push had failed: GitHub access)"
     }
   ]
 }

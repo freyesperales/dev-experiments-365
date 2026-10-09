@@ -13,5 +13,10 @@
     "n": 67,
     "slug": "chatorder",
     "hook": "Paste a WhatsApp order chat, get a clean order sheet, a baking/pick list and print-ready invoices \u2014 offline, one HTML file, nothing uploaded."
+  },
+  {
+    "n": 68,
+    "slug": "spoolslip",
+    "hook": "Drop a sliced .3mf/.gcode and get a print receipt: time, grams of filament, and cost, entirely offline."
   }
 ]

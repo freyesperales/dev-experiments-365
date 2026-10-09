@@ -1,0 +1,14 @@
+{
+  "name": "spoolslip",
+  "version": "1.0.0",
+  "description": "Offline print receipts from .3mf / .gcode: time, filament, and cost per job.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "fixtures": "node tools/make-fixtures.mjs",
+    "demo": "node tools/make-fixtures.mjs && node cli.mjs fixtures/benchy.gcode.3mf fixtures/prusa.gcode",
+    "start": "node tools/serve.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
