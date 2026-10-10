@@ -1,0 +1,9 @@
+{
+  "name": "logfold",
+  "version": "1.0.0",
+  "description": "Collapse a million log lines into a dozen templates, and diff a good run against a bad one. Offline, zero dependencies.",
+  "bin": { "logfold": "bin/logfold.js" },
+  "scripts": { "test": "node --test test/core.test.js", "build": "node scripts/build.js", "demo": "node bin/logfold.js --demo" },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}

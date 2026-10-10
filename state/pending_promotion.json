@@ -18,5 +18,10 @@
     "n": 68,
     "slug": "spoolslip",
     "hook": "Drop a sliced .3mf/.gcode and get a print receipt: time, grams of filament, and cost, entirely offline."
+  },
+  {
+    "n": 69,
+    "slug": "logfold",
+    "hook": "Collapse a million log lines into a dozen templates \u2014 and diff a good run against a bad one. Offline, zero dependencies."
   }
 ]

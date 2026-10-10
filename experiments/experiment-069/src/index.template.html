@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Logfold</title>
+<meta name="description" content="Drop a log file: millions of lines collapse into a handful of templates. Diff a good run against a bad one. Runs offline in your browser.">
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#16181d;--mut:#667085;--line:#e3e6ec;--acc:#2f5bea;--bar:#c9d5fb;--err:#d92d20;--warn:#b54708;--ok:#067647;--new:#d92d20;--code:#f0f2f6}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--panel:#171a21;--ink:#e8eaf0;--mut:#98a2b3;--line:#272c37;--acc:#7b9bff;--bar:#27345f;--err:#ff7a70;--warn:#f5a45b;--ok:#5fd39a;--new:#ff7a70;--code:#1f232d}}
+:root[data-theme=light]{--bg:#f6f7f9;--panel:#fff;--ink:#16181d;--mut:#667085;--line:#e3e6ec;--acc:#2f5bea;--bar:#c9d5fb;--err:#d92d20;--warn:#b54708;--ok:#067647;--new:#d92d20;--code:#f0f2f6}
+:root[data-theme=dark]{--bg:#0f1115;--panel:#171a21;--ink:#e8eaf0;--mut:#98a2b3;--line:#272c37;--acc:#7b9bff;--bar:#27345f;--err:#ff7a70;--warn:#f5a45b;--ok:#5fd39a;--new:#ff7a70;--code:#1f232d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:28px;margin:0;letter-spacing:-.02em}
+.sub{color:var(--mut);margin:4px 0 20px}
+.drops{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.drops{grid-template-columns:1fr}}
+.drop{background:var(--panel);border:2px dashed var(--line);border-radius:12px;padding:16px;min-height:132px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s}
+.drop.over{border-color:var(--acc)}
+.drop h2{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.drop textarea{flex:1;min-height:56px;resize:vertical;border:1px solid var(--line);border-radius:8px;background:var(--code);color:var(--ink);font:12px ui-monospace,Menlo,Consolas,monospace;padding:8px}
+.drop .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+button:hover,.btn:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+input[type=file]{display:none}
+.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}
+.bar input[type=search],.bar select{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px}
+.bar input[type=search]{flex:1;min-width:180px}
+.spacer{flex:1}
+#status{color:var(--mut);font-size:13px}
+.summary{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:13px}
+.chip b{font-variant-numeric:tabular-nums}
+.chip.new{color:var(--new)}.chip.spiking{color:var(--warn)}.chip.gone,.chip.dropping{color:var(--ok)}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel)}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.t:hover td{background:var(--code);cursor:pointer}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.tpl{font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;word-break:break-word}
+.ph{color:var(--acc);font-weight:600}
+.cbar{height:6px;background:var(--bar);border-radius:3px;margin-top:3px}
+.lv{font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--code);color:var(--mut)}
+.lv.ERROR,.lv.FATAL{color:var(--err)}.lv.WARN{color:var(--warn)}
+.st{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;text-transform:uppercase;white-space:nowrap}
+.st.new{background:var(--new);color:#fff}.st.spiking{background:var(--warn);color:#fff}.st.gone,.st.dropping{background:var(--ok);color:#fff}.st.steady{background:var(--code);color:var(--mut)}
+svg.sp{display:block}
+tr.detail td{background:var(--code);cursor:default}
+.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:10px}
+.var{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px}
+.var h4{margin:0 0 4px;font-size:12px;color:var(--mut)}
+.var div{display:flex;justify-content:space-between;gap:8px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.var span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+pre.ex{margin:6px 0 0;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;font:12px ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+.empty{padding:40px;text-align:center;color:var(--mut)}
+.err{color:var(--err);margin:8px 0}
+footer{margin-top:32px;color:var(--mut);font-size:13px}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Logfold</h1>
+  <p class="sub">A million log lines, a dozen shapes. Everything runs in this tab &mdash; your log is never uploaded.</p>
+
+  <div class="drops">
+    <div class="drop" id="dropA" aria-label="Log A">
+      <h2>Log A <span style="text-transform:none;letter-spacing:0">&mdash; the log to read (or the good run)</span></h2>
+      <div class="name" id="nameA">drop a file here, or paste below</div>
+      <textarea id="txtA" placeholder="…or paste log text" aria-label="Paste log A"></textarea>
+      <div class="row"><label class="btn" for="fileA">Choose file</label><input id="fileA" type="file"><button id="clrA">Clear</button></div>
+    </div>
+    <div class="drop" id="dropB" aria-label="Log B">
+      <h2>Log B <span style="text-transform:none;letter-spacing:0">&mdash; optional: the bad run to diff against A</span></h2>
+      <div class="name" id="nameB">leave empty for a single-log summary</div>
+      <textarea id="txtB" placeholder="…or paste log text" aria-label="Paste log B"></textarea>
+      <div class="row"><label class="btn" for="fileB">Choose file</label><input id="fileB" type="file"><button id="clrB">Clear</button></div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="primary" id="go">Fold</button>
+    <button id="demo">Try a demo incident</button>
+    <span id="status" role="status" aria-live="polite"></span>
+  </div>
+  <div class="err" id="err" role="alert"></div>
+
+  <section id="out" hidden>
+    <div class="summary" id="summary"></div>
+    <div class="bar">
+      <input type="search" id="q" placeholder="Filter templates…" aria-label="Filter templates">
+      <select id="lvl" aria-label="Level"><option value="">All levels</option></select>
+      <select id="stf" aria-label="Status" hidden><option value="">All statuses</option><option value="new">new</option><option value="spiking">spiking</option><option value="gone">gone</option><option value="dropping">dropping</option><option value="steady">steady</option></select>
+      <span class="spacer"></span>
+      <button id="cpMd">Copy Markdown</button>
+      <button id="dlJson">Download JSON</button>
+    </div>
+    <div id="table"></div>
+  </section>
+
+  <footer>Logfold &middot; Development Experiment 069 of dev-experiments-365 &middot; MIT</footer>
+</main>
+
+<script id="core-src">/*__CORE__*/</script>
+<script id="sample-src">/*__SAMPLE__*/</script>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+var files={A:null,B:null}, result=null, diffRes=null, expanded={}, worker=null, MAX_ROWS=500;
+var coreText=$('core-src').textContent;
+
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function fmt(n){return Number(n).toLocaleString('en-US')}
+function tplHtml(t){return esc(t).replace(/&lt;(\*|N|IP|UUID|HEX|PATH|EMAIL)&gt;/g,'<span class="ph">&lt;$1&gt;</span>')}
+function spark(bins,w,h){
+  var max=Math.max.apply(null,bins.concat([1])), bw=w/bins.length, r='';
+  for(var i=0;i<bins.length;i++){var bh=Math.max(bins[i]?1:0,Math.round(bins[i]/max*h));r+='<rect x="'+(i*bw).toFixed(1)+'" y="'+(h-bh)+'" width="'+Math.max(1,bw-1).toFixed(1)+'" height="'+bh+'" fill="currentColor"/>'}
+  return '<svg class="sp" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true" style="color:var(--acc)">'+r+'</svg>';
+}
+function setStatus(s){$('status').textContent=s}
+function setErr(s){$('err').textContent=s||''}
+
+// ---- input handling
+function readFile(f,side){
+  $('name'+side).textContent=f.name+' ('+(f.size/1048576).toFixed(1)+' MB)';
+  files[side]={name:f.name,file:f}; $('txt'+side).value='';
+}
+['A','B'].forEach(function(s){
+  $('file'+s).addEventListener('change',function(e){if(e.target.files[0])readFile(e.target.files[0],s)});
+  $('clr'+s).addEventListener('click',function(){files[s]=null;$('txt'+s).value='';$('file'+s).value='';$('name'+s).textContent=s==='A'?'drop a file here, or paste below':'leave empty for a single-log summary'});
+  $('txt'+s).addEventListener('input',function(){files[s]=null;$('name'+s).textContent=$('txt'+s).value?'pasted text':(s==='A'?'drop a file here, or paste below':'leave empty for a single-log summary')});
+  var d=$('drop'+s);
+  d.addEventListener('dragover',function(e){e.preventDefault();d.classList.add('over')});
+  d.addEventListener('dragleave',function(){d.classList.remove('over')});
+  d.addEventListener('drop',function(e){e.preventDefault();d.classList.remove('over');var f=e.dataTransfer.files[0];if(f)readFile(f,s)});
+});
+document.addEventListener('dragover',function(e){e.preventDefault()});
+document.addEventListener('drop',function(e){e.preventDefault()});
+
+function getInput(side){
+  if(files[side]) return files[side].file.text().then(function(t){return{name:files[side].name,text:t}});
+  var t=$('txt'+side).value;
+  if(t.trim()) return Promise.resolve({name:side==='A'?'log A':'log B',text:t});
+  return Promise.resolve(null);
+}
+
+// ---- analysis (in a Worker; falls back to main thread)
+function runAnalysis(inputs){
+  return new Promise(function(resolve,reject){
+    var w=null;
+    try{
+      var code=coreText+';self.onmessage=function(e){try{self.postMessage({ok:1,res:Logfold.analyze(e.data)})}catch(x){self.postMessage({ok:0,err:String(x&&x.message||x)})}}';
+      w=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'})));
+    }catch(e){w=null}
+    if(!w){try{resolve(Logfold.analyze(inputs))}catch(e){reject(e)};return}
+    worker=w;
+    w.onmessage=function(e){w.terminate();worker=null;e.data.ok?resolve(e.data.res):reject(new Error(e.data.err))};
+    w.onerror=function(e){w.terminate();worker=null;try{resolve(Logfold.analyze(inputs))}catch(x){reject(x)}};
+    w.postMessage(inputs);
+  });
+}
+
+function fold(inputs){
+  setErr('');
+  if(!inputs[0]||!inputs[0].text.trim()){setErr('Log A is empty — drop a file or paste some log lines first.');return}
+  if(worker){worker.terminate();worker=null}
+  var lines=0;inputs.forEach(function(i){lines+=i.text.length});
+  setStatus('Folding '+(lines/1048576).toFixed(1)+' MB…');
+  var t0=performance.now();
+  runAnalysis(inputs).then(function(res){
+    result=res;diffRes=res.sources.length===2?Logfold.diff(res):null;expanded={};
+    setStatus('Done in '+((performance.now()-t0)/1000).toFixed(2)+' s');
+    render();
+  }).catch(function(e){setStatus('');setErr('Could not analyse this input: '+e.message)});
+}
+
+$('go').addEventListener('click',function(){
+  Promise.all([getInput('A'),getInput('B')]).then(function(r){fold(r[1]?[r[0],r[1]]:[r[0]])})
+  .catch(function(e){setErr('Could not read the file: '+e.message)});
+});
+$('demo').addEventListener('click',function(){
+  files.A=files.B=null;
+  $('nameA').textContent='demo-good.log (synthetic)';$('nameB').textContent='demo-bad.log (synthetic)';
+  $('txtA').value='';$('txtB').value='';
+  fold([{name:'demo-good.log',text:LogfoldSample.gen('good',6000)},{name:'demo-bad.log',text:LogfoldSample.gen('bad',6000)}]);
+});
+
+// ---- rendering
+function render(){
+  $('out').hidden=false;
+  var s=result.sources, sum='';
+  s.forEach(function(x){sum+='<span class="chip"><b>'+esc(x.name)+'</b> &middot; '+fmt(x.events)+' events'+(x.lines!==x.events?' ('+fmt(x.lines)+' lines)':'')+'</span>'});
+  sum+='<span class="chip"><b>'+fmt(result.templates.length)+'</b> templates</span>';
+  if(s.length===1&&s[0].hasTime) sum+='<span class="chip">'+esc(Logfold.fmtTime(s[0].tmin))+' &rarr; '+esc(Logfold.fmtTime(s[0].tmax))+'</span>';
+  if(diffRes) ['new','spiking','gone','dropping'].forEach(function(k){if(diffRes.summary[k])sum+='<span class="chip '+k+'"><b>'+diffRes.summary[k]+'</b> '+k+'</span>'});
+  $('summary').innerHTML=sum;
+  var lv={};result.templates.forEach(function(t){if(t.level)lv[t.level]=1});
+  var sel=$('lvl'),cur=sel.value;sel.innerHTML='<option value="">All levels</option>'+Object.keys(lv).sort().map(function(l){return'<option>'+l+'</option>'}).join('');sel.value=lv[cur]?cur:'';
+  $('stf').hidden=!diffRes;if(!diffRes)$('stf').value='';
+  renderTable();
+}
+
+function varsHtml(t){
+  if(!t.vars.length)return'';
+  var h='<div class="vars">';
+  t.vars.slice(0,12).forEach(function(v){
+    h+='<div class="var"><h4>variable #'+(v.pos+1)+' &middot; '+esc(v.distinct)+' distinct</h4>';
+    v.top.slice(0,6).forEach(function(p){h+='<div><span title="'+esc(p[0])+'">'+esc(p[0])+'</span><span>'+fmt(p[1])+'</span></div>'});
+    h+='</div>';
+  });
+  return h+'</div>';
+}
+function exHtml(t){return t.examples.map(function(e){return'<pre class="ex">'+(result.sources.length>1?'['+esc(result.sources[e.si].name)+'] ':'')+esc(e.text)+'</pre>'}).join('')}
+
+function renderTable(){
+  var q=$('q').value.toLowerCase(),lv=$('lvl').value,st=$('stf').value,rows,h;
+  var byId={};result.templates.forEach(function(t){byId[t.id]=t});
+  if(diffRes){
+    rows=diffRes.rows.filter(function(r){return(!q||r.template.toLowerCase().indexOf(q)>=0)&&(!lv||r.level===lv)&&(!st||r.status===st)});
+    h='<table><thead><tr><th>Status</th><th class="n" style="text-align:right">A</th><th style="text-align:right">B</th><th>Template</th><th>A &rarr; B over time</th></tr></thead><tbody>';
+    rows.slice(0,MAX_ROWS).forEach(function(r){
+      var t=byId[r.id],ex=expanded[r.id];
+      h+='<tr class="t" data-id="'+r.id+'" tabindex="0" aria-expanded="'+!!ex+'"><td><span class="st '+r.status+'">'+r.status+(r.factor&&r.status!=='steady'?' &times;'+(r.factor>=1?r.factor.toFixed(1):(1/r.factor).toFixed(1)):'')+'</span></td><td class="n">'+fmt(r.a)+'</td><td class="n">'+fmt(r.b)+'</td><td class="tpl">'+(r.level?'<span class="lv '+r.level+'">'+r.level+'</span> ':'')+tplHtml(r.template)+'</td><td style="white-space:nowrap">'+spark(t.bins[0],70,22)+spark(t.bins[1],70,22)+'</td></tr>';
+      if(ex)h+='<tr class="detail"><td colspan="5">'+varsHtml(t)+exHtml(t)+'</td></tr>';
+    });
+  }else{
+    var total=Math.max(1,result.sources[0].events),max=result.templates.length?result.templates[0].total:1;
+    rows=result.templates.filter(function(t){return(!q||t.template.toLowerCase().indexOf(q)>=0)&&(!lv||t.level===lv)});
+    h='<table><thead><tr><th style="text-align:right">Count</th><th>Template</th><th>Over time</th></tr></thead><tbody>';
+    rows.slice(0,MAX_ROWS).forEach(function(t){
+      var ex=expanded[t.id];
+      h+='<tr class="t" data-id="'+t.id+'" tabindex="0" aria-expanded="'+!!ex+'"><td class="n" style="min-width:90px">'+fmt(t.total)+'<div style="color:var(--mut);font-size:12px">'+(100*t.total/total).toFixed(1)+'%</div><div class="cbar" style="width:'+Math.max(2,Math.round(t.total/max*100))+'%"></div></td><td class="tpl">'+(t.level?'<span class="lv '+t.level+'">'+t.level+'</span> ':'')+tplHtml(t.template)+(t.multiline?' <span style="color:var(--mut)">(+stack/continuation lines)</span>':'')+'</td><td>'+spark(t.bins[0],110,24)+'</td></tr>';
+      if(ex)h+='<tr class="detail"><td colspan="3">'+varsHtml(t)+exHtml(t)+'</td></tr>';
+    });
+  }
+  h+='</tbody></table>';
+  if(!rows.length)h='<div class="empty">No templates match this filter.</div>';
+  else if(rows.length>MAX_ROWS)h+='<p class="sub">Showing the first '+MAX_ROWS+' of '+fmt(rows.length)+' &mdash; filter to narrow down.</p>';
+  $('table').innerHTML=h;
+}
+function toggle(tr){var id=tr.getAttribute('data-id');expanded[id]=!expanded[id];renderTable()}
+$('table').addEventListener('click',function(e){var tr=e.target.closest('tr.t');if(tr)toggle(tr)});
+$('table').addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr.t')){e.preventDefault();toggle(e.target)}});
+['q','lvl','stf'].forEach(function(id){$(id).addEventListener('input',renderTable)});
+
+// ---- export
+$('cpMd').addEventListener('click',function(){
+  var md=Logfold.toMarkdown(result,{top:50});
+  (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(md):Promise.reject()).then(function(){setStatus('Markdown copied')},function(){
+    var ta=document.createElement('textarea');ta.value=md;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');setStatus('Markdown copied')}catch(e){setErr('Copy failed — select the table manually.')}ta.remove()});
+});
+$('dlJson').addEventListener('click',function(){
+  var data=diffRes?{sources:result.sources,diff:diffRes}:{sources:result.sources,templates:result.templates};
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='logfold.json';a.click();
+});
+})();
+</script>
+</body>
+</html>
