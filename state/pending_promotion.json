@@ -23,5 +23,10 @@
     "n": 69,
     "slug": "logfold",
     "hook": "Collapse a million log lines into a dozen templates \u2014 and diff a good run against a bad one. Offline, zero dependencies."
+  },
+  {
+    "n": 70,
+    "slug": "hashboard",
+    "hook": "Full-screen signs, scoreboards, queue numbers, countdowns and timers where the URL is the app \u2014 send the link, send the sign."
   }
 ]

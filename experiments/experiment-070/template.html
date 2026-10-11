@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hashboard</title>
+<meta name="description" content="Full-screen signs, scoreboards, queue numbers, countdowns and timers where the URL is the app. No server, no account.">
+<meta name="referrer" content="no-referrer">
+<style>
+:root{--bg:#0b0d10;--fg:#f4f4f5;--ac:#ffd23f;--mut:#8b919a;--pn:#16191e;--bd:#2a2f37}
+[data-th=paper]{--bg:#f6f3ec;--fg:#16181b;--ac:#c2410c;--mut:#6b6f76;--pn:#fff;--bd:#d9d4c7}
+[data-th=terminal]{--bg:#050805;--fg:#4cff72;--ac:#b6ff4c;--mut:#2f8f46;--pn:#0a120b;--bd:#1b3a22}
+[data-th=signal]{--bg:#000;--fg:#fff;--ac:#ffe600;--mut:#b5b5b5;--pn:#111;--bd:#444}
+[data-th=ocean]{--bg:#06222f;--fg:#e8f7ff;--ac:#41d6ff;--mut:#79a7bb;--pn:#0b3144;--bd:#1b5068}
+[data-th=ember]{--bg:#1a0c08;--fg:#ffeede;--ac:#ff7a3d;--mut:#b58a75;--pn:#2a140d;--bd:#4d2a1d}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{overflow:hidden;-webkit-tap-highlight-color:transparent}
+button,input,textarea,select{font:inherit;color:inherit}
+#stage{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(2vmin,env(safe-area-inset-top)) 4vmin;text-align:center}
+.ti{font-size:min(5vw,5vh);letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:2vh;max-width:100%;overflow-wrap:anywhere}
+.fit{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.05;font-weight:800;max-width:100%}
+.ac{color:var(--ac)}.mut{color:var(--mut)}
+.big{font-variant-numeric:tabular-nums;font-weight:800;line-height:1}
+.units{display:flex;gap:3vw;justify-content:center;flex-wrap:wrap}
+.unit .big{font-size:min(17vw,24vh)}.unit small{display:block;font-size:min(3vw,3vh);letter-spacing:.2em;text-transform:uppercase;color:var(--mut);margin-top:1vh}
+.score{display:flex;width:100%;flex:1;gap:2vw;align-items:stretch;justify-content:center;margin-top:1vh}
+.team{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid var(--bd);border-radius:2vmin;min-width:0;cursor:pointer;user-select:none;touch-action:manipulation}
+.team:active{background:var(--pn)}
+.team .nm{font-size:min(4.5vw,5vh);letter-spacing:.1em;text-transform:uppercase;color:var(--mut);max-width:100%;overflow:hidden;text-overflow:ellipsis;padding:0 1vw}
+.team .big{font-size:min(30vw,48vh)}
+.sched{width:min(100%,900px);text-align:left;overflow:auto;max-height:80vh}
+.row{display:flex;gap:2vw;padding:1.2vh 1.5vw;border-radius:1.2vmin;font-size:min(5vw,5vh);align-items:baseline}
+.row b{font-variant-numeric:tabular-nums;min-width:3.4em;color:var(--mut)}
+.row.past{opacity:.38}.row.cur{background:var(--pn);outline:2px solid var(--ac)}.row.cur b{color:var(--ac)}.row.nxt b{color:var(--fg)}
+.bar{width:min(80%,900px);height:2.2vh;background:var(--pn);border-radius:9px;overflow:hidden;margin-top:3vh}.bar i{display:block;height:100%;background:var(--ac)}
+.pill{display:inline-block;padding:.4vh 2vw;border:2px solid var(--ac);border-radius:99px;color:var(--ac);font-size:min(4vw,4vh);letter-spacing:.15em;text-transform:uppercase;margin-bottom:2vh}
+.hint{position:fixed;left:0;right:0;bottom:1.2vh;text-align:center;color:var(--mut);font-size:12px;opacity:.7;pointer-events:none}
+#kebab{position:fixed;top:max(8px,env(safe-area-inset-top));right:8px;width:44px;height:44px;border-radius:50%;border:1px solid var(--bd);background:var(--pn);cursor:pointer;opacity:.0;transition:opacity .2s;font-size:20px;z-index:5}
+body.ui #kebab,#kebab:focus-visible,#kebab:hover{opacity:.9}
+body.kiosk #kebab,body.kiosk .hint{display:none}
+#panel{position:fixed;inset:0;display:none;z-index:10;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center}
+#panel.open{display:flex}
+.sheet{background:var(--pn);color:var(--fg);border:1px solid var(--bd);width:min(100%,640px);max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 18px calc(18px + env(safe-area-inset-bottom))}
+.sheet h2{margin:.2em 0 .6em;font-size:18px}
+.f{display:block;margin:10px 0 4px;font-size:12px;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
+.sheet input[type=text],.sheet input[type=number],.sheet input[type=datetime-local],.sheet textarea,.sheet select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
+.sheet textarea{min-height:110px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.btn{padding:10px 14px;border-radius:9px;border:1px solid var(--bd);background:var(--bg);cursor:pointer}
+.btn.pri{background:var(--ac);color:#000;border-color:var(--ac);font-weight:700}
+.btn:focus-visible,#kebab:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.meter{height:6px;background:var(--bg);border-radius:4px;overflow:hidden;margin:6px 0 2px}.meter i{display:block;height:100%;background:var(--ac)}
+.small{font-size:12px;color:var(--mut)}
+.warn{color:#ff6b6b}
+#qr{background:#fff;padding:14px;border-radius:10px;display:none;margin:10px auto;width:max-content}
+#qr canvas{display:block;width:min(70vw,300px);height:min(70vw,300px);image-rendering:pixelated}
+.home{width:min(100%,900px);padding:0 4vmin}
+.home h1{font-size:min(10vw,64px);margin:0 0 .1em}.home p{color:var(--mut);margin:.2em 0 1.2em;font-size:min(4.5vw,18px)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;text-align:left}
+.card{padding:16px;border:1px solid var(--bd);background:var(--pn);border-radius:12px;cursor:pointer}
+.card:hover,.card:focus-visible{border-color:var(--ac);outline:none}.card b{display:block;font-size:18px;color:var(--ac)}.card span{color:var(--mut);font-size:14px}
+.err{color:#ff6b6b;margin-bottom:12px}
+</style>
+</head>
+<body>
+<main id="stage" aria-live="off"></main>
+<button id="kebab" aria-label="Edit board and share" title="Edit / share">⋯</button>
+<div class="hint" id="hint">Tap ⋯ (top right) to edit · the address bar is the save file</div>
+<div id="panel" role="dialog" aria-modal="true" aria-label="Board settings"><div class="sheet" id="sheet"></div></div>
+
+<script id="core">
+/*CORE*/
+</script>
+<script id="app">
+(function () {
+'use strict';
+var stage = document.getElementById('stage'), panel = document.getElementById('panel'), sheet = document.getElementById('sheet');
+var state = null, tick = null, saveTimer = null, wakeLock = null, lastHash = '';
+var NAMES = { sign: ['Sign', 'Giant text, auto-fitted to any screen.'], count: ['Countdown', 'Days to a date. Absolute time, so every screen agrees.'],
+  score: ['Scoreboard', 'Tap a side to add a point. Long-press to subtract.'], queue: ['Queue number', 'Call next, issue tickets. Counter-friendly.'],
+  timer: ['Focus timer', 'Pomodoro cycles with long breaks.'], sched: ['Schedule', 'Times and items; highlights what is on now.'] };
+
+function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function fit(node, maxVh) {
+  var box = stage, lo = 8, hi = Math.min(window.innerWidth, window.innerHeight * 0.9) * (maxVh || 1);
+  node.style.fontSize = hi + 'px';
+  if (!node.textContent) return;
+  var maxH = box.clientHeight * 0.7 - (node.offsetTop > 0 && 0), maxW = box.clientWidth * 0.92;
+  for (var i = 0; i < 14 && hi - lo > 1; i++) {
+    var mid = (lo + hi) / 2; node.style.fontSize = mid + 'px';
+    if (node.scrollWidth > maxW || node.scrollHeight > maxH) hi = mid; else lo = mid;
+  }
+  node.style.fontSize = lo + 'px';
+}
+
+/* ---------- persistence in the URL ---------- */
+function save(immediate) {
+  clearTimeout(saveTimer);
+  var run = function () {
+    HB.encode(state).then(function (h) {
+      lastHash = '#' + h;
+      try { history.replaceState(null, '', lastHash); } catch (e) { /* sandboxed iframe */ }
+      updateMeter();
+    });
+  };
+  if (immediate) run(); else saveTimer = setTimeout(run, 250);
+}
+function set(next, immediate) { state = next; save(immediate); renderLive(); }
+
+/* ---------- rendering ---------- */
+function home(err) {
+  clearInterval(tick); document.body.dataset.th = 'night';
+  stage.textContent = '';
+  var h = el('div', 'home');
+  h.appendChild(el('h1', '', 'Hashboard'));
+  h.appendChild(el('p', '', 'Pick a board. Your settings live in the URL, so sending the link sends the sign. No server, no account.'));
+  if (err) h.appendChild(el('div', 'err', err));
+  var c = el('div', 'cards');
+  HB.TYPES.forEach(function (t) {
+    var b = el('button', 'card'); b.appendChild(el('b', '', NAMES[t][0])); b.appendChild(el('span', '', NAMES[t][1]));
+    b.onclick = function () { state = HB.defaults(t); save(true); render(); openPanel(); };
+    c.appendChild(b);
+  });
+  h.appendChild(c); stage.appendChild(h);
+  document.getElementById('kebab').style.display = 'none'; document.getElementById('hint').style.display = 'none';
+}
+function render() {
+  clearInterval(tick);
+  document.getElementById('kebab').style.display = ''; document.getElementById('hint').style.display = '';
+  document.body.dataset.th = state.th;
+  document.title = (state.ti || NAMES[state.t][0]) + ' · Hashboard';
+  stage.textContent = '';
+  if (state.ti && state.t !== 'sign') stage.appendChild(el('div', 'ti', state.ti));
+  BUILD[state.t]();
+  renderLive();
+  tick = setInterval(renderLive, 250);
+}
+var refs = {};
+var BUILD = {
+  sign: function () { refs.t = el('div', 'fit', ''); stage.appendChild(refs.t); },
+  count: function () {
+    refs.x = el('div', 'pill', ''); stage.appendChild(refs.x);
+    refs.u = el('div', 'units'); stage.appendChild(refs.u);
+    refs.msg = el('div', 'fit ac', ''); stage.appendChild(refs.msg);
+  },
+  score: function () {
+    var w = el('div', 'score'); refs.teams = [];
+    state.tm.forEach(function (t, i) {
+      var d = el('div', 'team'); d.tabIndex = 0; d.setAttribute('role', 'button');
+      var n = el('div', 'nm', ''), s = el('div', 'big', '');
+      d.appendChild(n); d.appendChild(s);
+      var lp = null, fired = false;
+      d.addEventListener('pointerdown', function () { fired = false; lp = setTimeout(function () { fired = true; set(HB.scoreAdd(state, i, -state.st)); }, 600); });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { d.addEventListener(ev, function () { clearTimeout(lp); }); });
+      d.addEventListener('click', function () { if (!fired) set(HB.scoreAdd(state, i, state.st)); });
+      d.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); set(HB.scoreAdd(state, i, state.st)); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); set(HB.scoreAdd(state, i, -state.st)); }
+      });
+      w.appendChild(d); refs.teams.push([n, s]);
+    });
+    stage.appendChild(w);
+  },
+  queue: function () {
+    refs.l = el('div', 'ti', ''); stage.appendChild(refs.l);
+    refs.n = el('div', 'big ac', ''); stage.appendChild(refs.n);
+    refs.sub = el('div', 'ti', ''); refs.sub.style.marginTop = '2vh'; stage.appendChild(refs.sub);
+    var b = el('div', 'btns'); b.style.cssText = 'position:fixed;left:0;right:0;bottom:4vh;justify-content:center';
+    [['Call next ▶', function () { set(HB.queueCall(state)); }, 'btn pri'], ['◀ Back', function () { set(HB.queueBack(state)); }, 'btn'],
+     ['Issue ticket +', function () { set(HB.queueIssue(state)); }, 'btn']].forEach(function (x) { var k = el('button', x[2], x[0]); k.onclick = x[1]; b.appendChild(k); });
+    refs.qb = b; stage.appendChild(b);
+  },
+  timer: function () {
+    refs.ph = el('div', 'pill', ''); stage.appendChild(refs.ph);
+    refs.n = el('div', 'big', ''); stage.appendChild(refs.n);
+    var bar = el('div', 'bar'); refs.bar = el('i'); bar.appendChild(refs.bar); stage.appendChild(bar);
+    var b = el('div', 'btns'); b.style.marginTop = '4vh';
+    refs.go = el('button', 'btn pri', 'Start'); refs.go.onclick = function () { set(state.st ? HB.timerPause(state, Date.now()) : HB.timerStart(state, Date.now())); };
+    var r = el('button', 'btn', 'Reset'); r.onclick = function () { set(HB.timerReset(state)); };
+    b.appendChild(refs.go); b.appendChild(r); stage.appendChild(b);
+  },
+  sched: function () { refs.s = el('div', 'sched'); stage.appendChild(refs.s); }
+};
+var UPDATE = {
+  sign: function () { if (refs.t.textContent !== state.x) { refs.t.textContent = state.x; } fit(refs.t); },
+  count: function () {
+    var p = HB.countdownParts(state.at, Date.now());
+    refs.x.textContent = state.x;
+    refs.u.textContent = '';
+    if (p.done && p.d === 0 && p.h === 0 && p.m === 0 && p.s < 1) { /* fallthrough: shows done */ }
+    if (p.done) { refs.u.style.display = 'none'; refs.msg.textContent = state.dn; fit(refs.msg, .5); return; }
+    refs.u.style.display = ''; refs.msg.textContent = ''; refs.msg.style.fontSize = '0';
+    [['d', 'days'], ['h', 'hours'], ['m', 'min'], ['s', 'sec']].forEach(function (u) {
+      if (u[0] === 'd' && p.d === 0) return;
+      var d = el('div', 'unit'); d.appendChild(el('div', 'big', String(p[u[0]]).padStart(2, '0'))); d.appendChild(el('small', '', u[1])); refs.u.appendChild(d);
+    });
+  },
+  score: function () {
+    state.tm.forEach(function (t, i) { refs.teams[i][0].textContent = t.n; refs.teams[i][1].textContent = String(t.s); });
+  },
+  queue: function () { refs.l.textContent = state.l; refs.n.textContent = String(state.n).padStart(3, '0'); refs.n.style.fontSize = 'min(38vw,52vh)';
+    refs.sub.textContent = state.i > state.n ? (state.i - state.n) + ' waiting · last ticket ' + state.i : 'No one waiting'; },
+  timer: function () {
+    var now = Date.now(), ph = HB.timerPhase(state, HB.timerElapsed(state, now));
+    var run = !!state.st, started = run || state.p > 0;
+    refs.ph.textContent = (ph.phase === 'work' ? 'Focus ' + ph.n + '/' + state.cy : ph.phase === 'break' ? 'Short break' : 'Long break') + (started && !run ? ' · paused' : '');
+    refs.n.textContent = HB.fmtMs(ph.left); refs.n.style.fontSize = 'min(30vw,42vh)';
+    refs.n.style.color = ph.phase === 'work' ? 'var(--fg)' : 'var(--ac)';
+    refs.bar.style.width = (100 * (1 - ph.left / ph.total)).toFixed(1) + '%';
+    refs.go.textContent = run ? 'Pause' : started ? 'Resume' : 'Start';
+    var key = ph.phase + ph.n + ph.round;
+    if (run && refs.key && refs.key !== key) beep(); refs.key = key;
+  },
+  sched: function () {
+    var d = new Date(), mins = d.getHours() * 60 + d.getMinutes(), ps = HB.parseSchedule(state.x), nw = HB.scheduleNow(ps.rows, mins);
+    var sig = JSON.stringify([ps.rows, nw.cur, nw.next]);
+    if (refs.sig === sig) return; refs.sig = sig; refs.s.textContent = '';
+    ps.rows.forEach(function (r, i) {
+      var row = el('div', 'row' + (i < nw.cur ? ' past' : i === nw.cur ? ' cur' : i === nw.next ? ' nxt' : ''));
+      row.appendChild(el('b', '', HB.fmtClock(r.m))); row.appendChild(el('span', '', r.text)); refs.s.appendChild(row);
+      if (i === nw.cur) setTimeout(function () { row.scrollIntoView({ block: 'center' }); }, 0);
+    });
+    if (!ps.rows.length) refs.s.appendChild(el('div', 'row mut', 'No valid lines. Use "HH:MM Title".'));
+  }
+};
+function renderLive() { if (state && UPDATE[state.t]) UPDATE[state.t](); }
+function beep() {
+  try { var C = window.AudioContext || window.webkitAudioContext, a = new C(), o = a.createOscillator(), g = a.createGain();
+    o.connect(g); g.connect(a.destination); g.gain.value = .2; o.frequency.value = 880; o.start(); o.stop(a.currentTime + .4); } catch (e) { /* no audio */ }
+}
+
+/* ---------- editor ---------- */
+function field(label, input) { var w = el('div'); w.appendChild(el('label', 'f', label)); w.appendChild(input); return w; }
+function textInput(val, max, on) { var i = el('input'); i.type = 'text'; i.value = val; i.maxLength = max; i.oninput = function () { on(i.value); }; return i; }
+function numInput(val, lo, hi, on) { var i = el('input'); i.type = 'number'; i.min = lo; i.max = hi; i.value = val; i.oninput = function () { if (i.value !== '') on(Math.min(hi, Math.max(lo, +i.value))); }; return i; }
+function patch(k, v) { var o = JSON.parse(JSON.stringify(state)); o[k] = v; state = HB.sanitize(o); save(); render(); }
+function patchLive(k, v) { var o = JSON.parse(JSON.stringify(state)); o[k] = v; state = HB.sanitize(o); save(); renderLive(); }
+function toLocalInput(ms) { var d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); }
+function openPanel() {
+  sheet.textContent = '';
+  sheet.appendChild(el('h2', '', NAMES[state.t][0] + ' settings'));
+  if (state.t !== 'sign') sheet.appendChild(field('Title (optional)', textInput(state.ti, 80, function (v) { patchLive('ti', v); document.title = v + ' · Hashboard'; var t = stage.querySelector('.ti'); if (t) t.textContent = v; })));
+  var T = {
+    sign: function () { var t = el('textarea'); t.value = state.x; t.maxLength = 600; t.oninput = function () { patchLive('x', t.value); }; sheet.appendChild(field('Text', t)); },
+    count: function () {
+      sheet.appendChild(field('Label', textInput(state.x, 48, function (v) { patchLive('x', v); })));
+      var d = el('input'); d.type = 'datetime-local'; d.value = toLocalInput(state.at);
+      d.oninput = function () { var ms = new Date(d.value).getTime(); if (isFinite(ms)) patchLive('at', ms); };
+      sheet.appendChild(field('Target moment (your timezone; stored as an absolute time)', d));
+      sheet.appendChild(field('When it hits zero', textInput(state.dn, 80, function (v) { patchLive('dn', v); })));
+    },
+    score: function () {
+      state.tm.forEach(function (t, i) {
+        var g = el('div', 'g2');
+        g.appendChild(field('Team ' + (i + 1) + ' name', textInput(t.n, 24, function (v) { var o = JSON.parse(JSON.stringify(state)); o.tm[i].n = v; state = HB.sanitize(o); save(); renderLive(); })));
+        g.appendChild(field('Score', numInput(t.s, -9999, 99999, function (v) { var o = JSON.parse(JSON.stringify(state)); o.tm[i].s = v; state = HB.sanitize(o); save(); renderLive(); })));
+        sheet.appendChild(g);
+      });
+      var g2 = el('div', 'g2'); g2.appendChild(field('Points per tap', numInput(state.st, 1, 100, function (v) { patchLive('st', v); })));
+      var b = el('div', 'btns'); var add = el('button', 'btn', '+ team'); add.onclick = function () { var o = JSON.parse(JSON.stringify(state)); if (o.tm.length < 8) o.tm.push({ n: 'Team ' + (o.tm.length + 1), s: 0 }); state = HB.sanitize(o); save(true); render(); openPanel(); };
+      var rm = el('button', 'btn', '− team'); rm.onclick = function () { var o = JSON.parse(JSON.stringify(state)); if (o.tm.length > 2) o.tm.pop(); state = HB.sanitize(o); save(true); render(); openPanel(); };
+      var z = el('button', 'btn', 'Zero scores'); z.onclick = function () { var o = JSON.parse(JSON.stringify(state)); o.tm.forEach(function (t) { t.s = 0; }); state = HB.sanitize(o); save(true); render(); openPanel(); };
+      b.appendChild(add); b.appendChild(rm); b.appendChild(z); sheet.appendChild(g2); sheet.appendChild(b);
+    },
+    queue: function () {
+      sheet.appendChild(field('Label', textInput(state.l, 48, function (v) { patchLive('l', v); })));
+      var g = el('div', 'g2'); g.appendChild(field('Now serving', numInput(state.n, 0, 9999, function (v) { patchLive('n', v); })));
+      g.appendChild(field('Last ticket issued', numInput(state.i, 0, 9999, function (v) { patchLive('i', v); }))); sheet.appendChild(g);
+      var z = el('button', 'btn', 'Reset to 0'); z.onclick = function () { set(HB.sanitize(Object.assign({}, state, { n: 0, i: 0 })), true); openPanel(); }; sheet.appendChild(z);
+    },
+    timer: function () {
+      var g = el('div', 'g4');
+      [['Focus min', 'w', 600], ['Break min', 'b', 600], ['Long break', 'lb', 600], ['Rounds', 'cy', 12]].forEach(function (f) {
+        g.appendChild(field(f[0], numInput(state[f[2] ? f[1] : f[1]], 1, f[2], function (v) { patchLive(f[1], v); })));
+      }); sheet.appendChild(g);
+      sheet.appendChild(el('p', 'small', 'Start/pause/reset live on the board itself. A running timer is stored as its start time, so a reloaded or shared link keeps counting.'));
+    },
+    sched: function () {
+      var t = el('textarea'); t.value = state.x; t.maxLength = 1500; var note = el('div', 'small', '');
+      t.oninput = function () { patchLive('x', t.value); var p = HB.parseSchedule(t.value); note.textContent = p.bad.length ? 'Could not read line(s): ' + p.bad.join(', ') : p.rows.length + ' items'; note.className = 'small' + (p.bad.length ? ' warn' : ''); };
+      sheet.appendChild(field('One item per line: "HH:MM Title" (also 9.30am, 1430)', t)); sheet.appendChild(note);
+    }
+  };
+  T[state.t]();
+  var th = el('select'); HB.THEMES.forEach(function (n) { var o = el('option', '', n); o.value = n; if (n === state.th) o.selected = true; th.appendChild(o); });
+  th.onchange = function () { patch('th', th.value); }; sheet.appendChild(field('Theme', th));
+
+  var m = el('div'); m.id = 'meterwrap'; m.appendChild(el('label', 'f', 'Link size')); var mt = el('div', 'meter'); mt.appendChild(el('i')); m.appendChild(mt); m.appendChild(el('div', 'small', '')); sheet.appendChild(m);
+  var b = el('div', 'btns');
+  var cp = el('button', 'btn pri', 'Copy link'); cp.onclick = function () { copy(location.href, cp); };
+  var qr = el('button', 'btn', 'Show QR'); qr.onclick = function () { showQR(); };
+  var ks = el('button', 'btn', 'Kiosk mode'); ks.onclick = kiosk;
+  var nw = el('button', 'btn', 'New board'); nw.onclick = function () { closePanel(); state = null; history.replaceState(null, '', location.pathname + location.search); home(); };
+  var cl = el('button', 'btn', 'Done'); cl.onclick = closePanel;
+  [cp, qr, ks, nw, cl].forEach(function (x) { b.appendChild(x); }); sheet.appendChild(b);
+  var qw = el('div'); qw.id = 'qr'; sheet.appendChild(qw);
+  sheet.appendChild(el('p', 'small', 'Open this link on any screen. In kiosk mode the controls hide; press Esc or reload without ?kiosk to return.'));
+  panel.classList.add('open'); updateMeter();
+}
+function closePanel() { panel.classList.remove('open'); }
+function updateMeter() {
+  var w = document.getElementById('meterwrap'); if (!w) return;
+  var n = location.href.length, pct = Math.min(100, n / 2000 * 100);
+  w.querySelector('.meter i').style.width = pct + '%';
+  var t = w.querySelector('.small'); t.textContent = n + ' characters' + (n > 2000 ? ' - long; some chat apps may truncate it' : ' - fits anywhere');
+  t.className = 'small' + (n > 2000 ? ' warn' : '');
+  if (document.getElementById('qr').style.display === 'block') showQR();
+}
+function copy(text, btn) {
+  var done = function (ok) { var o = btn.textContent; btn.textContent = ok ? 'Copied ✓' : 'Select the address bar'; setTimeout(function () { btn.textContent = o; }, 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); }); else done(false);
+}
+function showQR() {
+  var box = document.getElementById('qr'), q = HB.qrEncode(location.href);
+  box.textContent = '';
+  if (!q) { box.style.display = 'block'; box.style.background = 'none'; box.appendChild(el('div', 'small warn', 'Link too long for a QR code (limit ≈ 850 bytes). Shorten the text.')); return; }
+  box.style.background = '#fff'; box.style.display = 'block';
+  var c = document.createElement('canvas'), q4 = 4, n = q.size + 2 * q4; c.width = c.height = n;
+  var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, n, n); g.fillStyle = '#000';
+  q.modules.forEach(function (row, y) { row.forEach(function (d, x) { if (d) g.fillRect(x + q4, y + q4, 1, 1); }); });
+  box.appendChild(c);
+}
+function kiosk() {
+  closePanel(); document.body.classList.add('kiosk');
+  var r = document.documentElement.requestFullscreen; if (r) r.call(document.documentElement).catch(function () {});
+  if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { wakeLock = l; }, function () {});
+}
+document.addEventListener('visibilitychange', function () { if (document.body.classList.contains('kiosk') && document.visibilityState === 'visible' && navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { wakeLock = l; }, function () {}); });
+document.getElementById('kebab').onclick = openPanel;
+panel.addEventListener('click', function (e) { if (e.target === panel) closePanel(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (panel.classList.contains('open')) closePanel(); else document.body.classList.remove('kiosk'); } });
+var uiT; document.addEventListener('pointermove', function () { document.body.classList.add('ui'); clearTimeout(uiT); uiT = setTimeout(function () { document.body.classList.remove('ui'); }, 2500); });
+window.addEventListener('resize', renderLive);
+
+/* ---------- boot ---------- */
+function boot() {
+  HB.decode(location.hash).then(function (r) {
+    if (r.state) { state = r.state; render(); if (/[?&]kiosk\b/.test(location.search)) kiosk(); lastHash = location.hash; }
+    else { state = null; home(r.error); }
+  });
+}
+window.addEventListener('hashchange', function () { if (location.hash !== lastHash) boot(); });
+boot();
+})();
+</script>
+</body>
+</html>

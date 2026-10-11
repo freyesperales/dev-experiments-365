@@ -1,0 +1,12 @@
+{
+  "name": "hashboard",
+  "version": "1.0.0",
+  "description": "Signs, scoreboards, queue numbers, countdowns and timers where the URL is the app.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "test": "node tools/build.mjs && node --test test/*.test.mjs",
+    "start": "node tools/serve.mjs"
+  }
+}
