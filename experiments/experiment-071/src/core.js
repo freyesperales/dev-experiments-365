@@ -1,0 +1,262 @@
+/* gguf-xray core: GGUF header parser + VRAM fit planner + chat-template sanity checks.
+   Pure JS, no dependencies. Works in browsers (global GGUFXray) and Node (module.exports). */
+(function (root) {
+  'use strict';
+
+  class NeedMore extends Error {}
+  class BadFile extends Error {}
+
+  // ggml type id -> [name, elements per block, bytes per block]
+  const GGML = {
+    0: ['F32', 1, 4], 1: ['F16', 1, 2], 2: ['Q4_0', 32, 18], 3: ['Q4_1', 32, 20],
+    6: ['Q5_0', 32, 22], 7: ['Q5_1', 32, 24], 8: ['Q8_0', 32, 34], 9: ['Q8_1', 32, 36],
+    10: ['Q2_K', 256, 84], 11: ['Q3_K', 256, 110], 12: ['Q4_K', 256, 144], 13: ['Q5_K', 256, 176],
+    14: ['Q6_K', 256, 210], 15: ['Q8_K', 256, 292], 16: ['IQ2_XXS', 256, 66], 17: ['IQ2_XS', 256, 74],
+    18: ['IQ3_XXS', 256, 98], 19: ['IQ1_S', 256, 50], 20: ['IQ4_NL', 32, 18], 21: ['IQ3_S', 256, 110],
+    22: ['IQ2_S', 256, 82], 23: ['IQ4_XS', 256, 136], 24: ['I8', 1, 1], 25: ['I16', 1, 2],
+    26: ['I32', 1, 4], 27: ['I64', 1, 8], 28: ['F64', 1, 8], 29: ['IQ1_M', 256, 56], 30: ['BF16', 1, 2],
+  };
+  // general.file_type ids -> label (the ones seen in the wild)
+  const FILE_TYPE = {
+    0: 'F32', 1: 'F16', 2: 'Q4_0', 3: 'Q4_1', 7: 'Q8_0', 8: 'Q5_0', 9: 'Q5_1', 10: 'Q2_K',
+    11: 'Q3_K_S', 12: 'Q3_K_M', 13: 'Q3_K_L', 14: 'Q4_K_S', 15: 'Q4_K_M', 16: 'Q5_K_S', 17: 'Q5_K_M',
+    18: 'Q6_K', 19: 'IQ2_XXS', 20: 'IQ2_XS', 21: 'Q2_K_S', 22: 'IQ3_XS', 23: 'IQ3_XXS', 24: 'IQ1_S',
+    25: 'IQ4_NL', 26: 'IQ3_S', 27: 'IQ3_M', 28: 'IQ2_S', 29: 'IQ2_M', 30: 'IQ4_XS', 31: 'IQ1_M', 32: 'BF16',
+  };
+  // KV cache element types -> bytes per element
+  const KV_TYPES = { f16: 2, q8_0: 34 / 32, q4_0: 18 / 32 };
+  const SCALAR = { 0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1, 10: 8, 11: 8, 12: 8 };
+
+  class Reader {
+    constructor(buf) {
+      this.dv = new DataView(buf.buffer || buf, buf.byteOffset || 0, buf.byteLength);
+      this.pos = 0;
+      this.len = buf.byteLength;
+      this.td = new TextDecoder('utf-8');
+    }
+    need(n) { if (this.pos + n > this.len) throw new NeedMore('need ' + (this.pos + n)); }
+    u8() { this.need(1); return this.dv.getUint8(this.pos++); }
+    u32() { this.need(4); const v = this.dv.getUint32(this.pos, true); this.pos += 4; return v; }
+    u64() {
+      this.need(8);
+      const lo = this.dv.getUint32(this.pos, true), hi = this.dv.getUint32(this.pos + 4, true);
+      this.pos += 8;
+      return hi * 4294967296 + lo;
+    }
+    str() {
+      const n = this.u64();
+      if (n > 1 << 26) throw new BadFile('implausible string length ' + n + ' — not a valid GGUF');
+      this.need(n);
+      const s = this.td.decode(new Uint8Array(this.dv.buffer, this.dv.byteOffset + this.pos, n));
+      this.pos += n;
+      return s;
+    }
+    scalar(t) {
+      switch (t) {
+        case 0: return this.u8();
+        case 1: { this.need(1); const v = this.dv.getInt8(this.pos); this.pos += 1; return v; }
+        case 2: { this.need(2); const v = this.dv.getUint16(this.pos, true); this.pos += 2; return v; }
+        case 3: { this.need(2); const v = this.dv.getInt16(this.pos, true); this.pos += 2; return v; }
+        case 4: return this.u32();
+        case 5: { this.need(4); const v = this.dv.getInt32(this.pos, true); this.pos += 4; return v; }
+        case 6: { this.need(4); const v = this.dv.getFloat32(this.pos, true); this.pos += 4; return v; }
+        case 7: return this.u8() !== 0;
+        case 10: return this.u64();
+        case 11: { this.need(8); const v = Number(this.dv.getBigInt64(this.pos, true)); this.pos += 8; return v; }
+        case 12: { this.need(8); const v = this.dv.getFloat64(this.pos, true); this.pos += 8; return v; }
+        default: throw new BadFile('unknown GGUF value type ' + t);
+      }
+    }
+    value(t) {
+      if (t === 8) return this.str();
+      if (t !== 9) return this.scalar(t);
+      const et = this.u32(), n = this.u64();
+      if (et === 9) throw new BadFile('nested arrays are not supported');
+      const keep = n <= 256;
+      if (et === 8) {
+        const out = [];
+        for (let i = 0; i < n; i++) { const s = this.str(); if (keep) out.push(s); }
+        return keep ? out : { array: true, length: n };
+      }
+      if (!(et in SCALAR)) throw new BadFile('unknown array element type ' + et);
+      if (!keep) { this.need(n * SCALAR[et]); this.pos += n * SCALAR[et]; return { array: true, length: n }; }
+      const out = [];
+      for (let i = 0; i < n; i++) out.push(this.scalar(et));
+      return out;
+    }
+  }
+
+  function tensorBytes(type, dims) {
+    const g = GGML[type];
+    if (!g) throw new BadFile('unknown ggml tensor type ' + type);
+    let n = 1;
+    for (const d of dims) n *= d;
+    if (n % g[1] !== 0) throw new BadFile('tensor element count not a multiple of block size');
+    return (n / g[1]) * g[2];
+  }
+
+  /** Parse a GGUF header from the first bytes of a file. Throws NeedMore if the buffer is too short. */
+  function parseHeader(buf) {
+    const r = new Reader(buf);
+    if (r.len < 4) throw new NeedMore('need 4');
+    const magic = String.fromCharCode(r.u8(), r.u8(), r.u8(), r.u8());
+    if (magic !== 'GGUF') {
+      if (magic === 'FUGG') throw new BadFile('big-endian GGUF is not supported');
+      throw new BadFile('not a GGUF file (magic "' + magic.replace(/[^\x20-\x7e]/g, '?') + '")');
+    }
+    const version = r.u32();
+    if (version < 2 || version > 3) {
+      throw new BadFile(version === 1 ? 'GGUF v1 is obsolete and not supported' : 'unsupported GGUF version ' + version);
+    }
+    const tensorCount = r.u64(), kvCount = r.u64();
+    if (tensorCount > 1e6 || kvCount > 1e6) throw new BadFile('implausible tensor/KV counts — corrupt header');
+    const kv = {};
+    for (let i = 0; i < kvCount; i++) {
+      const key = r.str();
+      const t = r.u32();
+      kv[key] = r.value(t);
+    }
+    const tensors = [];
+    for (let i = 0; i < tensorCount; i++) {
+      const name = r.str();
+      const nd = r.u32();
+      if (nd > 8) throw new BadFile('tensor with ' + nd + ' dims — corrupt header');
+      const dims = [];
+      for (let d = 0; d < nd; d++) dims.push(r.u64());
+      const type = r.u32();
+      const offset = r.u64();
+      tensors.push({ name, dims, type, typeName: (GGML[type] || ['?'])[0], offset, bytes: tensorBytes(type, dims) });
+    }
+    const align = typeof kv['general.alignment'] === 'number' ? kv['general.alignment'] : 32;
+    const dataStart = Math.ceil(r.pos / align) * align;
+    return { version, kv, tensors, headerEnd: r.pos, dataStart, align };
+  }
+
+  const num = (v) => (typeof v === 'number' ? v : undefined);
+  const avgOf = (v) => (Array.isArray(v) ? (v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0) : num(v));
+
+  /** Derive model facts: arch, layers, weights by layer/quant, KV bytes per token. */
+  function describe(h, fileSize) {
+    const kv = h.kv, arch = kv['general.architecture'] || 'unknown';
+    const k = (s) => kv[arch + '.' + s];
+    const layers = num(k('block_count'));
+    const emb = num(k('embedding_length'));
+    const heads = avgOf(k('attention.head_count'));
+    const kvHeads = avgOf(k('attention.head_count_kv')) || heads;
+    const keyLen = num(k('attention.key_length')) || (emb && heads ? emb / heads : undefined);
+    const valLen = num(k('attention.value_length')) || keyLen;
+    const trainedCtx = num(k('context_length'));
+    let total = 0, layerBytes = 0, outputBytes = 0, embedBytes = 0, params = 0, end = 0;
+    const perLayer = new Map(), byType = {};
+    for (const t of h.tensors) {
+      total += t.bytes;
+      end = Math.max(end, t.offset + t.bytes);
+      let n = 1; for (const d of t.dims) n *= d;
+      params += n;
+      byType[t.typeName] = byType[t.typeName] || { bytes: 0, tensors: 0, params: 0 };
+      byType[t.typeName].bytes += t.bytes; byType[t.typeName].tensors++; byType[t.typeName].params += n;
+      const m = /^blk\.(\d+)\./.exec(t.name);
+      if (m) { layerBytes += t.bytes; perLayer.set(+m[1], (perLayer.get(+m[1]) || 0) + t.bytes); }
+      else if (/^output/.test(t.name)) outputBytes += t.bytes;
+      else if (/^token_embd/.test(t.name)) embedBytes += t.bytes;
+    }
+    const nLayers = layers || perLayer.size || 0;
+    const kvPerTokenPerLayer = kvHeads && keyLen ? kvHeads * (keyLen + valLen) : undefined; // elements
+    const expected = h.dataStart + end;
+    return {
+      arch, name: kv['general.name'], fileType: FILE_TYPE[kv['general.file_type']], layers: nLayers,
+      embedding: emb, heads, kvHeads, keyLen, valLen, trainedCtx, params, weightBytes: total,
+      layerBytes, outputBytes, embedBytes, byType, tensorCount: h.tensors.length,
+      bitsPerWeight: params ? (total * 8) / params : 0,
+      kvElemsPerTokenPerLayer: kvPerTokenPerLayer,
+      expectedFileSize: expected, fileSize,
+      truncated: fileSize != null && fileSize < expected,
+      hasMLA: kv[arch + '.attention.kv_lora_rank'] !== undefined,
+      swa: num(k('attention.sliding_window')),
+      moe: num(k('expert_count')),
+    };
+  }
+
+  /** Plan a launch: does it fit, how many layers to offload, max context. Sizes in bytes. */
+  function plan(d, o) {
+    const GB = 1024 ** 3, MB = 1024 ** 2;
+    const vram = o.vramGB * GB, ram = (o.ramGB == null ? Infinity : o.ramGB * GB);
+    const ctx = o.ctx, bpe = KV_TYPES[o.kvType || 'f16'];
+    const overhead = (o.overheadMB == null ? 512 : o.overheadMB) * MB;
+    if (!d.layers || !d.kvElemsPerTokenPerLayer) return { ok: false, reason: 'Missing layer/attention metadata for architecture "' + d.arch + '" — cannot size the KV cache.' };
+    const kvTokLayer = d.kvElemsPerTokenPerLayer * bpe;
+    const kvTotal = kvTokLayer * d.layers * ctx;
+    const avgLayerW = d.layerBytes / d.layers;
+    const fixedGpu = d.outputBytes + overhead;
+    const full = d.weightBytes + kvTotal + overhead;
+    const perLayerGpu = avgLayerW + kvTokLayer * ctx;
+    let ngl = Math.floor((vram - fixedGpu - 0) / perLayerGpu);
+    ngl = Math.max(0, Math.min(d.layers, ngl));
+    const fits = full <= vram;
+    if (fits) ngl = d.layers;
+    const gpuBytes = fits ? full : ngl > 0 ? fixedGpu + ngl * perLayerGpu : 0;
+    const cpuWeights = fits ? 0 : d.weightBytes - (ngl > 0 ? ngl * avgLayerW + d.outputBytes : 0);
+    const cpuKv = fits ? 0 : kvTokLayer * (d.layers - ngl) * ctx;
+    const cpuBytes = cpuWeights + cpuKv;
+    const ramOk = cpuBytes <= ram;
+    const maxCtxFull = Math.max(0, Math.floor((vram - d.weightBytes - overhead) / (kvTokLayer * d.layers)));
+    let verdict = fits ? 'full' : !ramOk ? 'none' : ngl > 0 ? 'partial' : 'cpu';
+    return {
+      ok: true, verdict, ngl, layers: d.layers, kvTotal, kvTokenBytes: kvTokLayer * d.layers, overhead,
+      gpuBytes, cpuBytes, ramOk, maxCtxFull, weightBytes: d.weightBytes,
+    };
+  }
+
+  /** Sanity checks on the embedded tokenizer/chat template and file integrity. */
+  function checks(h, d, p, o, fileName) {
+    const kv = h.kv, out = [], add = (sev, id, msg) => out.push({ sev, id, msg });
+    const tpl = kv['tokenizer.chat_template'];
+    if (d.truncated) add('error', 'TRUNCATED', 'File is ' + d.fileSize + ' bytes but its tensor table needs ' + d.expectedFileSize + ' — the download is incomplete or corrupt.');
+    if (fileName && /-\d{5}-of-\d{5}\.gguf$/i.test(fileName)) add('info', 'SPLIT', 'This is one shard of a split model. Point llama.cpp at the first shard (…-00001-of-…) and keep all shards in one folder; sizes here cover this shard only.');
+    if (typeof tpl !== 'string' || !tpl.trim()) {
+      add('warn', 'NO_TEMPLATE', 'No tokenizer.chat_template embedded. Fine for base models; for an instruct model llama.cpp must guess a format or you must pass --chat-template.');
+    } else {
+      if (/\{\{-?\s*bos_token\b/.test(tpl) && kv['tokenizer.ggml.add_bos_token'] === true) add('warn', 'DOUBLE_BOS', 'Template prints bos_token AND the tokenizer is set to add_bos_token — prompts can start with two BOS tokens, which measurably degrades some models.');
+      if (/\[\s*:?\s*:\s*-1\s*\]/.test(tpl)) add('warn', 'REVERSE_SLICE', 'Template uses a reverse slice ([::-1]). Older llama.cpp/minja builds fail to parse this; update llama.cpp or patch the template.');
+      if (/strftime_now/.test(tpl)) add('info', 'STRFTIME', 'Template calls strftime_now — needs a recent llama.cpp; the date will be baked into every prompt (breaks prompt-cache reuse across days).');
+      if (/\btools\b/.test(tpl)) add('info', 'TOOLS', 'Template has a tools section. Start llama-server with --jinja to enable tool calling.');
+      else add('info', 'NO_TOOLS', 'Template has no tools section — tool/function calling will not use native tool formatting.');
+      if (/<think>|enable_thinking/.test(tpl)) add('info', 'THINK', 'Reasoning-style template (<think> / enable_thinking). Expect long hidden reasoning; budget context accordingly.');
+    }
+    if (kv['tokenizer.ggml.eos_token_id'] === undefined) add('warn', 'NO_EOS', 'No tokenizer.ggml.eos_token_id — generation may never stop on its own.');
+    if (o && o.ctx && d.trainedCtx && o.ctx > d.trainedCtx) add('warn', 'CTX_OVER_TRAINED', 'Requested context ' + o.ctx + ' exceeds the trained context ' + d.trainedCtx + ' — quality degrades unless you add RoPE scaling.');
+    if (d.hasMLA) add('warn', 'MLA', 'This architecture uses MLA (compressed KV). The KV estimate here assumes classic attention and will OVERSTATE real usage.');
+    if (d.swa) add('info', 'SWA', 'Sliding-window attention (' + d.swa + ') is in use; some layers need far less KV than estimated, so the estimate is conservative.');
+    if (d.moe) add('info', 'MOE', 'Mixture-of-experts (' + d.moe + ' experts): all experts must be resident, so file size — not active parameters — drives memory.');
+    if (p && p.ok && p.verdict === 'none') add('error', 'NO_FIT', 'Does not fit in VRAM + RAM at this context. Lower the context, quantize the KV cache, or pick a smaller quant.');
+    return out;
+  }
+
+  function launchCommand(fileName, d, p, o) {
+    const parts = ['llama-server', '-m', fileName || 'model.gguf', '-c', String(o.ctx)];
+    if (p && p.ok) parts.push('-ngl', String(p.ngl));
+    if (o.kvType && o.kvType !== 'f16') parts.push('-fa on', '-ctk ' + o.kvType, '-ctv ' + o.kvType);
+    const tpl = o.template;
+    if (typeof tpl === 'string' && /\btools\b/.test(tpl)) parts.push('--jinja');
+    return parts.join(' ');
+  }
+
+  /** Parse with automatic growth: tries `start` bytes, doubles until the header fits. */
+  async function readHeader(readSlice, fileSize, start) {
+    let n = Math.min(fileSize, start || 4 * 1024 * 1024);
+    for (;;) {
+      const buf = await readSlice(0, n);
+      try { return parseHeader(buf); } catch (e) {
+        if (e instanceof NeedMore && n < fileSize) { n = Math.min(fileSize, n * 4); continue; }
+        if (e instanceof NeedMore) throw new BadFile('file ends inside the header — truncated download');
+        throw e;
+      }
+    }
+  }
+
+  const fmtBytes = (b) => (b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(2) + ' GB' : (b / 1024 ** 2).toFixed(0) + ' MB');
+
+  const api = { parseHeader, describe, plan, checks, launchCommand, readHeader, fmtBytes, GGML, KV_TYPES, NeedMore, BadFile };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.GGUFXray = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);

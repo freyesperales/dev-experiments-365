@@ -28,5 +28,10 @@
     "n": 70,
     "slug": "hashboard",
     "hook": "Full-screen signs, scoreboards, queue numbers, countdowns and timers where the URL is the app \u2014 send the link, send the sign."
+  },
+  {
+    "n": 71,
+    "slug": "gguf-xray",
+    "hook": "Drop a .gguf; learn if it fits your GPU, at what context, and whether its chat template is broken."
   }
 ]

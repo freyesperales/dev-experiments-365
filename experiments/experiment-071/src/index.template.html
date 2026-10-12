@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>gguf-xray — will this GGUF fit my GPU?</title>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--line:#272c37;--fg:#e6e9ef;--mut:#8b93a5;--ok:#3ecf8e;--warn:#f5b84b;--err:#ff6b6b;--acc:#7c9cff;--w:#7c9cff;--k:#c78bff;--o:#555e73}
+@media (prefers-color-scheme:light){:root{--bg:#f5f6f9;--card:#fff;--line:#dde1ea;--fg:#1a1d24;--mut:#5d6578;--acc:#3d5bd9;--w:#3d5bd9;--k:#9a4de0;--o:#8b93a5}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:24px 16px 64px}h1{margin:0 0 4px;font-size:26px}h1 span{color:var(--acc)}
+p.sub{margin:0 0 20px;color:var(--mut)}
+#drop{border:2px dashed var(--line);border-radius:14px;padding:36px 16px;text-align:center;color:var(--mut);cursor:pointer;background:var(--card)}
+#drop.over,#drop:focus-visible{border-color:var(--acc);color:var(--fg);outline:none}
+#drop b{color:var(--fg)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:16px}
+.row{display:flex;flex-wrap:wrap;gap:14px}.row label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:4px;min-width:120px;flex:1}
+input,select{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
+input[type=range]{padding:0}
+.bar{display:flex;height:28px;border-radius:8px;overflow:hidden;background:var(--line);margin:10px 0 6px}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--mut)}.legend s{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;text-decoration:none}
+.verdict{font-size:20px;font-weight:650;margin:0}.full{color:var(--ok)}.partial,.cpu{color:var(--warn)}.none{color:var(--err)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}th{color:var(--mut);font-weight:500}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.flag{padding:8px 10px;border-left:3px solid var(--mut);margin:6px 0;border-radius:4px;background:var(--bg);font-size:14px}
+.flag.warn{border-color:var(--warn)}.flag.error{border-color:var(--err)}.flag.info{border-color:var(--acc)}.flag b{font-size:12px;margin-right:6px}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;font-size:13px;white-space:pre-wrap;word-break:break-all}
+button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}
+h2{font-size:15px;margin:0 0 8px;color:var(--mut);font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+#err{color:var(--err);margin-top:12px}.hide{display:none}
+footer{margin-top:28px;color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<h1><span>gguf</span>-xray</h1>
+<p class="sub">Drop a .gguf. It reads only the header (a few MB) and tells you if it fits your GPU, at what context, and whether its chat template is sane. The file never leaves your machine.</p>
+<div id="drop" tabindex="0" role="button" aria-label="Choose or drop a GGUF file"><b>Drop a .gguf file here</b> or click to choose<input id="file" type="file" accept=".gguf" class="hide"></div>
+<div id="err" role="alert"></div>
+<div id="out" class="hide">
+  <div class="card"><div class="row">
+    <label>VRAM (GB)<input id="vram" type="number" min="1" step="0.5" value="12"></label>
+    <label>System RAM (GB)<input id="ram" type="number" min="0" step="1" value="32"></label>
+    <label>KV cache type<select id="kv"><option value="f16">f16</option><option value="q8_0">q8_0</option><option value="q4_0">q4_0</option></select></label>
+    <label>Context: <span id="ctxv"></span><input id="ctx" type="range" min="9" max="19" step="0.25" value="13"></label>
+  </div></div>
+  <div class="card"><p id="verdict" class="verdict"></p><div id="sub" style="color:var(--mut)"></div>
+    <div class="bar" id="bar" role="img" aria-label="GPU memory breakdown"></div>
+    <div class="legend"><span><s style="background:var(--w)"></s>weights</span><span><s style="background:var(--k)"></s>KV cache</span><span><s style="background:var(--o)"></s>compute buffers</span></div>
+  </div>
+  <div class="card"><h2>Launch</h2><pre id="cmd"></pre><button id="copy">Copy</button></div>
+  <div class="card"><h2>Checks</h2><div id="flags"></div></div>
+  <div class="card"><h2>Model</h2><div id="facts" style="margin-bottom:10px"></div><table id="quant"></table></div>
+  <div class="card hide" id="tplc"><h2>Embedded chat template</h2><pre id="tpl"></pre></div>
+</div>
+<footer>Development Experiment 071 of dev-experiments-365 · estimates, not guarantees — see README limitations.</footer>
+</main>
+<script>
+/*CORE*/
+</script>
+<script>
+(function () {
+  var X = GGUFXray, $ = function (id) { return document.getElementById(id); };
+  var state = null;
+  function fail(m) { $('err').textContent = m; }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  async function load(file) {
+    fail('');
+    try {
+      var h = await X.readHeader(async function (s, e) { return new Uint8Array(await file.slice(s, e).arrayBuffer()); }, file.size);
+      var d = X.describe(h, file.size);
+      state = { file: file, h: h, d: d };
+      var t = d.trainedCtx || 8192;
+      $('ctx').max = Math.max(13, Math.log2(t) + 1).toFixed(2);
+      $('ctx').value = Math.min(Math.log2(Math.min(t, 8192)), $('ctx').max);
+      $('out').classList.remove('hide');
+      render();
+    } catch (e) { $('out').classList.add('hide'); fail(e instanceof X.BadFile ? e.message : 'Could not read this file: ' + e.message); }
+  }
+  function ctxVal() { return Math.max(256, Math.round(Math.pow(2, +$('ctx').value) / 256) * 256); }
+  function render() {
+    if (!state) return;
+    var d = state.d, h = state.h, GB = 1024 * 1024 * 1024;
+    var o = { vramGB: Math.max(0.5, +$('vram').value || 0), ramGB: +$('ram').value >= 0 ? +$('ram').value : 0, ctx: ctxVal(), kvType: $('kv').value, template: h.kv['tokenizer.chat_template'] };
+    $('ctxv').textContent = o.ctx.toLocaleString('en-US') + ' tokens';
+    var p = X.plan(d, o), f = X.fmtBytes;
+    if (!p.ok) { $('verdict').textContent = 'Cannot size this model'; $('verdict').className = 'verdict none'; $('sub').textContent = p.reason; $('bar').innerHTML = ''; }
+    else {
+      var msg = { full: 'Fits — full GPU offload', partial: 'Partial — offload ' + p.ngl + ' of ' + p.layers + ' layers', cpu: 'CPU only — no whole layer fits', none: 'Does not fit' }[p.verdict];
+      $('verdict').textContent = msg; $('verdict').className = 'verdict ' + p.verdict;
+      $('sub').textContent = 'GPU ' + f(p.gpuBytes) + ' of ' + o.vramGB + ' GB' + (p.cpuBytes ? ' · spills ' + f(p.cpuBytes) + ' to RAM' : '') + ' · KV cache ' + f(p.kvTotal) + ' · max context for full offload ' + p.maxCtxFull.toLocaleString('en-US') + ' tokens';
+      var cap = Math.max(o.vramGB * GB, p.gpuBytes), full = p.verdict === 'full';
+      var w = full ? p.weightBytes : Math.max(0, p.gpuBytes - p.overhead - (p.kvTokenBytes / d.layers) * p.ngl * o.ctx), k = full ? p.kvTotal : (p.kvTokenBytes / d.layers) * p.ngl * o.ctx;
+      var pc = function (x) { return (100 * x / cap).toFixed(2) + '%'; };
+      $('bar').innerHTML = '<i style="width:' + pc(w) + ';background:var(--w)"></i><i style="width:' + pc(k) + ';background:var(--k)"></i><i style="width:' + pc(p.gpuBytes ? p.overhead : 0) + ';background:var(--o)"></i>';
+    }
+    $('cmd').textContent = X.launchCommand(state.file.name, d, p, o);
+    $('flags').innerHTML = X.checks(h, d, p, o, state.file.name).map(function (c) { return '<div class="flag ' + c.sev + '"><b>' + c.id + '</b>' + esc(c.msg) + '</div>'; }).join('') || 'No issues found.';
+    $('facts').textContent = (d.name || state.file.name) + ' · ' + d.arch + ' · ' + d.layers + ' layers · ' + (d.params / 1e9).toFixed(2) + 'B params · ' + (d.fileType || '?') + ' · ' + d.bitsPerWeight.toFixed(2) + ' bits/weight · trained ctx ' + (d.trainedCtx || '?') + ' · KV heads ' + d.kvHeads + '/' + d.heads;
+    var rows = Object.keys(d.byType).sort(function (a, b) { return d.byType[b].bytes - d.byType[a].bytes; });
+    $('quant').innerHTML = '<tr><th>Type</th><th class="n">Tensors</th><th class="n">Size</th><th class="n">Share</th></tr>' + rows.map(function (t) { var v = d.byType[t]; return '<tr><td>' + t + '</td><td class="n">' + v.tensors + '</td><td class="n">' + f(v.bytes) + '</td><td class="n">' + (100 * v.bytes / d.weightBytes).toFixed(1) + '%</td></tr>'; }).join('');
+    var tpl = h.kv['tokenizer.chat_template'];
+    $('tplc').classList.toggle('hide', typeof tpl !== 'string');
+    if (typeof tpl === 'string') $('tpl').textContent = tpl;
+  }
+  var drop = $('drop'), inp = $('file');
+  drop.onclick = function () { inp.click(); };
+  drop.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } };
+  inp.onchange = function () { if (inp.files[0]) load(inp.files[0]); };
+  ['dragenter', 'dragover'].forEach(function (n) { drop.addEventListener(n, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (n) { drop.addEventListener(n, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { var f = e.dataTransfer.files[0]; if (f) load(f); });
+  ['vram', 'ram', 'kv', 'ctx'].forEach(function (id) { $(id).addEventListener('input', render); });
+  $('copy').onclick = function () { navigator.clipboard && navigator.clipboard.writeText($('cmd').textContent); $('copy').textContent = 'Copied'; setTimeout(function () { $('copy').textContent = 'Copy'; }, 1200); };
+})();
+</script>
+</body>
+</html>

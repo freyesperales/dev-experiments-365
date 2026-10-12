@@ -1,5 +1,5 @@
 {
-  "last_number": 70,
+  "last_number": 71,
   "entries": [
     {
       "n": 1,
@@ -564,6 +564,15 @@
       "mode": "monorepo",
       "status": "completed",
       "note": "built by the routine on 2026-10-11; published 2026-10-22 (push had failed: GitHub access)"
+    },
+    {
+      "n": 71,
+      "date": "2026-10-12",
+      "title": "gguf-xray — drop a .gguf, learn if it fits your GPU at what context (exact per-tensor sizes, KV cache, -ngl offload plan) and whether its chat template is broken; single HTML file + CLI, header-only, nothing uploaded",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-071",
+      "mode": "monorepo",
+      "status": "completed",
+      "note": "built by the routine on 2026-10-12; published 2026-10-22 (push had failed: GitHub access)"
     }
   ]
 }

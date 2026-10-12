@@ -1,0 +1,9 @@
+{
+  "name": "gguf-xray",
+  "version": "1.0.0",
+  "description": "Drop a .gguf, learn if it fits your GPU, at what context, and whether its chat template is sane.",
+  "bin": { "gguf-xray": "cli.js" },
+  "scripts": { "test": "node build.js && node --test test/*.test.js", "build": "node build.js", "demo": "node demo.js && node cli.js demo/demo-8b-q4_k.gguf --vram 8 --ram 32 --ctx 32768 --kv q8_0" },
+  "license": "MIT",
+  "engines": { "node": ">=18" }
+}
