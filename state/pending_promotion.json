@@ -33,5 +33,10 @@
     "n": 71,
     "slug": "gguf-xray",
     "hook": "Drop a .gguf; learn if it fits your GPU, at what context, and whether its chat template is broken."
+  },
+  {
+    "n": 72,
+    "slug": "feedfrock",
+    "hook": "Chrome is dropping XSLT \u2014 turn your styled RSS, Atom and sitemap XML into a static, JavaScript-free page browsers can still show."
   }
 ]

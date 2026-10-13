@@ -1,0 +1,9 @@
+{
+  "name": "feedfrock",
+  "version": "1.0.0",
+  "description": "Render XSLT-styled RSS/Atom/sitemap feeds as static, JS-free HTML before Chrome removes XSLT.",
+  "bin": { "feedfrock": "cli.js" },
+  "scripts": { "test": "node --test \"test/*.test.js\"", "build": "node build.js", "start": "node cli.js examples/podcast.xml --out-dir out" },
+  "license": "MIT",
+  "engines": { "node": ">=18" }
+}

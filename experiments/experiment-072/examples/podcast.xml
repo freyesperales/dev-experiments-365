@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/assets/rss.xsl"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>The Cold Boot Podcast</title>
+    <link>https://coldboot.example.com/</link>
+    <atom:link href="https://coldboot.example.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <description>Stories from people who maintain the boring infrastructure the internet runs on.</description>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 12 Oct 2026 08:00:00 GMT</lastBuildDate>
+    <itunes:image href="https://coldboot.example.com/cover.jpg"/>
+    <itunes:author>Dana Ortiz</itunes:author>
+    <item>
+      <title>12: The cron job that outlived its company</title>
+      <link>https://coldboot.example.com/episodes/12</link>
+      <guid isPermaLink="false">ep-12</guid>
+      <pubDate>Mon, 12 Oct 2026 08:00:00 GMT</pubDate>
+      <itunes:episode>12</itunes:episode>
+      <itunes:duration>00:42:17</itunes:duration>
+      <enclosure url="https://cdn.example.com/ep12.mp3" length="40640000" type="audio/mpeg"/>
+      <description><![CDATA[<p>A <strong>nightly script</strong> kept running for nine years after the team left. <a href="/episodes/12#notes">Show notes</a>.</p><script>alert('xss')</script><img src="javascript:alert(1)" onerror="alert(2)">]]></description>
+      <category>Ops</category><category>War stories</category>
+    </item>
+    <item>
+      <title>11: Why is DNS always the problem?</title>
+      <link>https://coldboot.example.com/episodes/11</link>
+      <guid isPermaLink="false">ep-11</guid>
+      <pubDate>Mon, 05 Oct 2026 08:00:00 GMT</pubDate>
+      <itunes:duration>38:02</itunes:duration>
+      <enclosure url="https://cdn.example.com/ep11.mp3" length="36500000" type="audio/mpeg"/>
+      <description>Plain text description &amp; a sneaky ampersand.</description>
+    </item>
+  </channel>
+</rss>

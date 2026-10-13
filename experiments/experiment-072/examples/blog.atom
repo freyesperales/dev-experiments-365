@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet href="/pretty-feed-v3.xsl" type="text/xsl"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+  <title>Notes from the Margin</title>
+  <subtitle>Small essays on software and paper.</subtitle>
+  <link href="https://margin.example.org/"/>
+  <link rel="self" href="https://margin.example.org/atom.xml"/>
+  <updated>2026-10-10T09:30:00Z</updated>
+  <id>https://margin.example.org/</id>
+  <author><name>Sam Whitlock</name></author>
+  <entry>
+    <title type="html">Why &lt;em&gt;every&lt;/em&gt; table needs a caption</title>
+    <link href="https://margin.example.org/captions"/>
+    <id>tag:margin.example.org,2026:captions</id>
+    <published>2026-10-10T09:30:00Z</published>
+    <summary>A short argument for captions.</summary>
+    <content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Captions are <em>free</em> accessibility.</p><ul><li>Screen readers announce them</li><li>Search finds them</li></ul></div></content>
+  </entry>
+  <entry>
+    <title>Plain text entry</title>
+    <link href="https://margin.example.org/plain"/>
+    <id>tag:margin.example.org,2026:plain</id>
+    <updated>2026-10-01T12:00:00Z</updated>
+    <content type="text">First paragraph with &lt;b&gt;literal&lt;/b&gt; angle brackets.
+
+Second paragraph.</content>
+  </entry>
+</feed>

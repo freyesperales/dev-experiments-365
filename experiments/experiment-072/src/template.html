@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>FeedFrock</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1d1f;--mut:#6b6b73;--card:#fff;--line:#e4e2dc;--acc:#c2410c;--accfg:#fff;--bad:#b91c1c;--good:#15803d}
+@media (prefers-color-scheme:dark){:root{--bg:#141416;--fg:#ecebe8;--mut:#9b9aa3;--card:#1c1c1f;--line:#2e2e33;--acc:#fb923c;--accfg:#1a1206;--bad:#f87171;--good:#4ade80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{max-width:1100px;margin:0 auto;padding:28px 16px 8px}
+h1{margin:0;font-size:1.9rem;letter-spacing:-.02em}h1 span{color:var(--acc)}
+.lead{margin:4px 0 0;color:var(--mut);max-width:70ch}
+main{max-width:1100px;margin:0 auto;padding:12px 16px 56px;display:grid;gap:16px;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+@media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+label{display:block;font-size:.8rem;color:var(--mut);margin:10px 0 4px}
+textarea,input[type=text]{width:100%;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+textarea{height:300px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+button{font:inherit;font-size:.88rem;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button:hover{border-color:var(--acc)}button.primary{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+button:focus-visible,textarea:focus-visible,input:focus-visible,[role=tab]:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:10px;text-align:center;color:var(--mut);font-size:.85rem}
+.drop.over{border-color:var(--acc);color:var(--acc)}
+[role=tablist]{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px;flex-wrap:wrap}
+[role=tab]{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:8px 12px}
+[role=tab][aria-selected=true]{border-bottom-color:var(--acc);color:var(--acc);font-weight:600}
+iframe{width:100%;height:560px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:600}
+.bad{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}.good{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good)}
+pre{margin:6px 0 12px;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:auto;font-size:12.5px}
+#err{color:var(--bad);font-size:.9rem;margin-top:8px;min-height:1.2em}
+.mut{color:var(--mut);font-size:.88rem}
+h3{margin:14px 0 4px;font-size:1rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>Feed<span>Frock</span></h1>
+  <p class="lead">Chrome is removing XSLT. Paste or drop your RSS, Atom or sitemap XML and get a static, JavaScript-free page that browsers can still show — plus the server snippet to serve it. Everything runs in this tab; nothing is uploaded.</p>
+</header>
+<main>
+  <section class="card" aria-label="Input">
+    <div class="drop" id="drop">Drop a feed / sitemap file here</div>
+    <label for="src">Feed XML</label>
+    <textarea id="src" spellcheck="false" placeholder="<?xml version=&quot;1.0&quot;?>&#10;<?xml-stylesheet type=&quot;text/xsl&quot; href=&quot;/rss.xsl&quot;?>&#10;<rss version=&quot;2.0&quot;>…"></textarea>
+    <div class="row">
+      <button data-sample="podcast">Sample: podcast</button>
+      <button data-sample="atom">Sample: Atom blog</button>
+      <button data-sample="sitemap">Sample: sitemap</button>
+    </div>
+    <label for="url">…or fetch a URL (works only if the site allows cross-origin reads; otherwise paste)</label>
+    <div class="row" style="margin-top:0"><input type="text" id="url" placeholder="https://example.com/feed.xml" style="flex:1"><button id="fetch">Fetch</button></div>
+    <div id="err" role="alert"></div>
+  </section>
+  <section class="card" aria-label="Result">
+    <div role="tablist" aria-label="Result views">
+      <button role="tab" id="t-preview" aria-selected="true" aria-controls="p-preview">Preview</button>
+      <button role="tab" id="t-audit" aria-selected="false" aria-controls="p-audit">XSLT audit</button>
+      <button role="tab" id="t-deploy" aria-selected="false" aria-controls="p-deploy">Deploy</button>
+    </div>
+    <div id="p-preview" role="tabpanel" aria-labelledby="t-preview">
+      <iframe id="frame" title="Rendered feed preview" sandbox></iframe>
+      <div class="row"><button class="primary" id="dl-html">Download feed.html</button><button id="dl-xml">Download XML without xml-stylesheet</button></div>
+    </div>
+    <div id="p-audit" role="tabpanel" aria-labelledby="t-audit" hidden></div>
+    <div id="p-deploy" role="tabpanel" aria-labelledby="t-deploy" hidden>
+      <label for="feedurl">Public feed URL</label><input type="text" id="feedurl" placeholder="https://example.com/feed.xml">
+      <p class="mut">Browsers send <code>Accept: text/html</code>; feed readers don't. These snippets serve <code>feed.html</code> to browsers and the untouched XML to everyone else. Test with <code>curl -sI -H 'Accept: text/html' …</code> on your host.</p>
+      <h3>nginx</h3><pre id="s-nginx"></pre>
+      <h3>Apache (.htaccess)</h3><pre id="s-apache"></pre>
+      <h3>Vercel (vercel.json)</h3><pre id="s-vercel"></pre>
+      <h3>Cloudflare Worker</h3><pre id="s-cloudflare"></pre>
+    </div>
+  </section>
+</main>
+<script>
+/*__CORE__*/
+</script>
+<script>
+(function () {
+  'use strict';
+  var SAMPLES = /*__SAMPLES__*/ {};
+  var $ = function (id) { return document.getElementById(id); };
+  var src = $('src'), err = $('err'), last = null, lastXml = '';
+
+  function download(name, text, type) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: type }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function esc(s) { return FeedFrock.escapeHtml(s); }
+
+  function render() {
+    err.textContent = '';
+    var text = src.value;
+    if (!text.trim()) { $('frame').srcdoc = ''; $('p-audit').innerHTML = '<p class="mut">Paste a feed to audit it.</p>'; last = null; return; }
+    var model;
+    try { model = FeedFrock.parseFeed(text); } catch (e) { err.textContent = e.message; last = null; return; }
+    last = model; lastXml = text;
+    var html = FeedFrock.renderHtml(model, { feedUrl: $('feedurl').value.trim() });
+    $('frame').srcdoc = html;
+    var x = model.xslt, a = $('p-audit');
+    var count = model.type === 'sitemap' ? model.urls.length + ' URLs' : model.type === 'sitemapindex' ? model.maps.length + ' sitemaps' : model.items.length + ' entries';
+    var h = '<p><span class="badge ' + (x.usesXslt ? 'bad' : 'good') + '">' + (x.usesXslt ? 'Uses XSLT — breaks in Chrome' : 'No XSLT stylesheet') + '</span> <span class="mut">' + esc(model.type) + ', ' + esc(count) + '</span></p>';
+    if (x.usesXslt) {
+      h += '<p>This file asks the browser to transform it with:</p><ul>' + x.stylesheets.map(function (s) { return '<li><code>' + esc(s.href || '(no href)') + '</code> <span class="mut">' + esc(s.type) + '</span></li>'; }).join('') + '</ul>' +
+        '<p>Chrome plans to remove XSLT (per Chrome\'s deprecation notice, stable removal is scheduled for 17 Nov 2026 — check the notice for the current date). Visitors who open this URL will see a raw XML tree instead of your styled page. Feed readers are unaffected.</p>' +
+        '<p><b>Fix:</b> publish the generated <code>feed.html</code> and serve it to browsers with the <i>Deploy</i> snippet. You can keep or drop the <code>&lt;?xml-stylesheet?&gt;</code> line; the download button gives a copy without it.</p>';
+    } else h += '<p>Nothing to migrate. You can still publish the generated page so browsers show something friendly.</p>';
+    a.innerHTML = h;
+    var sn = FeedFrock.snippets({});
+    ['nginx', 'apache', 'vercel', 'cloudflare'].forEach(function (k) { $('s-' + k).textContent = sn[k]; });
+  }
+
+  src.addEventListener('input', render);
+  $('feedurl').addEventListener('input', render);
+  document.querySelectorAll('[data-sample]').forEach(function (b) { b.addEventListener('click', function () { src.value = SAMPLES[b.getAttribute('data-sample')]; render(); }); });
+  $('dl-html').addEventListener('click', function () { if (last) download('feed.html', FeedFrock.renderHtml(last, { feedUrl: $('feedurl').value.trim() }), 'text/html'); });
+  $('dl-xml').addEventListener('click', function () { if (last) download('feed.clean.xml', FeedFrock.stripStylesheetPI(lastXml), 'application/xml'); });
+  $('fetch').addEventListener('click', function () {
+    var u = $('url').value.trim(); if (!u) return;
+    err.textContent = 'Fetching…';
+    fetch(u).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(function (t) { src.value = t; if (!$('feedurl').value) $('feedurl').value = u; render(); })
+      .catch(function (e) { err.textContent = 'Could not fetch (' + e.message + '). Cross-origin reads are usually blocked — open the feed in a tab, copy its source, and paste it here.'; });
+  });
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) {
+    var f = e.dataTransfer.files[0]; if (!f) return;
+    f.text().then(function (t) { src.value = t; render(); });
+  });
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role=tab]'));
+  function select(t) {
+    tabs.forEach(function (x) { var on = x === t; x.setAttribute('aria-selected', on); $(x.getAttribute('aria-controls')).hidden = !on; });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; n.focus(); select(n); }
+    });
+  });
+  src.value = SAMPLES.podcast; render();
+})();
+</script>
+</body>
+</html>
