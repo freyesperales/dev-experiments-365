@@ -38,5 +38,10 @@
     "n": 72,
     "slug": "feedfrock",
     "hook": "Chrome is dropping XSLT \u2014 turn your styled RSS, Atom and sitemap XML into a static, JavaScript-free page browsers can still show."
+  },
+  {
+    "n": 73,
+    "slug": "plainly",
+    "hook": "Paste a letter, see exactly what makes it hard to read, and fix it \u2014 EN/ES/DE, offline, no AI."
   }
 ]

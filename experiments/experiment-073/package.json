@@ -1,0 +1,8 @@
+{
+  "name": "plainly",
+  "version": "1.0.0",
+  "description": "Offline plain-language workbench for English, Spanish and German",
+  "bin": { "plainly": "cli.js" },
+  "scripts": { "test": "node --test test/core.test.js test/ui.test.js", "build": "node build.js", "start": "node build.js && echo open plainly.html" },
+  "license": "MIT"
+}

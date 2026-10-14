@@ -1,5 +1,5 @@
 {
-  "last_number": 72,
+  "last_number": 73,
   "entries": [
     {
       "n": 1,
@@ -582,6 +582,15 @@
       "mode": "monorepo",
       "status": "completed",
       "note": "built by the routine on 2026-10-13; published 2026-10-22 (push had failed: GitHub access)"
+    },
+    {
+      "n": 73,
+      "date": "2026-10-14",
+      "title": "Plainly — offline plain-language workbench for English/Español/Deutsch: per-sentence flags (length, passive, noun-heavy), plainer-wording swaps with undo, LIX/Flesch/Fernández-Huerta/Amstad/WSTF scores, Markdown rewrite checklist; web + CLI, zero deps",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-073",
+      "mode": "monorepo",
+      "status": "completed",
+      "note": "built by the routine on 2026-10-14; published 2026-10-22 (push had failed: GitHub access)"
     }
   ]
 }

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plainly — plain-language workbench</title>
+<meta name="description" content="Paste a letter, see what makes it hard to read, apply plainer wording. English, Español, Deutsch. Offline.">
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1d1b;--mut:#6b6a63;--card:#fff;--bd:#e3e0d6;--ok:#1a7f4b;--warn:#b26a00;--bad:#b3261e;--acc:#2447c8;--mk:#fff1b8;--l1:#fde8e6;--l2:#fff4dc}
+@media(prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecebe5;--mut:#9c9a90;--card:#1f1f1c;--bd:#33332e;--ok:#5fcf93;--warn:#f0b24a;--bad:#ff8a80;--acc:#8fa8ff;--mk:#5b4c00;--l1:#42201d;--l2:#3b3012}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:20px 16px 8px;max-width:1200px;margin:auto}h1{margin:0;font-size:28px;letter-spacing:-.02em}header p{margin:4px 0 0;color:var(--mut)}
+main{max-width:1200px;margin:auto;padding:8px 16px 40px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+select,button{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--fg);cursor:pointer}
+button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}button:disabled{opacity:.5;cursor:default}
+textarea{width:100%;min-height:380px;resize:vertical;font:16px/1.55 Georgia,serif;padding:12px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--fg)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.stat{border:1px solid var(--bd);border-radius:10px;padding:8px 10px}.stat b{display:block;font-size:22px}.stat span{color:var(--mut);font-size:13px}
+.verdict{font-weight:600;padding:8px 12px;border-radius:8px;margin-bottom:12px}.verdict.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}.verdict.no{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+#view{font:16px/1.8 Georgia,serif;white-space:pre-wrap;padding:10px;border:1px solid var(--bd);border-radius:8px;max-height:340px;overflow:auto}
+.s1{background:var(--l1);border-radius:3px}.s2{background:var(--l2);border-radius:3px}mark{background:var(--mk);color:inherit;border-radius:3px;border-bottom:2px solid var(--warn)}
+ul.fl{list-style:none;padding:0;margin:12px 0 0;max-height:300px;overflow:auto}ul.fl li{padding:8px 0;border-top:1px solid var(--bd);font-size:14px}ul.fl q{display:block;color:var(--mut);font-family:Georgia,serif}ul.fl span{display:block}
+.mut{color:var(--mut);font-size:13px}h2{font-size:15px;margin:14px 0 6px}
+</style>
+</head>
+<body>
+<header><h1>Plainly</h1><p>Paste a letter. See what makes it hard to read. Fix it. — nothing leaves this page.</p></header>
+<main>
+<section class="card">
+  <div class="bar">
+    <select id="lang" aria-label="Language"><option value="auto">Auto-detect</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select>
+    <select id="target" aria-label="Target level"><option value="easy">Easy (≈A2)</option><option value="plain" selected>Plain (≈B1)</option><option value="standard">Standard (≈B2)</option></select>
+    <button id="apply" class="pri">Apply plainer wording</button>
+    <button id="undo" disabled>Undo</button>
+  </div>
+  <textarea id="in" spellcheck="false" placeholder="Paste text here…"></textarea>
+  <div class="bar" style="margin-top:10px"><span class="mut">Examples:</span>
+    <button data-ex="en">English letter</button><button data-ex="de">Deutscher Brief</button><button data-ex="es">Carta en español</button></div>
+</section>
+<section class="card">
+  <div id="verdict" class="verdict no">—</div>
+  <div class="stats" id="stats"></div>
+  <div id="view" aria-live="polite"></div>
+  <p class="mut"><mark>wording swap</mark> <span class="s1">&nbsp;too long / passive&nbsp;</span> <span class="s2">&nbsp;other flags&nbsp;</span></p>
+  <div class="bar"><button id="copy">Copy checklist (Markdown)</button><button id="dl">Download .md</button></div>
+  <h2>Rewrite checklist</h2><ul class="fl" id="fl"></ul>
+</section>
+</main>
+<script src="core.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const EX={
+en:"Pursuant to Section 4 of the Housing Benefit Regulations, the claimant is required to notify the Council in the event that any change in circumstances occurs, and failure to do so may result in the overpayment of benefit being recovered, together with a penalty (the amount of which will be determined at the discretion of the Council) in accordance with the relevant legislation. Prior to the commencement of the assessment, additional documentation must be submitted. We will endeavour to process your application as soon as possible.",
+de:"Hinsichtlich Ihres Antrags vom 3. März teilen wir Ihnen mit, dass die erforderlichen Unterlagen zeitnah einzureichen sind, da andernfalls aufgrund der fehlenden Mitwirkung eine Entscheidung nicht getroffen werden kann. Gegebenenfalls ist die Vorlage weiterer Nachweise im Rahmen der Prüfung erforderlich. Der Bescheid wird Ihnen umgehend zugestellt.",
+es:"Con carácter previo a la resolución del expediente, el interesado deberá subsanar la documentación presentada en el plazo de diez días, y en caso de no efectuar la subsanación se le tendrá por desistido de su petición. La cuantía será abonada mediante transferencia. Asimismo, la solicitud será remitida a la unidad competente."};
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let history=[],last=null;
+function opts(){const l=$('lang').value;return{lang:l==='auto'?undefined:l,target:$('target').value};}
+function render(){
+  const text=$('in').value,a=P.analyze(text,opts());last=a;
+  const f=a.formula;
+  $('stats').innerHTML=[
+    [a.lix.toFixed(0),'LIX · '+a.band],
+    f?[f.value.toFixed(0),f.name]:['—',''],
+    a.wstf!==null?[a.wstf.toFixed(1),'Wiener Sachtext']:null,
+    [a.avgSentence.toFixed(1),'words / sentence'],
+    [a.stats.words,'words · '+P.LANG_NAMES[a.lang]],
+  ].filter(Boolean).map(x=>`<div class="stat"><b>${esc(String(x[0]))}</b><span>${esc(x[1])}</span></div>`).join('');
+  const v=$('verdict');
+  if(!text.trim()){v.className='verdict no';v.textContent='Paste some text to begin.';}
+  else if(a.passesTarget){v.className='verdict ok';v.textContent='✔ Meets the "'+a.targetInfo.label+'" target.';}
+  else{v.className='verdict no';v.textContent=`${a.flaggedCount} of ${a.stats.sentences} sentences need work for "${a.targetInfo.label}" (LIX target ≤ ${a.targetInfo.lix}).`;}
+  // highlighted view
+  let html='',pos=0;
+  for(const s of a.sentences){
+    html+=esc(text.slice(pos,s.start));
+    const sev=s.flags.some(x=>x.id==='long'||x.id==='passive')?'s1':s.flags.length?'s2':'';
+    let inner='',p=s.start;
+    for(const h of s.swaps){inner+=esc(text.slice(p,h.start))+`<mark title="→ ${esc(h.to)}">${esc(text.slice(h.start,h.end))}</mark>`;p=h.end;}
+    inner+=esc(text.slice(p,s.end));
+    html+=sev?`<span class="${sev}" title="${esc(s.flags.map(x=>x.label).join('; '))}">${inner}</span>`:inner;
+    pos=s.end;
+  }
+  $('view').innerHTML=html+esc(text.slice(pos));
+  const items=[];
+  a.sentences.forEach((s,i)=>{if(!s.flags.length)return;const t=s.text.replace(/\s+/g,' ');
+    items.push(`<li><q>#${i+1} “${esc(t.length>100?t.slice(0,97)+'…':t)}”</q>${s.flags.map(x=>`<span>• ${esc(x.label)} — <i class="mut">${esc(x.hint)}</i></span>`).join('')}</li>`);});
+  $('fl').innerHTML=items.join('')||'<li class="mut">Nothing to fix at this target.</li>';
+  $('apply').disabled=!a.sentences.some(s=>s.swaps.length);
+}
+const P=Plainly;
+$('in').addEventListener('input',render);$('lang').onchange=render;$('target').onchange=render;
+$('apply').onclick=()=>{const l=last.lang,r=P.applySwaps($('in').value,l);history.push($('in').value);$('in').value=r.text;$('undo').disabled=false;render();};
+$('undo').onclick=()=>{if(history.length){$('in').value=history.pop();render();}$('undo').disabled=!history.length;};
+document.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{history=[];$('undo').disabled=true;$('lang').value='auto';$('in').value=EX[b.dataset.ex];render();});
+function md(){return P.checklistMarkdown($('in').value,last);}
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(md());$('copy').textContent='Copied ✔';}catch(e){$('copy').textContent='Copy failed — use Download';}setTimeout(()=>$('copy').textContent='Copy checklist (Markdown)',1500);};
+$('dl').onclick=()=>{const u=URL.createObjectURL(new Blob([md()],{type:'text/markdown'}));const a=document.createElement('a');a.href=u;a.download='rewrite-checklist.md';a.click();URL.revokeObjectURL(u);};
+$('in').value=EX.en;render();
+})();
+</script>
+</body>
+</html>
