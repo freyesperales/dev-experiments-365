@@ -1,0 +1,1 @@
+{"name":"hexlens","version":"1.0.0","description":"Fuzzy, value-aware binary explorer: search any file by number, float or date instead of exact bytes.","bin":{"hexlens":"hexlens.js"},"scripts":{"test":"node --test tests/*.test.js","start":"node tests/make-sample.js samples/demo.sav && node hexlens.js samples/demo.sav --find date:2024-06-01"},"license":"MIT"}

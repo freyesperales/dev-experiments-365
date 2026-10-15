@@ -1,5 +1,5 @@
 {
-  "last_number": 73,
+  "last_number": 74,
   "entries": [
     {
       "n": 1,
@@ -591,6 +591,15 @@
       "mode": "monorepo",
       "status": "completed",
       "note": "built by the routine on 2026-10-14; published 2026-10-22 (push had failed: GitHub access)"
+    },
+    {
+      "n": 74,
+      "date": "2026-10-15",
+      "title": "HexLens — fuzzy binary explorer: search any file by value (int/float/timestamp ranges, all widths & endiannesses) instead of exact bytes; single offline HTML + zero-dep CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-074",
+      "mode": "monorepo",
+      "status": "completed",
+      "note": "built by the routine on 2026-10-15; published 2026-10-22 (push had failed: GitHub access)"
     }
   ]
 }

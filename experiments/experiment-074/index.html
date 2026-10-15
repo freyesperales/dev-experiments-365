@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HexLens — fuzzy binary explorer</title>
+<style>
+:root{--bg:#0f1318;--panel:#171d25;--line:#263040;--fg:#d8e0ea;--dim:#7d8b9e;--acc:#4cc2ff;--hit:#ffb454;--sel:#2f6fed;--ok:#7ee787}
+@media (prefers-color-scheme:light){:root{--bg:#f6f7f9;--panel:#fff;--line:#d5dae1;--fg:#1c2330;--dim:#667385;--acc:#0a69c7;--hit:#b35c00;--sel:#2f6fed;--ok:#1a7f37}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,sans-serif;height:100vh;display:flex;flex-direction:column}
+header{display:flex;gap:12px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:16px;margin:0}header h1 span{color:var(--acc)}
+.badge{font-size:11px;color:var(--ok);border:1px solid var(--ok);border-radius:10px;padding:1px 8px}
+button,input,select{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 10px}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
+#q{flex:1;min-width:220px;font-family:ui-monospace,monospace}
+#drop{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--dim);border:2px dashed var(--line);margin:20px;border-radius:12px;text-align:center;padding:20px}
+#drop.over{border-color:var(--acc);color:var(--fg)}
+#app{display:none;flex:1;min-height:0;flex-direction:column}
+#strip{height:34px;width:100%;display:block;cursor:pointer;border-bottom:1px solid var(--line)}
+#main{flex:1;display:flex;min-height:0}
+#hexwrap{flex:1;overflow:auto;position:relative;min-width:0}
+#hexpad{position:relative}
+#hex{position:absolute;left:0;right:0;font:13px/20px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+.row{height:20px;padding-left:10px}.off{color:var(--dim)}.b{cursor:pointer}.b:hover{background:var(--line)}
+.b.z{color:var(--dim)}.b.hit{background:rgba(255,180,84,.35);color:var(--fg)}.b.sel{background:var(--sel);color:#fff}
+.asc{color:var(--dim);margin-left:12px}
+aside{width:340px;border-left:1px solid var(--line);overflow:auto;background:var(--panel);display:flex;flex-direction:column}
+.tabs{display:flex;border-bottom:1px solid var(--line)}.tabs button{flex:1;border:0;border-radius:0;background:none}
+.tabs button.on{color:var(--acc);box-shadow:inset 0 -2px var(--acc)}
+.pane{padding:10px;overflow:auto;flex:1;font-size:13px}
+table{width:100%;border-collapse:collapse}td{padding:2px 4px;border-bottom:1px solid var(--line);font-family:ui-monospace,monospace;font-size:12px;word-break:break-all}
+td.k{color:var(--dim);white-space:nowrap}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--line)}
+.help{color:var(--dim);font-size:12px}.err{color:#ff6b6b}
+code{background:var(--line);padding:0 4px;border-radius:3px}
+#status{padding:4px 14px;border-top:1px solid var(--line);color:var(--dim);font-size:12px}
+@media (max-width:760px){#main{flex-direction:column}aside{width:100%;height:40%;border-left:0;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hex<span>Lens</span></h1>
+  <span class="badge" title="This page makes no network requests. Check DevTools → Network.">100% local · no uploads</span>
+  <input id="q" placeholder='Find by VALUE: 1.7e9..1.8e9 · 37.77~0.05 · date:2020-01-01..2024-12-31 · hex:de ad be ef · text:config' disabled>
+  <select id="al" title="Alignment" disabled><option value="1">any offset</option><option value="natural">natural alignment</option></select>
+  <button id="go" disabled>Search</button>
+  <button id="open">Open file…</button>
+  <input type="file" id="file" hidden>
+</header>
+<div id="drop"><div style="font-size:40px">⬡</div><div><b>Drop any binary file here</b></div>
+<div>HexLens guesses its structure and lets you search by <i>value</i>, not just bytes.</div>
+<div><button id="demo">…or load a built-in demo file</button></div></div>
+<div id="app">
+  <canvas id="strip" title="Structure heat strip — click to jump"></canvas>
+  <div id="main">
+    <div id="hexwrap"><div id="hexpad"><div id="hex"></div></div></div>
+    <aside>
+      <div class="tabs"><button data-t="insp" class="on">Inspector</button><button data-t="res">Results</button><button data-t="str">Strings</button><button data-t="info">File</button></div>
+      <div class="pane" id="pane"></div>
+    </aside>
+  </div>
+  <div id="status"></div>
+</div>
+
+<script id="core">
+// <core>
+'use strict';
+const SIZES = {u8:1,i8:1,u16:2,i16:2,u32:4,i32:4,u64:8,i64:8,f32:4,f64:8};
+const EPOCH_FILETIME_MS = 11644473600000; // 1601-01-01 → 1970-01-01
+const COCOA_OFFSET_S = 978307200;        // 1970-01-01 → 2001-01-01
+
+function readVal(dv, off, type, le) {
+  switch (type) {
+    case 'u8': return dv.getUint8(off);
+    case 'i8': return dv.getInt8(off);
+    case 'u16': return dv.getUint16(off, le);
+    case 'i16': return dv.getInt16(off, le);
+    case 'u32': return dv.getUint32(off, le);
+    case 'i32': return dv.getInt32(off, le);
+    case 'u64': return Number(dv.getBigUint64(off, le));
+    case 'i64': return Number(dv.getBigInt64(off, le));
+    case 'f32': return dv.getFloat32(off, le);
+    case 'f64': return dv.getFloat64(off, le);
+  }
+  throw new Error('bad type ' + type);
+}
+
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+function parseDate(s) {
+  const m = DATE_RE.exec(s.trim());
+  if (!m) throw new Error('Bad date "' + s + '" (use YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS, UTC)');
+  const t = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  if (isNaN(t) || new Date(t).getUTCMonth() !== +m[2] - 1) throw new Error('Impossible date "' + s + '"');
+  return t;
+}
+function num(s) {
+  const t = s.trim();
+  const v = /^0x[0-9a-f]+$/i.test(t) ? parseInt(t, 16) : Number(t);
+  if (t === '' || !isFinite(v)) throw new Error('Not a number: "' + s + '"');
+  return v;
+}
+
+// Query → list of scan specs. Throws Error with a human message on bad input.
+function parseQuery(raw) {
+  const q = (raw || '').trim();
+  if (!q) throw new Error('Type a query, e.g. 1700000000..1800000000');
+  let m;
+  if ((m = /^text:(.+)$/is.exec(q))) return {kind: 'text', text: m[1]};
+  if ((m = /^hex:(.+)$/is.exec(q))) {
+    const parts = m[1].trim().split(/[\s,]+/).filter(Boolean);
+    const bytes = parts.map(p => { if (!/^[0-9a-f]{2}$/i.test(p)) throw new Error('hex: needs byte pairs like "de ad be ef"'); return parseInt(p, 16); });
+    return {kind: 'bytes', bytes};
+  }
+  if ((m = /^date:(.+)$/is.exec(q))) {
+    const [a, b] = m[1].split('..');
+    const lo = parseDate(a), hi = b === undefined ? lo + 86400000 - 1 : parseDate(b);
+    if (hi < lo) throw new Error('Date range is reversed');
+    const S = (ms) => ms / 1000;
+    return {kind: 'scan', specs: [
+      {label: 'unix s', types: ['u32', 'i32', 'u64', 'i64', 'f64'], lo: S(lo), hi: S(hi)},
+      {label: 'unix ms', types: ['u64', 'i64', 'f64'], lo, hi},
+      {label: 'FILETIME', types: ['u64', 'i64'], lo: (lo + EPOCH_FILETIME_MS) * 1e4, hi: (hi + EPOCH_FILETIME_MS) * 1e4},
+      {label: 'Cocoa s', types: ['f64', 'f32', 'u32', 'i32'], lo: S(lo) - COCOA_OFFSET_S, hi: S(hi) - COCOA_OFFSET_S},
+    ]};
+  }
+  let lo, hi;
+  if ((m = /^(.+?)\.\.(.+)$/.exec(q))) { lo = num(m[1]); hi = num(m[2]); }
+  else if ((m = /^(.+?)~(.+)$/.exec(q))) { const c = num(m[1]), t = Math.abs(num(m[2])); lo = c - t; hi = c + t; }
+  else { lo = hi = num(q); }
+  if (hi < lo) throw new Error('Range is reversed');
+  const isInt = Number.isInteger(lo) && Number.isInteger(hi);
+  const types = isInt ? ['u8', 'i8', 'u16', 'i16', 'u32', 'i32', 'u64', 'i64', 'f32', 'f64'] : ['f32', 'f64'];
+  return {kind: 'scan', specs: [{label: '', types, lo, hi}]};
+}
+
+// Run a parsed query. opts: {align:1|'natural', limit}
+function search(bytes, query, opts) {
+  opts = opts || {};
+  const limit = opts.limit || 2000, hits = [];
+  let truncated = false;
+  const push = (h) => { if (hits.length >= limit) { truncated = true; return false; } hits.push(h); return true; };
+  if (query.kind === 'bytes' || query.kind === 'text') {
+    const pats = query.kind === 'bytes' ? [{label: 'bytes', b: query.bytes}] : (() => {
+      const t = query.text, a = [...t].map(c => c.charCodeAt(0) & 255);
+      const u = []; for (const c of t) { const k = c.charCodeAt(0); u.push(k & 255, k >> 8); }
+      const u8 = Array.from(new TextEncoder().encode(t));
+      const out = [{label: 'ascii/utf8', b: u8}];
+      if (a.join() !== u8.join()) out.push({label: 'latin1', b: a});
+      out.push({label: 'utf16le', b: u});
+      return out;
+    })();
+    for (const p of pats) {
+      const b = p.b, n = b.length; if (!n) continue;
+      outer: for (let i = 0; i + n <= bytes.length; i++) {
+        for (let j = 0; j < n; j++) if (bytes[i + j] !== b[j]) continue outer;
+        if (!push({offset: i, size: n, type: p.label, le: true, value: null, label: p.label})) return {hits, truncated};
+      }
+    }
+    return {hits, truncated};
+  }
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const total = bytes.length;
+  for (const spec of query.specs) {
+    for (const type of spec.types) {
+      const sz = SIZES[type], isF = type[0] === 'f';
+      for (const le of (sz === 1 ? [true] : [true, false])) {
+        const step = opts.align === 'natural' ? sz : 1;
+        for (let off = 0; off + sz <= total; off += step) {
+          const v = readVal(dv, off, type, le);
+          if (isF) {
+            if (!isFinite(v)) continue;
+            // skip denormal noise for exact/small searches: 0-valued float on all-zero bytes is meaningless
+            if (v === 0 && spec.lo <= 0 && spec.hi >= 0 && spec.lo === spec.hi) { /* explicit search for 0: allow */ }
+          }
+          if (v >= spec.lo && v <= spec.hi) {
+            if (!push({offset: off, size: sz, type, le, value: v, label: spec.label})) return {hits, truncated};
+          }
+        }
+      }
+    }
+  }
+  hits.sort((a, b) => a.offset - b.offset || a.size - b.size);
+  return {hits, truncated};
+}
+
+function isoZ(ms) { return new Date(ms).toISOString().replace('.000Z', 'Z'); }
+function plausibleDates(v, intLike) {
+  const out = [], lo = Date.UTC(1995, 0, 1), hi = Date.UTC(2040, 0, 1);
+  const chk = (label, ms) => { if (isFinite(ms) && ms >= lo && ms <= hi) out.push(label + ' ' + isoZ(ms)); };
+  chk('unix s', v * 1000);
+  chk('unix ms', v);
+  chk('Cocoa', (v + COCOA_OFFSET_S) * 1000);
+  if (intLike) chk('FILETIME', v / 1e4 - EPOCH_FILETIME_MS);
+  return out;
+}
+
+// Every interpretation of the bytes at `off`.
+function interpretAt(bytes, off) {
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const rows = [];
+  for (const type of Object.keys(SIZES)) {
+    const sz = SIZES[type];
+    if (off + sz > bytes.length) continue;
+    for (const le of (sz === 1 ? [true] : [true, false])) {
+      const v = readVal(dv, off, type, le);
+      let txt = type[0] === 'f' ? (isFinite(v) ? String(Number(v.toPrecision(9))) : String(v)) : String(v);
+      if (sz >= 4 && type[0] !== 'f') txt += '  (0x' + (v < 0 ? (BigInt.asUintN(sz * 8, BigInt(v))).toString(16) : v.toString(16)) + ')';
+      const dates = type === 'f32' ? [] : plausibleDates(v, type[0] !== 'f');
+      rows.push({type: type + (sz > 1 ? (le ? ' LE' : ' BE') : ''), text: txt, dates});
+    }
+  }
+  const slice = bytes.subarray(off, Math.min(off + 32, bytes.length));
+  let s = ''; for (const c of slice) s += c >= 32 && c < 127 ? String.fromCharCode(c) : '·';
+  rows.push({type: 'ascii', text: s, dates: []});
+  try {
+    const t = new TextDecoder('utf-8', {fatal: true}).decode(slice.subarray(0, Math.min(slice.length, 24)));
+    rows.push({type: 'utf-8', text: t.replace(/[\x00-\x1f]/g, '·'), dates: []});
+  } catch (e) { /* not valid utf-8 here */ }
+  return rows;
+}
+
+const MAGICS = [
+  ['PNG image', [0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]], ['JPEG image', [0xff,0xd8,0xff]], ['GIF image', [0x47,0x49,0x46,0x38]],
+  ['ZIP / docx / xlsx / jar / apk', [0x50,0x4b,0x03,0x04]], ['PDF document', [0x25,0x50,0x44,0x46,0x2d]], ['ELF executable', [0x7f,0x45,0x4c,0x46]],
+  ['Windows PE (MZ)', [0x4d,0x5a]], ['SQLite 3 database', [0x53,0x51,0x4c,0x69,0x74,0x65,0x20,0x66,0x6f,0x72,0x6d,0x61,0x74,0x20,0x33,0x00]],
+  ['gzip', [0x1f,0x8b,0x08]], ['7-Zip', [0x37,0x7a,0xbc,0xaf,0x27,0x1c]], ['RIFF container (wav/avi/webp)', [0x52,0x49,0x46,0x46]],
+  ['WebAssembly', [0x00,0x61,0x73,0x6d]], ['Mach-O (64-bit)', [0xcf,0xfa,0xed,0xfe]], ['Ogg', [0x4f,0x67,0x67,0x53]],
+  ['MP3 (ID3)', [0x49,0x44,0x33]], ['BMP image', [0x42,0x4d]], ['Apple binary plist', [0x62,0x70,0x6c,0x69,0x73,0x74]],
+  ['TIFF (LE)', [0x49,0x49,0x2a,0x00]], ['Java class', [0xca,0xfe,0xba,0xbe]], ['bzip2', [0x42,0x5a,0x68]], ['xz', [0xfd,0x37,0x7a,0x58,0x5a,0x00]],
+  ['Zstandard', [0x28,0xb5,0x2f,0xfd]], ['GGUF model', [0x47,0x47,0x55,0x46]], ['Protobuf-ish? (no magic)', null],
+].filter(m => m[1]);
+
+function matchAt(bytes, i, sig) { for (let j = 0; j < sig.length; j++) if (bytes[i + j] !== sig[j]) return false; return true; }
+function identify(bytes) { for (const [n, s] of MAGICS) if (bytes.length >= s.length && matchAt(bytes, 0, s)) return n; return null; }
+function scanMagics(bytes, limit) {
+  limit = limit || 50; const out = [];
+  for (let i = 1; i < bytes.length && out.length < limit; i++) {
+    for (const [n, s] of MAGICS) { if (s.length >= 4 && i + s.length <= bytes.length && matchAt(bytes, i, s)) { out.push({offset: i, name: n}); break; } }
+  }
+  return out;
+}
+
+const printable = c => (c >= 32 && c < 127) || c === 9 || c === 10 || c === 13;
+// ASCII runs plus length-prefixed strings (u8 / u16 LE / u32 LE prefix).
+function findStrings(bytes, minLen) {
+  minLen = minLen || 5; const out = [], n = bytes.length;
+  let i = 0;
+  while (i < n) {
+    if (printable(bytes[i])) {
+      let j = i; while (j < n && printable(bytes[j])) j++;
+      if (j - i >= minLen) out.push({offset: i, len: j - i, kind: 'ascii', text: String.fromCharCode(...bytes.subarray(i, Math.min(j, i + 200)))});
+      i = j;
+    } else i++;
+  }
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const lp = [];
+  for (let p = 0; p + 2 < n; p++) {
+    for (const [w, rd] of [[1, () => bytes[p]], [2, () => p + 2 <= n ? dv.getUint16(p, true) : 0], [4, () => p + 4 <= n ? dv.getUint32(p, true) : 0]]) {
+      const L = rd();
+      if (L < minLen || L > 4096 || p + w + L > n) continue;
+      let ok = true; for (let k = 0; k < L; k++) { const c = bytes[p + w + k]; if (c < 32 || c >= 127) { ok = false; break; } }
+      if (ok && lp.length < 20000) {
+        lp.push({offset: p + w, len: L, kind: 'len-prefixed u' + w * 8, text: String.fromCharCode(...bytes.subarray(p + w, p + w + Math.min(L, 200))), prefixAt: p});
+      }
+    }
+  }
+  // A length-prefixed string supersedes a plain ASCII run that ends exactly where it ends and starts at or before it.
+  const ends = new Set(lp.map(x => x.offset + x.len));
+  const merged = out.filter(a => !(ends.has(a.offset + a.len) && lp.some(x => x.offset + x.len === a.offset + a.len && x.offset >= a.offset)))
+    .concat(lp);
+  merged.sort((a, b) => a.offset - b.offset);
+  return merged;
+}
+
+function entropy(bytes, s, e) {
+  const h = new Uint32Array(256); for (let i = s; i < e; i++) h[bytes[i]]++;
+  const n = e - s; let H = 0; for (let i = 0; i < 256; i++) if (h[i]) { const p = h[i] / n; H -= p * Math.log2(p); }
+  return H;
+}
+// Classify fixed-size blocks → [{start,end,kind,entropy}]
+function analyzeBlocks(bytes, blockSize) {
+  blockSize = blockSize || 256; const out = [];
+  for (let s = 0; s < bytes.length; s += blockSize) {
+    const e = Math.min(bytes.length, s + blockSize), n = e - s;
+    let z = 0, t = 0, ff = 0; for (let i = s; i < e; i++) { const c = bytes[i]; if (c === 0) z++; else if (c === 255) ff++; if (printable(c)) t++; }
+    const H = entropy(bytes, s, e); let kind;
+    if (z / n > 0.95) kind = 'zero'; else if (ff / n > 0.95) kind = 'ff';
+    else if (t / n > 0.85) kind = 'text';
+    else if (n >= 64 && H / Math.log2(Math.min(n, 256)) > 0.85) kind = 'random';
+    else if (z / n > 0.3) kind = 'sparse';
+    else kind = 'structured';
+    out.push({start: s, end: e, kind, entropy: H});
+  }
+  return out;
+}
+
+function hexdumpLine(bytes, off, width) {
+  width = width || 16; let h = '', a = '';
+  for (let i = 0; i < width; i++) {
+    if (off + i < bytes.length) { const c = bytes[off + i]; h += c.toString(16).padStart(2, '0') + ' '; a += c >= 32 && c < 127 ? String.fromCharCode(c) : '.'; } else h += '   ';
+  }
+  return off.toString(16).padStart(8, '0') + '  ' + h + ' ' + a;
+}
+// </core>
+</script>
+
+<script>
+(function () {
+  if (typeof document === 'undefined') return;
+  const $ = (s) => document.querySelector(s);
+  const ROW = 20, W = 16;
+  let bytes = null, fname = '', hits = [], hitSet = new Map(), sel = null, blocks = [], strings = null, tab = 'insp';
+  const hexwrap = $('#hexwrap'), hexpad = $('#hexpad'), hexEl = $('#hex'), pane = $('#pane'), strip = $('#strip');
+  const hx = (n, w) => n.toString(16).padStart(w, '0');
+  const esc = (s) => s.replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+  const KC = {zero: '#1d2733', ff: '#3a4a60', text: '#3fb950', sparse: '#5b7bb5', structured: '#4cc2ff', random: '#d2603c'};
+
+  function load(buf, name) {
+    bytes = buf; fname = name; hits = []; hitSet = new Map(); sel = null; strings = null;
+    blocks = analyzeBlocks(bytes, Math.max(64, Math.ceil(bytes.length / 600 / 64) * 64));
+    $('#drop').style.display = 'none'; $('#app').style.display = 'flex';
+    for (const id of ['#q', '#go', '#al']) $(id).disabled = false;
+    hexpad.style.height = Math.ceil(bytes.length / W) * ROW + 'px';
+    hexwrap.scrollTop = 0; drawStrip(); render(); setTab('info');
+    status(name + ' — ' + bytes.length.toLocaleString() + ' bytes' + (identify(bytes) ? ' — looks like: ' + identify(bytes) : ''));
+  }
+  function status(t) { $('#status').textContent = t; }
+
+  function render() {
+    if (!bytes) return;
+    const top = Math.floor(hexwrap.scrollTop / ROW), vis = Math.ceil(hexwrap.clientHeight / ROW) + 2;
+    const first = Math.max(0, top - 2), last = Math.min(Math.ceil(bytes.length / W), top + vis);
+    hexEl.style.top = first * ROW + 'px';
+    let html = '';
+    for (let r = first; r < last; r++) {
+      const o = r * W; let hs = '', as = '';
+      for (let i = 0; i < W; i++) {
+        const p = o + i;
+        if (p >= bytes.length) { hs += '   '; continue; }
+        const c = bytes[p]; let cls = 'b' + (c === 0 ? ' z' : '');
+        if (hitSet.has(p)) cls += ' hit';
+        if (sel && p >= sel.o && p < sel.o + sel.n) cls += ' sel';
+        hs += '<span class="' + cls + '" data-o="' + p + '">' + hx(c, 2) + '</span> ';
+        as += c >= 32 && c < 127 ? esc(String.fromCharCode(c)) : '·';
+      }
+      html += '<div class="row"><span class="off">' + hx(o, 8) + '</span>  ' + hs + '<span class="asc">' + as + '</span></div>';
+    }
+    hexEl.innerHTML = html;
+  }
+  hexwrap.addEventListener('scroll', render);
+  window.addEventListener('resize', () => { drawStrip(); render(); });
+  hexEl.addEventListener('click', (e) => { const t = e.target.closest('.b'); if (t) select(+t.dataset.o, 1); });
+
+  function select(o, n, noScroll) {
+    sel = {o, n}; render(); if (!noScroll) ensureVisible(o); setTab('insp');
+  }
+  function ensureVisible(o) {
+    const y = Math.floor(o / W) * ROW;
+    if (y < hexwrap.scrollTop || y > hexwrap.scrollTop + hexwrap.clientHeight - 2 * ROW) hexwrap.scrollTop = Math.max(0, y - 3 * ROW);
+  }
+
+  function drawStrip() {
+    const dpr = window.devicePixelRatio || 1, w = strip.clientWidth, h = strip.clientHeight;
+    strip.width = w * dpr; strip.height = h * dpr;
+    const g = strip.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
+    if (!bytes) return;
+    for (const b of blocks) { g.fillStyle = KC[b.kind]; g.fillRect(b.start / bytes.length * w, 0, Math.max(1, (b.end - b.start) / bytes.length * w + 0.5), h - 8); }
+    g.fillStyle = '#ffb454';
+    for (const h2 of hits) g.fillRect(h2.offset / bytes.length * w, h - 8, 2, 8);
+    if (sel) { g.fillStyle = '#fff'; g.fillRect(sel.o / bytes.length * w, 0, 2, h); }
+  }
+  strip.addEventListener('click', (e) => {
+    if (!bytes) return; const o = Math.floor(e.offsetX / strip.clientWidth * bytes.length);
+    hexwrap.scrollTop = Math.floor(o / W) * ROW; select(Math.min(o, bytes.length - 1), 1, true);
+  });
+
+  function setTab(t) {
+    tab = t; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); renderPane();
+  }
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+
+  function renderPane() {
+    if (!bytes) return;
+    if (tab === 'insp') {
+      if (!sel) { pane.innerHTML = '<p class="help">Click any byte to see every interpretation: ints, floats, timestamps, text — both endiannesses.</p>'; return; }
+      const rows = interpretAt(bytes, sel.o);
+      pane.innerHTML = '<p><b>Offset ' + sel.o + '</b> <span class="help">(0x' + hx(sel.o, 1) + ')</span></p><table>' + rows.map(r =>
+        '<tr><td class="k">' + r.type + '</td><td>' + esc(r.text) + (r.dates.length ? '<br><span style="color:var(--ok)">📅 ' + r.dates.map(esc).join('<br>📅 ') + '</span>' : '') + '</td></tr>').join('') + '</table>';
+    } else if (tab === 'res') {
+      if (!hits.length) { pane.innerHTML = '<p class="help">No results yet. Try <code>1700000000..1800000000</code>, <code>37.77~0.05</code>, <code>date:2023-01-01..2024-12-31</code>, <code>hex:50 4b 03 04</code> or <code>text:password</code>.</p>'; return; }
+      pane.innerHTML = '<p class="help">' + hits.length + ' hit(s). Click to jump.</p><table>' + hits.map((h, i) =>
+        '<tr class="click" data-i="' + i + '"><td class="k">0x' + hx(h.offset, 1) + '</td><td>' + h.type + (h.size > 1 && h.value !== null ? (h.le ? ' LE' : ' BE') : '') + '</td><td>' +
+        (h.value === null ? h.size + ' bytes' : esc(String(Number(h.value.toPrecision(9))))) + (h.label && h.value !== null ? ' <span class="help">' + h.label + '</span>' : '') + '</td></tr>').join('') + '</table>';
+      pane.querySelectorAll('tr.click').forEach(tr => tr.onclick = () => { const h = hits[+tr.dataset.i]; select(h.offset, h.size); });
+    } else if (tab === 'str') {
+      if (!strings) { strings = findStrings(bytes, 5); }
+      pane.innerHTML = '<p class="help">' + strings.length + ' string(s), incl. length-prefixed ones (the kind <code>strings</code> misses).</p><table>' + strings.slice(0, 1500).map((s, i) =>
+        '<tr class="click" data-i="' + i + '"><td class="k">0x' + hx(s.offset, 1) + '<br>' + s.kind + '</td><td>' + esc(s.text) + '</td></tr>').join('') + '</table>';
+      pane.querySelectorAll('tr.click').forEach(tr => tr.onclick = () => { const s = strings[+tr.dataset.i]; select(s.offset, s.len); });
+    } else {
+      const counts = {}; for (const b of blocks) counts[b.kind] = (counts[b.kind] || 0) + (b.end - b.start);
+      const mg = scanMagics(bytes, 30);
+      pane.innerHTML = '<table><tr><td class="k">name</td><td>' + esc(fname) + '</td></tr><tr><td class="k">size</td><td>' + bytes.length.toLocaleString() + ' bytes</td></tr>' +
+        '<tr><td class="k">type</td><td>' + (identify(bytes) || 'unknown (no known magic number)') + '</td></tr></table>' +
+        '<p><b>Structure map</b> <span class="help">(top strip)</span></p><table>' + Object.keys(counts).map(k =>
+          '<tr><td class="k"><span style="color:' + KC[k] + '">■</span> ' + k + '</td><td>' + (counts[k] / bytes.length * 100).toFixed(1) + '%</td></tr>').join('') + '</table>' +
+        '<p><b>Embedded signatures</b></p>' + (mg.length ? '<table>' + mg.map(m => '<tr class="click" data-o="' + m.offset + '"><td class="k">0x' + hx(m.offset, 1) + '</td><td>' + m.name + '</td></tr>').join('') + '</table>' : '<p class="help">None found past offset 0.</p>');
+      pane.querySelectorAll('tr.click').forEach(tr => tr.onclick = () => select(+tr.dataset.o, 4));
+    }
+  }
+
+  function doSearch() {
+    if (!bytes) return;
+    let q; try { q = parseQuery($('#q').value); } catch (e) { setTab('res'); pane.innerHTML = '<p class="err">' + esc(e.message) + '</p>'; return; }
+    status('Searching…');
+    setTimeout(() => {
+      const t0 = performance.now();
+      const r = search(bytes, q, {align: $('#al').value === 'natural' ? 'natural' : 1, limit: 3000});
+      hits = r.hits; hitSet = new Map();
+      for (const h of hits) for (let i = 0; i < h.size; i++) hitSet.set(h.offset + i, h);
+      drawStrip(); render(); setTab('res');
+      status(hits.length + ' hit(s)' + (r.truncated ? ' (truncated — narrow your range or use natural alignment)' : '') + ' in ' + Math.round(performance.now() - t0) + ' ms');
+      if (hits.length) { hexwrap.scrollTop = Math.floor(hits[0].offset / W) * ROW; render(); }
+    }, 10);
+  }
+  $('#go').onclick = doSearch;
+  $('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+
+  function loadFile(f) {
+    const rd = new FileReader();
+    rd.onerror = () => alert('Could not read file: ' + (rd.error && rd.error.message));
+    rd.onload = () => load(new Uint8Array(rd.result), f.name);
+    rd.readAsArrayBuffer(f);
+  }
+  $('#open').onclick = () => $('#file').click();
+  $('#file').onchange = (e) => { if (e.target.files[0]) loadFile(e.target.files[0]); };
+  const drop = $('#drop');
+  for (const el of [document.body]) {
+    el.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+    el.addEventListener('dragleave', () => drop.classList.remove('over'));
+    el.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+  }
+
+  // Built-in demo: a made-up "save game" record file with hidden timestamps, floats and strings.
+  function demoFile() {
+    const b = new Uint8Array(2048), dv = new DataView(b.buffer);
+    b.set([0x53, 0x41, 0x56, 0x45], 0); dv.setUint32(4, 3, true); dv.setUint32(8, 1717243200, true); // 2024-06-01T12:00:00Z
+    const name = 'Aria the Bold'; b[16] = name.length; for (let i = 0; i < name.length; i++) b[17 + i] = name.charCodeAt(i);
+    dv.setFloat32(64, 37.7749, true); dv.setFloat32(68, -122.4194, true); dv.setInt32(72, 48210, true);
+    dv.setBigUint64(96, BigInt(1717243200000), true);           // same instant, ms
+    dv.setBigUint64(104, (BigInt(1717243200000) + BigInt(EPOCH_FILETIME_MS)) * 10000n, true); // FILETIME
+    dv.setFloat64(112, 1717243200 - COCOA_OFFSET_S, true);       // Cocoa seconds
+    const msg = 'last_checkpoint=forest_gate'; dv.setUint16(160, msg.length, true); for (let i = 0; i < msg.length; i++) b[162 + i] = msg.charCodeAt(i);
+    let x = 12345; for (let i = 1024; i < 2048; i++) { x = (x * 1103515245 + 12345) & 0x7fffffff; b[i] = (x >> 8) & 255; }
+    return b;
+  }
+  $('#demo').onclick = () => load(demoFile(), 'demo.sav');
+  window.__hexlens = {load};
+})();
+</script>
+</body>
+</html>

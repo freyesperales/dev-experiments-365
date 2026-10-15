@@ -43,5 +43,10 @@
     "n": 73,
     "slug": "plainly",
     "hook": "Paste a letter, see exactly what makes it hard to read, and fix it \u2014 EN/ES/DE, offline, no AI."
+  },
+  {
+    "n": 74,
+    "slug": "hexlens",
+    "hook": "Search any binary file by value \u2014 int/float ranges and timestamps in any encoding \u2014 not just exact bytes."
   }
 ]
