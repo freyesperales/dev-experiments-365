@@ -48,5 +48,10 @@
     "n": 74,
     "slug": "hexlens",
     "hook": "Search any binary file by value \u2014 int/float ranges and timestamps in any encoding \u2014 not just exact bytes."
+  },
+  {
+    "n": 75,
+    "slug": "cachebreak",
+    "hook": "Drop in a Claude Code session log and see the exact turn where your prompt cache broke, what changed, and what it cost."
   }
 ]

@@ -1,5 +1,5 @@
 {
-  "last_number": 74,
+  "last_number": 75,
   "entries": [
     {
       "n": 1,
@@ -600,6 +600,15 @@
       "mode": "monorepo",
       "status": "completed",
       "note": "built by the routine on 2026-10-15; published 2026-10-22 (push had failed: GitHub access)"
+    },
+    {
+      "n": 75,
+      "date": "2026-10-16",
+      "title": "CacheBreak — finds the exact turn where your Claude Code prompt cache broke, why (model switch, TTL, compaction, tool change), where the prefix diverged and what it cost; single-file offline web tool + zero-dep CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-075",
+      "mode": "monorepo",
+      "status": "completed",
+      "note": "built by the routine on 2026-10-16; published 2026-10-22 (push had failed: GitHub access)"
     }
   ]
 }

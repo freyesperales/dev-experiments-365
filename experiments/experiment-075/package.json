@@ -1,0 +1,8 @@
+{
+  "name": "cachebreak",
+  "version": "1.0.0",
+  "description": "Find the exact turn where your Claude Code prompt cache broke, why, and what it cost.",
+  "bin": { "cachebreak": "cachebreak.js" },
+  "scripts": { "test": "node --test test/core.test.js", "build": "node build.js", "start": "node cachebreak.js" },
+  "license": "MIT"
+}

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CacheBreak — why did this turn cost 12x?</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1c1c1a;--mut:#6b6b64;--card:#fff;--bd:#e3e3dc;--read:#2f9e6b;--write:#e8912d;--inp:#b9b9b0;--bad:#d6402f;--acc:#3b5bdb}
+@media(prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecece6;--mut:#9a9a90;--card:#202020;--bd:#33332f;--read:#4cc38a;--write:#f0a24b;--inp:#5d5d56;--bad:#ff6b57;--acc:#8aa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:28px 16px 60px}h1{font-size:28px;margin:0}h1 span{color:var(--bad)}
+.sub{color:var(--mut);margin:4px 0 20px}
+#drop{border:2px dashed var(--bd);border-radius:12px;padding:30px;text-align:center;background:var(--card);cursor:pointer}
+#drop.over{border-color:var(--acc)}#drop b{display:block;font-size:17px}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.tile{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}
+.tile small{color:var(--mut);display:block}.tile strong{font-size:24px}.tile.bad strong{color:var(--bad)}
+.panel{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:14px 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--mut);font-size:13px;margin-bottom:6px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+svg{width:100%;height:auto;display:block}
+.brk{border-left:4px solid var(--bad);padding:6px 12px;margin:10px 0}.brk h3{margin:0;font-size:16px}
+.brk ul{margin:4px 0 0;padding-left:18px;color:var(--mut)}.tag{font-size:12px;border:1px solid var(--bd);border-radius:20px;padding:0 7px}
+.prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;font-size:13px}
+.prices input{width:64px;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:5px;padding:1px 4px}
+#tip{position:fixed;pointer-events:none;background:#000d;color:#fff;font-size:12px;padding:5px 8px;border-radius:6px;display:none;white-space:pre}
+footer{color:var(--mut);font-size:13px;margin-top:30px}.hide{display:none}
+</style></head><body><main>
+<h1>Cache<span>Break</span></h1>
+<p class="sub">Drop a Claude Code session log. It pins the turn where your prompt cache broke, what changed, and what it cost. Runs entirely in your browser — nothing is uploaded.</p>
+<div id="drop" tabindex="0"><b>Drop a session .jsonl here</b><span class="sub">or click to choose · logs live in ~/.claude/projects/&lt;project&gt;/</span><br><br>
+<button id="sample" type="button">Try a sample session</button></div><input id="file" type="file" accept=".jsonl,.json,.txt" class="hide">
+<div id="err" class="panel hide" style="border-color:var(--bad)"></div>
+<div id="out" class="hide">
+<div class="tiles" id="tiles"></div>
+<div class="panel"><div class="legend"><span><i style="background:var(--read)"></i>cache read (cheap)</span><span><i style="background:var(--write)"></i>cache write</span><span><i style="background:var(--inp)"></i>uncached input</span><span><i style="background:var(--bad)"></i>▼ cache break</span></div><div id="chart"></div></div>
+<h2>Cache breaks</h2><div id="breaks"></div>
+<div class="panel"><b>Prices (USD per million tokens)</b> — illustrative defaults, edit to match your plan<div class="prices" id="prices"></div></div>
+<p><button id="copy" type="button">Copy as Markdown</button> <span id="copied" class="sub"></span></p>
+</div>
+<footer>Estimates come from the <code>usage</code> fields in the log. A cause tagged <i>unexplained</i> means the log holds no signal for it — treat causes as ranked evidence, not proof. Development Experiment 075 of dev-experiments-365 · MIT</footer>
+<div id="tip"></div>
+</main>
+<script>/* cachebreak core — pure, dependency-free, runs in Node and the browser. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CacheBreak = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // USD per million tokens. ILLUSTRATIVE DEFAULTS — editable in the UI / --prices.
+  // cacheWrite5m / cacheWrite1h / cacheRead follow Anthropic's 1.25x / 2x / 0.1x multipliers.
+  function mk(i, o) { return { input: i, output: o, cacheWrite5m: i * 1.25, cacheWrite1h: i * 2, cacheRead: i * 0.1 }; }
+  const DEFAULT_PRICES = { opus: mk(15, 75), sonnet: mk(3, 15), haiku: mk(1, 5) };
+
+  const TTL_5M = 300, TTL_1H = 3600;
+  const PREFIX_ATTACHMENTS = {
+    deferred_tools_delta: 'tool set changed',
+    mcp_instructions_delta: 'MCP server instructions changed',
+    skill_listing: 'skill list changed',
+    agent_listing_delta: 'agent list changed',
+  };
+
+  function family(model) {
+    const m = String(model || '').toLowerCase();
+    if (m.includes('opus')) return 'opus';
+    if (m.includes('haiku')) return 'haiku';
+    if (m.includes('sonnet') || m.includes('fable')) return 'sonnet';
+    return 'sonnet';
+  }
+
+  function parseJsonl(text) {
+    const entries = []; let bad = 0;
+    for (const line of String(text).split(/\r?\n/)) {
+      if (!line.trim()) continue;
+      try { const d = JSON.parse(line); if (d && typeof d === 'object' && !Array.isArray(d)) entries.push(d); else bad++; }
+      catch (e) { bad++; }
+    }
+    return { entries, bad };
+  }
+
+  const num = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 ? v : 0);
+  const ts = (e) => { const t = Date.parse(e.timestamp); return isNaN(t) ? null : t / 1000; };
+
+  /**
+   * Turn entries into API turns. Claude Code writes one JSONL line per content block, each
+   * repeating the same usage block, so lines are de-duplicated by message.id.
+   * Sub-agent (isSidechain) turns have their own prefix and are accounted separately.
+   */
+  function extract(entries) {
+    const turns = [], byId = new Map(), side = { turns: 0, cacheRead: 0, cacheWrite: 0, input: 0, output: 0 };
+    let pending = []; // events between assistant turns: {kind, detail}
+    let lastVersion = null, skippedSynthetic = 0;
+    for (const e of entries) {
+      if (e.type === 'system' && e.subtype === 'compact_boundary') pending.push({ kind: 'compact', detail: 'conversation compacted' });
+      else if (e.type === 'user' && e.isCompactSummary) pending.push({ kind: 'compact', detail: 'conversation compacted' });
+      else if (e.type === 'attachment' && e.attachment && PREFIX_ATTACHMENTS[e.attachment.type] && !e.isSidechain)
+        pending.push({ kind: 'prefix', detail: PREFIX_ATTACHMENTS[e.attachment.type] });
+      if (e.type !== 'assistant' || !e.message || !e.message.usage) continue;
+      const m = e.message, u = m.usage;
+      if (m.model === '<synthetic>' || e.isApiErrorMessage) { skippedSynthetic++; continue; }
+      const id = m.id || e.requestId || e.uuid;
+      if (byId.has(id)) { const t = byId.get(id); const x = ts(e); if (x !== null) t.tEnd = x; continue; }
+      const cc = u.cache_creation || {};
+      let w5 = num(cc.ephemeral_5m_input_tokens), w1 = num(cc.ephemeral_1h_input_tokens);
+      const cw = num(u.cache_creation_input_tokens);
+      if (w5 + w1 === 0) w5 = cw; else if (w5 + w1 < cw) w5 += cw - (w5 + w1);
+      const t = {
+        id, model: m.model || 'unknown', input: num(u.input_tokens), cacheWrite: Math.max(cw, w5 + w1), w5, w1,
+        cacheRead: num(u.cache_read_input_tokens), output: num(u.output_tokens),
+        t: ts(e), tEnd: ts(e), version: e.version || null, sidechain: !!e.isSidechain, events: [],
+      };
+      byId.set(id, t);
+      if (t.sidechain) {
+        side.turns++; side.cacheRead += t.cacheRead; side.cacheWrite += t.cacheWrite; side.input += t.input; side.output += t.output;
+        continue;
+      }
+      t.events = pending; pending = [];
+      if (t.version && lastVersion && t.version !== lastVersion) t.events.push({ kind: 'version', detail: `client ${lastVersion} → ${t.version}` });
+      if (t.version) lastVersion = t.version;
+      turns.push(t);
+    }
+    turns.forEach((t, i) => { t.index = i + 1; t.prompt = t.input + t.cacheWrite + t.cacheRead; });
+    return { turns, sidechain: side, skippedSynthetic };
+  }
+
+  function cost(t, prices) {
+    const p = (prices || DEFAULT_PRICES)[family(t.model)] || DEFAULT_PRICES.sonnet;
+    return (t.input * p.input + t.output * p.output + t.w5 * p.cacheWrite5m + t.w1 * p.cacheWrite1h + t.cacheRead * p.cacheRead) / 1e6;
+  }
+
+  function fmtDur(s) {
+    if (s < 90) return Math.round(s) + 's';
+    if (s < 5400) return Math.round(s / 60) + ' min';
+    return (s / 3600).toFixed(1) + ' h';
+  }
+
+  /**
+   * A turn is a BREAK when the previous turn's whole prompt should have been a cache hit
+   * (it was written to cache) but this turn read much less of it back.
+   * lost = tokens of the previous prompt that were not read from cache (re-billed at write price).
+   */
+  function analyze(entries, opts) {
+    opts = opts || {};
+    const prices = opts.prices || DEFAULT_PRICES;
+    const minLost = opts.minLost == null ? 2000 : opts.minLost;
+    const minFrac = opts.minFrac == null ? 0.2 : opts.minFrac;
+    const { turns, sidechain, skippedSynthetic } = extract(entries);
+    const breaks = [];
+    let total = 0, totalRead = 0, totalPrompt = 0, wasted = 0;
+    turns.forEach((t, i) => {
+      t.cost = cost(t, prices); total += t.cost; totalRead += t.cacheRead; totalPrompt += t.prompt;
+      t.gap = null; t.break = null;
+      if (i === 0) return;
+      const prev = turns[i - 1];
+      if (t.t !== null && prev.tEnd !== null) t.gap = Math.max(0, t.t - prev.tEnd);
+      const expected = prev.prompt;
+      const lost = Math.max(0, expected - t.cacheRead);
+      if (lost < minLost || lost < expected * minFrac) return;
+      const p = (prices[family(t.model)] || DEFAULT_PRICES.sonnet);
+      // Re-written tokens cost write price instead of read price; use the 5m/1h mix actually billed.
+      const wPrice = t.cacheWrite ? (t.w5 * p.cacheWrite5m + t.w1 * p.cacheWrite1h) / t.cacheWrite : p.cacheWrite5m;
+      const waste = lost * (wPrice - p.cacheRead) / 1e6;
+      const causes = [];
+      if (t.model !== prev.model) causes.push({ cause: 'model-switch', confidence: 'high', detail: `${prev.model} → ${t.model} (cache is per-model)` });
+      const ttl = prev.w1 > prev.w5 ? TTL_1H : TTL_5M;
+      if (t.gap !== null && t.gap > ttl) causes.push({ cause: 'ttl-expiry', confidence: 'high', detail: `idle ${fmtDur(t.gap)} > ${ttl === TTL_1H ? '1 h' : '5 min'} cache TTL` });
+      for (const ev of t.events) {
+        if (ev.kind === 'compact') causes.push({ cause: 'compaction', confidence: 'high', detail: ev.detail });
+        else if (ev.kind === 'version') causes.push({ cause: 'client-upgrade', confidence: 'medium', detail: ev.detail });
+        else if (ev.kind === 'prefix') causes.push({ cause: 'prefix-change', confidence: 'medium', detail: ev.detail });
+      }
+      if (!causes.length) causes.push({ cause: 'unexplained', confidence: 'low', detail: 'no model/TTL/compaction/client signal in the log — prefix edited upstream (system prompt, tool schemas, CLAUDE.md) or server-side eviction' });
+      // Where the prefix diverged: cache read stops at the first changed token (rounded to a cache block).
+      const diverge = t.cacheRead;
+      const where = diverge === 0 ? 'the very start of the prompt (system prompt / tool definitions)'
+        : `≈ token ${diverge.toLocaleString('en-US')} of ${expected.toLocaleString('en-US')}`;
+      const b = { turn: t.index, lost, expected, read: t.cacheRead, waste, gap: t.gap, divergedAt: diverge, where, causes, primary: causes[0].cause };
+      t.break = b; breaks.push(b); wasted += waste;
+    });
+    const hit = totalPrompt ? totalRead / totalPrompt : null;
+    return {
+      turns, breaks, sidechain, skippedSynthetic,
+      summary: { turns: turns.length, hitRate: hit, cost: total, wasted, breaks: breaks.length, models: [...new Set(turns.map(t => t.model))] },
+    };
+  }
+
+  function money(x) { return '$' + (x < 10 ? x.toFixed(2) : x.toFixed(0)); }
+
+  function toMarkdown(r) {
+    const s = r.summary, L = [];
+    L.push('# CacheBreak report', '');
+    L.push(`- Turns: ${s.turns} · cache hit rate: ${s.hitRate === null ? 'n/a' : (s.hitRate * 100).toFixed(1) + '%'} · est. cost: ${money(s.cost)} · wasted on cache breaks: **${money(s.wasted)}**`);
+    L.push('', r.breaks.length ? '| Turn | Lost tokens | Wasted | Cause | Diverged at |' : '_No cache breaks detected._');
+    if (r.breaks.length) {
+      L.push('|---|---|---|---|---|');
+      for (const b of r.breaks) L.push(`| ${b.turn} | ${b.lost.toLocaleString('en-US')} | ${money(b.waste)} | ${b.causes.map(c => c.cause).join(' + ')} | ${b.where} |`);
+    }
+    L.push('', '_Prices are illustrative defaults; edit them to match your plan._');
+    return L.join('\n');
+  }
+
+  function ascii(r, width) {
+    width = width || 50;
+    const max = Math.max(1, ...r.turns.map(t => t.prompt));
+    return r.turns.map(t => {
+      const n = (x) => Math.round(x / max * width);
+      const rd = n(t.cacheRead), wr = n(t.cacheWrite), inp = Math.max(0, n(t.prompt) - rd - wr);
+      return String(t.index).padStart(3) + ' ' + '█'.repeat(rd) + '▒'.repeat(wr) + '░'.repeat(inp) + (t.break ? '  ◄ BREAK ' + t.break.primary : '');
+    }).join('\n');
+  }
+
+  return { analyze, extract, parseJsonl, toMarkdown, ascii, family, DEFAULT_PRICES, money, fmtDur };
+});
+</script>
+<script>
+const SAMPLE = "{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:00:20.000Z\",\"message\":{\"id\":\"msg_1\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":18000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:00:20.000Z\",\"message\":{\"id\":\"msg_1\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":18000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:00:20.000Z\",\"message\":{\"id\":\"msg_1\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":18000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:00:40.000Z\",\"message\":{\"id\":\"msg_2\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":19503,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:00:40.000Z\",\"message\":{\"id\":\"msg_2\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":19503,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:00:40.000Z\",\"message\":{\"id\":\"msg_2\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":19503,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:00.000Z\",\"message\":{\"id\":\"msg_3\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":21006,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:00.000Z\",\"message\":{\"id\":\"msg_3\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":21006,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:00.000Z\",\"message\":{\"id\":\"msg_3\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":21006,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:20.000Z\",\"message\":{\"id\":\"msg_4\",\"model\":\"claude-opus-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":24006,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":24006,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:20.000Z\",\"message\":{\"id\":\"msg_4\",\"model\":\"claude-opus-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":24006,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":24006,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:20.000Z\",\"message\":{\"id\":\"msg_4\",\"model\":\"claude-opus-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":24006,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":24006,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:40.000Z\",\"message\":{\"id\":\"msg_5\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":24012,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:40.000Z\",\"message\":{\"id\":\"msg_5\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":24012,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:01:40.000Z\",\"message\":{\"id\":\"msg_5\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":24012,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:02:00.000Z\",\"message\":{\"id\":\"msg_6\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":25515,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:02:00.000Z\",\"message\":{\"id\":\"msg_6\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":25515,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:02:00.000Z\",\"message\":{\"id\":\"msg_6\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":25515,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:00.000Z\",\"message\":{\"id\":\"msg_7\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":28515,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":28515,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:00.000Z\",\"message\":{\"id\":\"msg_7\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":28515,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":28515,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:00.000Z\",\"message\":{\"id\":\"msg_7\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":28515,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":28515,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:20.000Z\",\"message\":{\"id\":\"msg_8\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":28521,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:20.000Z\",\"message\":{\"id\":\"msg_8\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":28521,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:20.000Z\",\"message\":{\"id\":\"msg_8\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":28521,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"system\",\"subtype\":\"compact_boundary\",\"timestamp\":\"2026-10-01T09:17:20.000Z\"}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:40.000Z\",\"message\":{\"id\":\"msg_9\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10497,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:40.000Z\",\"message\":{\"id\":\"msg_9\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10497,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:17:40.000Z\",\"message\":{\"id\":\"msg_9\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10497,\"cache_read_input_tokens\":0,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:00.000Z\",\"message\":{\"id\":\"msg_10\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":10503,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:00.000Z\",\"message\":{\"id\":\"msg_10\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":10503,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:00.000Z\",\"message\":{\"id\":\"msg_10\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":10503,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:20.000Z\",\"message\":{\"id\":\"msg_11\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":12006,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:20.000Z\",\"message\":{\"id\":\"msg_11\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":12006,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:20.000Z\",\"message\":{\"id\":\"msg_11\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":12006,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"attachment\",\"attachment\":{\"type\":\"deferred_tools_delta\"},\"timestamp\":\"2026-10-01T09:18:20.000Z\"}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:40.000Z\",\"message\":{\"id\":\"msg_12\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10006,\"cache_read_input_tokens\":5000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10006,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:40.000Z\",\"message\":{\"id\":\"msg_12\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10006,\"cache_read_input_tokens\":5000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10006,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:18:40.000Z\",\"message\":{\"id\":\"msg_12\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10006,\"cache_read_input_tokens\":5000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10006,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:00.000Z\",\"message\":{\"id\":\"msg_13\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":15012,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:00.000Z\",\"message\":{\"id\":\"msg_13\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":15012,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:00.000Z\",\"message\":{\"id\":\"msg_13\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":15012,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:20.000Z\",\"message\":{\"id\":\"msg_14\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10012,\"cache_read_input_tokens\":8000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10012,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:20.000Z\",\"message\":{\"id\":\"msg_14\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10012,\"cache_read_input_tokens\":8000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10012,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:20.000Z\",\"message\":{\"id\":\"msg_14\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":10012,\"cache_read_input_tokens\":8000,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":10012,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:40.000Z\",\"message\":{\"id\":\"msg_15\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":18018,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:40.000Z\",\"message\":{\"id\":\"msg_15\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":18018,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n{\"type\":\"assistant\",\"isSidechain\":false,\"version\":\"2.1.0\",\"timestamp\":\"2026-10-01T09:19:40.000Z\",\"message\":{\"id\":\"msg_15\",\"model\":\"claude-sonnet-5-5\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\"}],\"usage\":{\"input_tokens\":3,\"cache_creation_input_tokens\":1497,\"cache_read_input_tokens\":18018,\"output_tokens\":200,\"cache_creation\":{\"ephemeral_5m_input_tokens\":1497,\"ephemeral_1h_input_tokens\":0}}}}\n";
+const $ = id => document.getElementById(id);
+let entries = [], prices = JSON.parse(JSON.stringify(CacheBreak.DEFAULT_PRICES)), last = null;
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function showErr(m){const e=$('err');e.textContent=m;e.classList.toggle('hide',!m)}
+function load(text){
+  const p = CacheBreak.parseJsonl(text); entries = p.entries;
+  const r = CacheBreak.analyze(entries,{prices});
+  if(!r.turns.length){$('out').classList.add('hide');showErr('No assistant turns with token usage found'+(p.bad?` (${p.bad} unparseable lines)`:'')+'. Is this a Claude Code session .jsonl?');return}
+  showErr(p.bad?`${p.bad} unparseable line(s) skipped.`:''); if(p.bad) $('err').classList.remove('hide');
+  last = r; render(r);
+}
+function render(r){
+  const s=r.summary,M=CacheBreak.money;
+  $('out').classList.remove('hide');
+  $('tiles').innerHTML=[['Turns',s.turns],['Cache hit rate',s.hitRate==null?'n/a':(s.hitRate*100).toFixed(1)+'%'],['Est. cost',M(s.cost)],['Wasted on breaks',M(s.wasted),'bad'],['Breaks',s.breaks,s.breaks?'bad':'']]
+    .map(t=>`<div class="tile ${t[2]||''}"><small>${t[0]}</small><strong>${t[1]}</strong></div>`).join('');
+  chart(r);
+  $('breaks').innerHTML=r.breaks.length?r.breaks.map(b=>`<div class="brk"><h3>Turn ${b.turn} — ${b.lost.toLocaleString('en-US')} of ${b.expected.toLocaleString('en-US')} prefix tokens re-billed (~${M(b.waste)})</h3><div class="sub" style="margin:0">Prefix diverged at ${esc(b.where)}</div><ul>${b.causes.map(c=>`<li><span class="tag">${c.confidence}</span> <b>${esc(c.cause)}</b> — ${esc(c.detail)}</li>`).join('')}</ul></div>`).join(''):'<div class="panel">No cache breaks detected. 🎉</div>';
+  $('prices').innerHTML=Object.keys(prices).map(f=>`<div><b>${f}</b> in <input data-f="${f}" data-k="input" value="${prices[f].input}"> out <input data-f="${f}" data-k="output" value="${prices[f].output}"></div>`).join('');
+}
+function chart(r){
+  const W=940,H=240,L=8,B=22,T=14,n=r.turns.length,max=Math.max(1,...r.turns.map(t=>t.prompt));
+  const bw=(W-L*2)/n,g=Math.min(2,bw*.15);let o=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Per-turn prompt composition">`;
+  r.turns.forEach((t,i)=>{
+    const x=L+i*bw,h=v=>v/max*(H-B-T);let y=H-B;
+    for(const [v,c] of [[t.cacheRead,'--read'],[t.cacheWrite,'--write'],[t.input,'--inp']]){const hh=h(v);y-=hh;o+=`<rect x="${x+g/2}" y="${y}" width="${Math.max(1,bw-g)}" height="${hh}" fill="var(${c})" data-i="${i}"/>`}
+    if(t.break)o+=`<text x="${x+bw/2}" y="${T-3}" text-anchor="middle" fill="var(--bad)" font-size="13">▼</text>`;
+  });
+  o+=`<text x="${L}" y="${H-5}" fill="var(--mut)" font-size="11">turn 1</text><text x="${W-L}" y="${H-5}" text-anchor="end" fill="var(--mut)" font-size="11">turn ${n}</text></svg>`;
+  $('chart').innerHTML=o;
+  const tip=$('tip');
+  $('chart').onmousemove=e=>{const i=e.target.dataset&&e.target.dataset.i;if(i==null){tip.style.display='none';return}
+    const t=r.turns[i];tip.textContent=`turn ${t.index} · ${t.model}\nread ${t.cacheRead.toLocaleString('en-US')} · write ${t.cacheWrite.toLocaleString('en-US')} · new ${t.input.toLocaleString('en-US')}\n`+(t.gap!=null?'gap '+CacheBreak.fmtDur(t.gap)+' · ':'')+CacheBreak.money(t.cost)+(t.break?'\nBREAK: '+t.break.primary:'');
+    tip.style.display='block';tip.style.left=e.clientX+12+'px';tip.style.top=e.clientY+12+'px'};
+  $('chart').onmouseleave=()=>tip.style.display='none';
+}
+$('prices').addEventListener('change',e=>{const f=e.target.dataset.f;if(!f)return;const v=parseFloat(e.target.value);if(!(v>=0)){e.target.value=prices[f][e.target.dataset.k];return}
+  const p=prices[f];p[e.target.dataset.k]=v;p.cacheWrite5m=p.input*1.25;p.cacheWrite1h=p.input*2;p.cacheRead=p.input*.1;render(CacheBreak.analyze(entries,{prices}));last=CacheBreak.analyze(entries,{prices})});
+function readFile(f){const rd=new FileReader();rd.onload=()=>load(String(rd.result));rd.onerror=()=>showErr('Could not read that file.');rd.readAsText(f)}
+const drop=$('drop'),fi=$('file');
+drop.onclick=e=>{if(e.target.id!=='sample')fi.click()};drop.onkeydown=e=>{if(e.key==='Enter')fi.click()};
+fi.onchange=()=>fi.files[0]&&readFile(fi.files[0]);
+['dragover','dragenter'].forEach(v=>drop.addEventListener(v,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(v=>drop.addEventListener(v,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];f&&readFile(f)});
+$('sample').onclick=()=>load(SAMPLE);
+if(location.hash==='#sample')load(SAMPLE);
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(CacheBreak.toMarkdown(last));$('copied').textContent='Copied.'}catch(e){$('copied').textContent='Clipboard blocked — select the table manually.'}};
+</script></body></html>
