@@ -1,0 +1,9 @@
+{
+  "name": "stacklens",
+  "version": "1.0.0",
+  "description": "See your stacked-PR branch chain, spot drift, get the rebase commands. Zero deps, read-only.",
+  "bin": { "stacklens": "bin/stacklens.js" },
+  "scripts": { "test": "node --test test/*.test.js", "demo": "node bin/stacklens.js" },
+  "license": "MIT",
+  "engines": { "node": ">=18" }
+}

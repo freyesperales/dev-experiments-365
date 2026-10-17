@@ -1,5 +1,5 @@
 {
-  "last_number": 75,
+  "last_number": 76,
   "entries": [
     {
       "n": 1,
@@ -609,6 +609,15 @@
       "mode": "monorepo",
       "status": "completed",
       "note": "built by the routine on 2026-10-16; published 2026-10-22 (push had failed: GitHub access)"
+    },
+    {
+      "n": 76,
+      "date": "2026-10-17",
+      "title": "stacklens — read-only stacked-PR branch visualizer: infers the stack from git ancestry + reflog fork-points, flags drift, emits a restack script",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-076",
+      "mode": "monorepo",
+      "status": "completed",
+      "note": "built by the routine on 2026-10-17; published 2026-10-22 (push had failed: GitHub access)"
     }
   ]
 }

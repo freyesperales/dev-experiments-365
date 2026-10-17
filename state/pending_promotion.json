@@ -53,5 +53,10 @@
     "n": 75,
     "slug": "cachebreak",
     "hook": "Drop in a Claude Code session log and see the exact turn where your prompt cache broke, what changed, and what it cost."
+  },
+  {
+    "n": 76,
+    "slug": "stacklens",
+    "hook": "See your stacked-PR branch chain, spot drift, get the rebase commands \u2014 zero deps, read-only."
   }
 ]
