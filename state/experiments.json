@@ -1,5 +1,5 @@
 {
-  "last_number": 76,
+  "last_number": 77,
   "entries": [
     {
       "n": 1,
@@ -618,6 +618,15 @@
       "mode": "monorepo",
       "status": "completed",
       "note": "built by the routine on 2026-10-17; published 2026-10-22 (push had failed: GitHub access)"
+    },
+    {
+      "n": 77,
+      "date": "2026-10-18",
+      "title": "OrderPaste — WhatsApp order chat export → order sheet, pick list & CSV; offline single HTML file + zero-dep CLI (SMB lane)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-077",
+      "mode": "monorepo",
+      "status": "completed",
+      "note": "built by the routine on 2026-10-18; published 2026-10-22 (push had failed: GitHub access)"
     }
   ]
 }

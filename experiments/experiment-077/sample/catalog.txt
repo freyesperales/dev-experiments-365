@@ -1,0 +1,7 @@
+# name | price | aliases (comma separated)
+Empanada de carne | 1.50 | empanadas de carne
+Empanada de pollo | 1.50 | empanadas de pollo
+Torta de chocolate | 18 | torta chocolate, pastel de chocolate
+Alfajor | 1.20 | alfajores
+Café | 2 | cafecito
+Jugo de naranja | 2.50 | jugo naranja, zumo de naranja

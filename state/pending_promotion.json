@@ -58,5 +58,10 @@
     "n": 76,
     "slug": "stacklens",
     "hook": "See your stacked-PR branch chain, spot drift, get the rebase commands \u2014 zero deps, read-only."
+  },
+  {
+    "n": 77,
+    "slug": "orderpaste",
+    "hook": "Turn a WhatsApp order chat into an order sheet, pick list and CSV \u2014 one HTML file, offline, no API."
   }
 ]

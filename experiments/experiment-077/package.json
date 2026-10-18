@@ -1,0 +1,9 @@
+{
+  "name": "orderpaste",
+  "version": "1.0.0",
+  "description": "WhatsApp chat export -> order sheet, pick list and CSV. Offline, single HTML file.",
+  "license": "MIT",
+  "bin": { "orderpaste": "cli.js" },
+  "scripts": { "test": "node --test test/orderpaste.test.js", "start": "node cli.js --demo" },
+  "engines": { "node": ">=18" }
+}

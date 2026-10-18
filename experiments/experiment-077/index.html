@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OrderPaste</title>
+<style>
+:root{--bg:#f6f7f4;--card:#fff;--ink:#1c2420;--mute:#66726b;--line:#dfe4de;--acc:#128c4a;--acc2:#0b6b38;--warn:#b45309;--bad:#b42318;--chip:#e8f3ec}
+@media (prefers-color-scheme:dark){:root{--bg:#121714;--card:#1a211d;--ink:#e6ece8;--mute:#92a099;--line:#2b352f;--acc:#3ecf7e;--acc2:#6ee0a0;--warn:#f0a642;--bad:#ff7a6b;--chip:#20352a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:20px 16px 8px;max-width:1180px;margin:auto}
+h1{margin:0;font-size:26px;letter-spacing:-.5px}
+header p{margin:4px 0 0;color:var(--mute)}
+main{max-width:1180px;margin:auto;padding:8px 16px 40px;display:grid;gap:16px;grid-template-columns:minmax(0,380px) minmax(0,1fr)}
+@media (max-width:860px){main{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:0 0 8px}
+textarea{width:100%;min-height:150px;resize:vertical;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:8px;font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+#drop{border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center;color:var(--mute);margin-bottom:8px;cursor:pointer}
+#drop.over{border-color:var(--acc);color:var(--acc)}
+button,.btn{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:7px 12px;font:600 13px system-ui;cursor:pointer}
+@media (prefers-color-scheme:dark){button,.btn{color:#08130d}}
+button.ghost{background:transparent;color:var(--acc2);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+label.s{font-size:13px;color:var(--mute);display:flex;gap:6px;align-items:center}
+select,input[type=number]{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+input[type=number]{width:64px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px;flex-wrap:wrap}
+.tab{background:none;color:var(--mute);border-radius:8px 8px 0 0;padding:8px 12px}
+.tab.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--acc)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:600;font-size:12px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;background:var(--chip);border-radius:99px;padding:1px 8px;margin:1px 3px 1px 0;font-size:12.5px}
+.chip.f{outline:1px dashed var(--warn)}
+.cancel{opacity:.5;text-decoration:line-through}
+.warn{color:var(--warn)} .bad{color:var(--bad)} .mute{color:var(--mute)}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}
+.stat b{display:block;font-size:22px;letter-spacing:-.5px}
+.stat span{font-size:12px;color:var(--mute)}
+.sug button{margin:2px 4px 2px 0;background:var(--chip);color:var(--ink);border:1px solid var(--line);font-weight:500}
+ul.w{margin:6px 0;padding-left:18px;font-size:13px}
+.empty{padding:40px 10px;text-align:center;color:var(--mute)}
+.senders label{display:block;font-size:13px}
+@media print{header,section.left,.tabs,.row,.noprint{display:none!important}body{background:#fff;color:#000}main{display:block}section{border:0}}
+</style>
+</head>
+<body>
+<header>
+<h1>🧾 OrderPaste</h1>
+<p>Export a WhatsApp chat → get an order sheet, pick list and CSV. Everything runs in this page; nothing is uploaded.</p>
+</header>
+<main>
+<section class="left">
+  <h2>1 · WhatsApp chat</h2>
+  <div id="drop">Drop the exported <b>.txt</b> or <b>.zip</b> here, or click to choose<input id="file" type="file" accept=".txt,.zip,text/plain,application/zip" hidden></div>
+  <textarea id="chat" placeholder="…or paste the chat text here" spellcheck="false"></textarea>
+  <h2 style="margin-top:12px">2 · Your products</h2>
+  <textarea id="catalog" spellcheck="false" placeholder="name | price | alias, alias&#10;Empanada de carne | 1.50 | empanadas de carne"></textarea>
+  <div class="row">
+    <label class="s">Orders from the same person within <input id="gap" type="number" min="1" value="30"> min are merged</label>
+  </div>
+  <div class="row">
+    <label class="s">Dates <select id="dateorder"><option value="auto">auto</option><option value="dmy">DD/MM</option><option value="mdy">MM/DD</option></select></label>
+    <button class="ghost" id="demo">Load demo</button>
+    <button class="ghost" id="clear">Clear</button>
+  </div>
+  <div id="senders" class="senders"></div>
+  <div id="warnings"></div>
+</section>
+<section>
+  <div id="out"><div class="empty">Load the demo to see how it works →</div></div>
+</section>
+</main>
+<script id="core">
+/* OrderPaste core — pure functions, shared by the page, the CLI and the tests. */
+(function (root) {
+'use strict';
+
+var NUMWORDS = {un:1,una:1,uno:1,um:1,uma:1,one:1,dos:2,dois:2,duas:2,two:2,tres:3,three:3,cuatro:4,quatro:4,four:4,
+  cinco:5,five:5,seis:6,six:6,siete:7,sete:7,seven:7,ocho:8,oito:8,eight:8,nueve:9,nove:9,nine:9,diez:10,dez:10,ten:10,
+  once:11,eleven:11,doce:12,twelve:12,quince:15,fifteen:15,veinte:20,vinte:20,twenty:20};
+var DOZEN = {docena:1,docenas:1,dozen:1,dozens:1,duzia:1,duzias:1};
+var FILL = {de:1,del:1,of:1,x:1,por:1,unidades:1,unidad:1,units:1,unit:1,pcs:1,pzs:1,piezas:1,pieza:1,kg:1,kgs:1,
+  kilo:1,kilos:1,lb:1,lbs:1,libra:1,libras:1,g:1,gr:1,l:1,lt:1,litro:1,litros:1,para:1,a:1};
+var STOP = {personas:1,persona:1,people:1,pm:1,am:1,hrs:1,hr:1,horas:1,hora:1,minutos:1,min:1,dias:1,dia:1,pesos:1,peso:1,
+  usd:1,dolares:1,dollars:1,soles:1,reales:1,de:1,la:1,el:1,los:1,las:1,en:1,para:1,por:1,y:1,and:1,que:1,mas:1,menos:1,
+  veces:1,tarde:1,noche:1,manana:1,hoy:1,today:1,tomorrow:1,por:1,favor:1,please:1,gracias:1,del:1,al:1,con:1,sin:1,the:1,
+  to:1,at:1,for:1,of:1,h:1,hs:1,x:1,a:1,o:1,un:1,una:1};
+var CANCEL = /\b(cancel\w*|olvida\w* (el|mi) pedido|ya no (quiero|lo quiero|va)|never ?mind|forget (it|the order)|esquece)\b/;
+var ADDR = /\b(?:direcci[oó]n|direc[cç][aã]o|endere[cç]o|dir\.?|address|env[ií]o a|entregar en|entrega en|enviar a|deliver to|ship to)\s*[:\-]?\s*(.+)/i;
+
+function strip(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function norm(s) { return strip(s).toLowerCase(); }
+
+/* ---------- chat parsing ---------- */
+var DATE = '(\\d{1,2})[\\/.\\-](\\d{1,2})[\\/.\\-](\\d{2,4})';
+var TIME = '(\\d{1,2})[:.](\\d{2})(?::\\d{2})?\\s?([AaPp])?\\.?\\s?[Mm]?\\.?';
+var RE_IOS = new RegExp('^\\[' + DATE + ',?\\s+' + TIME + '\\]\\s+(.*)$');
+var RE_AND = new RegExp('^' + DATE + ',?\\s+' + TIME + '\\s+-\\s+(.*)$');
+var SKIP_MSG = /^(<[^>]*(omitted|omitido|omitida)[^>]*>|\(?(archivo|file|imagen|image|video|audio|sticker)[^)]*(adjunto|attached|omitted|omitido)\)?|this message was deleted|se elimin[oó] este mensaje|eliminaste este mensaje|you deleted this message|mensagem apagada)$/i;
+
+function cleanText(raw) {
+  return String(raw).replace(/^﻿/, '').replace(/[‎‏‪-‮]/g, '').replace(/[  ]/g, ' ');
+}
+
+function parseChat(raw, dateOrder) {
+  var lines = cleanText(raw).split(/\r?\n/), msgs = [], cur = null, pairs = [];
+  lines.forEach(function (line) {
+    var m = RE_IOS.exec(line) || RE_AND.exec(line);
+    if (!m) { if (cur) cur.text += '\n' + line; return; }
+    var rest = m[7], c = rest.indexOf(': ');
+    if (c < 1 || c > 60 || /^\s*$/.test(rest.slice(0, c))) { cur = null; return; } // system line
+    cur = { a: +m[1], b: +m[2], y: +m[3], h: +m[4], mi: +m[5], ap: m[6], sender: rest.slice(0, c).replace(/^~\s*/, '').trim(), text: rest.slice(c + 2) };
+    pairs.push([cur.a, cur.b]);
+    msgs.push(cur);
+  });
+  var order = dateOrder && dateOrder !== 'auto' ? dateOrder : null, ambiguous = false;
+  if (!order) {
+    var dmy = pairs.some(function (p) { return p[0] > 12; }), mdy = pairs.some(function (p) { return p[1] > 12; });
+    if (dmy && !mdy) order = 'dmy'; else if (mdy && !dmy) order = 'mdy';
+    else { order = 'dmy'; ambiguous = !dmy && !mdy; }
+  }
+  var lastTs = 0, out = [];
+  msgs.forEach(function (m) {
+    var d = order === 'dmy' ? m.a : m.b, mo = order === 'dmy' ? m.b : m.a, y = m.y < 100 ? 2000 + m.y : m.y, h = m.h;
+    if (m.ap) { var pm = /p/i.test(m.ap); if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+    var ts = Date.UTC(y, mo - 1, d, h, m.mi);
+    var ok = mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && h < 24 && m.mi < 60 && !isNaN(ts);
+    if (!ok) ts = lastTs; else lastTs = ts;
+    var text = m.text.replace(/<(this message was edited|se edit[oó] este mensaje)>/ig, '').trim();
+    if (!text || SKIP_MSG.test(text)) return;
+    var iso = new Date(ts).toISOString();
+    out.push({ ts: ts, date: iso.slice(0, 10), time: iso.slice(11, 16), sender: m.sender, text: text, dateOk: ok });
+  });
+  var senders = []; out.forEach(function (m) { if (senders.indexOf(m.sender) < 0) senders.push(m.sender); });
+  return { messages: out, order: order, ambiguousDates: ambiguous, senders: senders };
+}
+
+/* ---------- catalog ---------- */
+function parsePrice(s) {
+  var t = String(s || '').replace(/[^\d.,]/g, '');
+  if (!t) return null;
+  var lc = t.lastIndexOf(','), ld = t.lastIndexOf('.');
+  if (lc >= 0 && ld >= 0) t = lc > ld ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+  else if (lc >= 0) t = /,\d{1,2}$/.test(t) && t.split(',').length === 2 ? t.replace(',', '.') : t.replace(/,/g, '');
+  var n = parseFloat(t);
+  return isNaN(n) ? null : n;
+}
+
+function words(s) { return norm(s).replace(/(\d),(\d)/g, '$1.$2').match(/\d+(?:\.\d+)?|[a-z]+/g) || []; }
+
+function parseCatalog(text) {
+  var items = [], warnings = [], seen = {};
+  String(text || '').split(/\r?\n/).forEach(function (line, i) {
+    line = line.trim();
+    if (!line || line[0] === '#') return;
+    var p = line.split('|').map(function (x) { return x.trim(); });
+    if (!p[0]) { warnings.push('Line ' + (i + 1) + ': empty product name'); return; }
+    var price = p[1] ? parsePrice(p[1]) : null;
+    if (p[1] && price === null) warnings.push('Line ' + (i + 1) + ': price "' + p[1] + '" not understood — treated as no price');
+    var names = [p[0]].concat((p[2] || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean));
+    var variants = names.map(words).filter(function (w) { return w.length; });
+    var key = norm(p[0]);
+    if (seen[key]) warnings.push('Line ' + (i + 1) + ': "' + p[0] + '" is listed twice');
+    seen[key] = 1;
+    items.push({ name: p[0], price: price, variants: variants });
+  });
+  var owner = {};
+  items.forEach(function (it, idx) {
+    it.variants.forEach(function (v) {
+      var k = v.join(' ');
+      if (k in owner && owner[k] !== idx) warnings.push('"' + k + '" is an alias of both "' + items[owner[k]].name + '" and "' + it.name + '" — the first wins');
+      else owner[k] = idx;
+    });
+  });
+  return { items: items, warnings: warnings };
+}
+
+/* ---------- item extraction ---------- */
+function forms(w) {
+  var f = [w];
+  if (w.length > 3 && w.slice(-1) === 's') f.push(w.slice(0, -1));
+  if (w.length > 4 && w.slice(-2) === 'es') f.push(w.slice(0, -2));
+  return f;
+}
+function lev1(a, b) {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  var i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1) ||
+    (a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2));
+  return a.length > b.length ? a.slice(i + 1) === b.slice(i) : b.slice(i + 1) === a.slice(i);
+}
+function wordEq(a, b, fuzzy) {
+  var fa = forms(a), fb = forms(b);
+  for (var i = 0; i < fa.length; i++) for (var j = 0; j < fb.length; j++) {
+    if (fa[i] === fb[j]) return 1;
+    if (fuzzy && fa[i].length >= 5 && fb[j].length >= 5 && lev1(fa[i], fb[j])) return 2;
+  }
+  return 0;
+}
+
+function tokenize(text) {
+  var raw = norm(text).replace(/(\d)x\b/g, '$1 x').replace(/\bx(\d)/g, 'x $1').replace(/(\d),(\d)/g, '$1.$2');
+  var ws = raw.match(/\d+(?:\.\d+)?|[a-z]+/g) || [], toks = [];
+  ws.forEach(function (w) {
+    var n = /^\d/.test(w) ? parseFloat(w) : (NUMWORDS[w] != null ? NUMWORDS[w] : null);
+    var prev = toks[toks.length - 1];
+    if (DOZEN[w]) {
+      if (prev && prev.n != null && !prev.dz) { prev.n *= 12; prev.dz = 1; prev.w += ' ' + w; return; }
+      if (prev && prev.w === 'media') { prev.n = 6; prev.w = 'media ' + w; prev.dz = 1; return; }
+      toks.push({ w: w, n: 12, dz: 1 }); return;
+    }
+    if (w === 'media' || w === 'medio') { toks.push({ w: 'media', n: null }); return; }
+    toks.push({ w: w, n: n });
+  });
+  return toks;
+}
+
+function buildMatcher(catalog) {
+  var vs = [];
+  catalog.items.forEach(function (it, idx) { it.variants.forEach(function (v) { vs.push({ idx: idx, v: v }); }); });
+  vs.sort(function (a, b) { return b.v.length - a.v.length; });
+  return function matchAt(toks, i) {
+    for (var pass = 0; pass < 2; pass++) for (var k = 0; k < vs.length; k++) {
+      var v = vs[k].v;
+      if (i + v.length > toks.length) continue;
+      var fuzzyUsed = 0, ok = true;
+      for (var j = 0; j < v.length && ok; j++) {
+        var r = wordEq(toks[i + j].w, v[j], pass === 1);
+        if (!r) ok = false; else if (r === 2 && ++fuzzyUsed > 1) ok = false;
+      }
+      if (ok && (pass === 1 ? fuzzyUsed === 1 : true)) return { idx: vs[k].idx, len: v.length, fuzzy: pass === 1 };
+    }
+    return null;
+  };
+}
+
+function extractItems(text, catalog, matcher) {
+  matcher = matcher || buildMatcher(catalog);
+  var toks = tokenize(text), used = [], ms = [], i = 0;
+  while (i < toks.length) {
+    var m = matcher(toks, i);
+    if (m) { m.start = i; ms.push(m); for (var j = 0; j < m.len; j++) used[i + j] = true; i += m.len; } else i++;
+  }
+  function back(m) {
+    var j = m.start - 1, skips = 0;
+    while (j >= 0 && skips <= 2 && toks[j].n == null && FILL[toks[j].w] && !used[j]) { j--; skips++; }
+    return j >= 0 && toks[j].n != null && !used[j] ? j : -1;
+  }
+  function fwd(m) {
+    var k = m.start + m.len;
+    if (k < toks.length && toks[k].w === 'x' && toks[k].n == null) k++;
+    return k < toks.length && toks[k].n != null && !used[k] ? k : -1;
+  }
+  var style = null;
+  for (var a = 0; a < ms.length && !style; a++) { if (back(ms[a]) >= 0) style = 'pre'; else if (fwd(ms[a]) >= 0) style = 'post'; }
+  style = style || 'pre';
+  var lines = [];
+  ms.forEach(function (m) {
+    var order = style === 'pre' ? [back, fwd] : [fwd, back], qty = 1, hit = -1;
+    for (var o = 0; o < 2 && hit < 0; o++) hit = order[o](m);
+    if (hit >= 0) { qty = toks[hit].n; used[hit] = true; }
+    var ex = lines.filter(function (l) { return l.idx === m.idx; })[0];
+    if (ex) { ex.qty += qty; ex.fuzzy = ex.fuzzy || m.fuzzy; }
+    else lines.push({ idx: m.idx, item: catalog.items[m.idx].name, price: catalog.items[m.idx].price, qty: qty, fuzzy: m.fuzzy });
+  });
+  var unknown = [];
+  toks.forEach(function (t, k) {
+    if (t.n != null && !used[k] && toks[k + 1] && toks[k + 1].n == null && !used[k + 1]) {
+      var w = toks[k + 1].w;
+      if (w.length >= 3 && !STOP[w] && !FILL[w] && !NUMWORDS[w]) unknown.push(w);
+    }
+  });
+  return { lines: lines, unknown: unknown };
+}
+
+/* ---------- orders ---------- */
+function round2(n) { return Math.round(n * 100) / 100; }
+
+function buildOrders(messages, catalog, opts) {
+  opts = opts || {};
+  var gap = (opts.gapMinutes || 30) * 60000, ignore = opts.ignoreSenders || [];
+  var matcher = buildMatcher(catalog), open = {}, last = {}, orders = [], unmatched = [], sugg = {};
+  messages.forEach(function (msg) {
+    if (ignore.indexOf(msg.sender) >= 0) return;
+    var ex = extractItems(msg.text, catalog, matcher), cur = open[msg.sender];
+    var fresh = cur && msg.ts - cur.lastTs <= gap;
+    var flat = norm(msg.text), am = ADDR.exec(msg.text.replace(/\n/g, ' '));
+    if (ex.lines.length) {
+      if (!fresh) {
+        cur = open[msg.sender] = { id: 0, sender: msg.sender, ts: msg.ts, date: msg.date, time: msg.time, lines: [], address: '', phone: '', notes: [], status: 'new', fuzzy: false, lastTs: msg.ts };
+        orders.push(cur);
+      }
+      ex.lines.forEach(function (l) {
+        var e = cur.lines.filter(function (x) { return x.item === l.item; })[0];
+        if (e) { e.qty += l.qty; e.fuzzy = e.fuzzy || l.fuzzy; } else cur.lines.push({ item: l.item, price: l.price, qty: l.qty, fuzzy: l.fuzzy });
+        if (l.fuzzy) cur.fuzzy = true;
+      });
+      cur.notes.push(msg.text); cur.lastTs = msg.ts; last[msg.sender] = cur;
+      if (am && !cur.address) cur.address = am[1].trim();
+      ex.unknown.forEach(function (w) { sugg[w] = (sugg[w] || 0) + 1; });
+      return;
+    }
+    if (CANCEL.test(flat)) {
+      var tgt = fresh ? cur : last[msg.sender];
+      if (tgt) { tgt.status = 'cancelled'; tgt.notes.push(msg.text); return; }
+    }
+    if (fresh) {
+      cur.lastTs = msg.ts;
+      if (am && !cur.address) { cur.address = am[1].trim(); cur.notes.push(msg.text); return; }
+      var ph = /(\+?\d[\d\s().\-]{7,}\d)/.exec(msg.text);
+      if (ph && ph[1].replace(/\D/g, '').length >= 8 && !cur.phone) { cur.phone = ph[1].trim(); cur.notes.push(msg.text); return; }
+    }
+    var tk = tokenize(msg.text);
+    if (tk.some(function (t) { return t.n != null; })) {
+      unmatched.push({ date: msg.date, time: msg.time, sender: msg.sender, text: msg.text });
+      ex.unknown.forEach(function (w) { sugg[w] = (sugg[w] || 0) + 1; });
+    }
+  });
+  orders.forEach(function (o, i) {
+    o.id = i + 1; o.total = 0; o.unpriced = false;
+    o.lines.forEach(function (l) {
+      if (l.price == null) { o.unpriced = true; l.subtotal = null; } else { l.subtotal = round2(l.price * l.qty); o.total += l.subtotal; }
+    });
+    o.total = round2(o.total); delete o.lastTs;
+  });
+  var suggestions = Object.keys(sugg).map(function (w) { return { word: w, count: sugg[w] }; })
+    .sort(function (a, b) { return b.count - a.count || (a.word < b.word ? -1 : 1); }).slice(0, 12);
+  return { orders: orders, unmatched: unmatched, suggestions: suggestions };
+}
+
+function pickList(orders, catalog) {
+  var map = {};
+  orders.forEach(function (o) {
+    if (o.status === 'cancelled') return;
+    o.lines.forEach(function (l) {
+      var e = map[l.item] || (map[l.item] = { item: l.item, qty: 0, revenue: 0, orders: 0, priced: l.price != null });
+      e.qty += l.qty; e.orders++; if (l.subtotal != null) e.revenue = round2(e.revenue + l.subtotal);
+    });
+  });
+  return catalog.items.map(function (i) { return map[i.name]; }).filter(Boolean);
+}
+
+/* ---------- CSV ---------- */
+function cell(v) {
+  var s = v == null ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(s) && isNaN(Number(s))) s = "'" + s; // spreadsheet formula guard
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function toCSV(rows) { return rows.map(function (r) { return r.map(cell).join(','); }).join('\r\n') + '\r\n'; }
+function describe(o) { return o.lines.map(function (l) { return l.qty + '× ' + l.item; }).join('; '); }
+function ordersCSV(orders) {
+  var rows = [['order', 'date', 'time', 'customer', 'items', 'total', 'address', 'phone', 'status']];
+  orders.forEach(function (o) { rows.push([o.id, o.date, o.time, o.sender, describe(o), o.unpriced ? '' : o.total, o.address, o.phone, o.status]); });
+  return toCSV(rows);
+}
+function linesCSV(orders) {
+  var rows = [['order', 'date', 'customer', 'item', 'qty', 'unit_price', 'subtotal', 'status']];
+  orders.forEach(function (o) { o.lines.forEach(function (l) { rows.push([o.id, o.date, o.sender, l.item, l.qty, l.price == null ? '' : l.price, l.subtotal == null ? '' : l.subtotal, o.status]); }); });
+  return toCSV(rows);
+}
+function pickCSV(list) {
+  var rows = [['item', 'qty', 'orders', 'revenue']];
+  list.forEach(function (p) { rows.push([p.item, p.qty, p.orders, p.priced ? p.revenue : '']); });
+  return toCSV(rows);
+}
+
+/* ---------- zip (WhatsApp iOS exports a .zip containing _chat.txt) ---------- */
+async function textFromZip(u8) {
+  var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), e = -1;
+  for (var i = u8.length - 22; i >= Math.max(0, u8.length - 65600); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error('Not a valid .zip file');
+  var n = dv.getUint16(e + 10, true), p = dv.getUint32(e + 16, true), best = null, dec = new TextDecoder();
+  for (var k = 0; k < n; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('Corrupt .zip directory');
+    var meth = dv.getUint16(p + 10, true), csz = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true),
+        xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true),
+        name = dec.decode(u8.subarray(p + 46, p + 46 + nl));
+    if (/\.txt$/i.test(name) && !/__MACOSX/.test(name) && (!best || /chat/i.test(name))) best = { meth: meth, csz: csz, off: off, name: name };
+    p += 46 + nl + xl + cl;
+  }
+  if (!best) throw new Error('No .txt chat file found inside the .zip');
+  var lnl = dv.getUint16(best.off + 26, true), lxl = dv.getUint16(best.off + 28, true), start = best.off + 30 + lnl + lxl;
+  var data = u8.subarray(start, start + best.csz);
+  if (best.meth === 0) return dec.decode(data);
+  if (best.meth !== 8) throw new Error('Unsupported zip compression method ' + best.meth);
+  var buf = await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+  return dec.decode(buf);
+}
+
+/* ---------- demo ---------- */
+var DEMO_CATALOG = [
+  '# name | price | aliases (comma separated)',
+  'Empanada de carne | 1.50 | empanadas de carne',
+  'Empanada de pollo | 1.50 | empanadas de pollo',
+  'Torta de chocolate | 18 | torta chocolate, pastel de chocolate',
+  'Alfajor | 1.20 | alfajores',
+  'Café | 2 | cafecito',
+  'Jugo de naranja | 2.50 | jugo naranja, zumo de naranja'
+].join('\n');
+var DEMO_CHAT = [
+  '14/10/2026, 08:01 - Los mensajes y las llamadas están cifrados de extremo a extremo.',
+  '14/10/2026, 08:15 - Carla Méndez: Buenos días! Quiero 2 docenas de empanadas de carne y media docena de empanadas de pollo',
+  '14/10/2026, 08:16 - Carla Méndez: y 1 torta de chocolate para las 5 pm',
+  '14/10/2026, 08:16 - Carla Méndez: Dirección: Av. Libertad 345, depto 2B',
+  '14/10/2026, 08:20 - Panadería Dulce Hogar: Listo Carla! Son $98.',
+  '14/10/2026, 09:02 - Jorge Ruiz: hola, para hoy: alfajores x6, 2 cafés y un jugo de naranja',
+  '14/10/2026, 09:03 - Jorge Ruiz: <Multimedia omitido>',
+  '14/10/2026, 09:04 - Jorge Ruiz: +54 9 11 5555-0142',
+  '14/10/2026, 10:30 - ~ Marta L.: buenas, me mandas 3 empnadas de carne y 4 chipas',
+  '14/10/2026, 11:45 - Jorge Ruiz: cancela mi pedido porfa, ya no puedo',
+  '14/10/2026, 12:10 - Luis Paz: 2 tortas de chocolate',
+  '14/10/2026, 12:11 - Luis Paz: envío a: Calle 9 #12-30',
+  '14/10/2026, 17:20 - Panadería Dulce Hogar: Mañana abrimos a las 7'
+].join('\n');
+
+var api = { parseChat: parseChat, parseCatalog: parseCatalog, parsePrice: parsePrice, extractItems: extractItems,
+  buildOrders: buildOrders, pickList: pickList, ordersCSV: ordersCSV, linesCSV: linesCSV, pickCSV: pickCSV, toCSV: toCSV,
+  textFromZip: textFromZip, describe: describe, DEMO_CHAT: DEMO_CHAT, DEMO_CATALOG: DEMO_CATALOG };
+if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.OP = api;
+})(typeof window !== 'undefined' ? window : this);
+</script>
+<script>
+(function () {
+'use strict';
+var $ = function (id) { return document.getElementById(id); };
+var ignored = {}, tab = 'orders', last = null;
+function store(k, v) { try { if (v === undefined) return localStorage.getItem('orderpaste.' + k); localStorage.setItem('orderpaste.' + k, v); } catch (e) {} return null; }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function money(n) { return n == null ? '—' : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function compute() {
+  var chat = OP.parseChat($('chat').value, $('dateorder').value), cat = OP.parseCatalog($('catalog').value);
+  // when there are exactly two voices, guess the shop side = the one with fewer item hits
+  if (!Object.keys(ignored).length && chat.senders.length === 2 && cat.items.length) {
+    var hits = {}; chat.senders.forEach(function (s) { hits[s] = 0; });
+    chat.messages.forEach(function (m) { if (OP.extractItems(m.text, cat).lines.length) hits[m.sender]++; });
+    var a = chat.senders[0], b = chat.senders[1];
+    if (hits[a] !== hits[b]) ignored[hits[a] < hits[b] ? a : b] = true;
+  }
+  var res = OP.buildOrders(chat.messages, cat, { gapMinutes: +$('gap').value || 30, ignoreSenders: Object.keys(ignored).filter(function (k) { return ignored[k]; }) });
+  last = { chat: chat, cat: cat, res: res, pick: OP.pickList(res.orders, cat) };
+  render();
+}
+
+function render() {
+  var c = last.chat, r = last.res, w = [];
+  var sb = $('senders'); sb.innerHTML = '';
+  if (c.senders.length) {
+    sb.innerHTML = '<h2 style="margin-top:10px">Ignore these senders (the shop side)</h2>' + c.senders.map(function (s, i) {
+      return '<label><input type="checkbox" data-s="' + i + '"' + (ignored[s] ? ' checked' : '') + '> ' + esc(s) + '</label>'; }).join('');
+    sb.querySelectorAll('input').forEach(function (el) { el.onchange = function () { ignored[c.senders[+el.dataset.s]] = el.checked; compute(); }; });
+  }
+  if (c.ambiguousDates) w.push('Every date could be DD/MM or MM/DD — assuming DD/MM. Change “Dates” if wrong.');
+  if (c.messages.some(function (m) { return !m.dateOk; })) w.push('Some timestamps were invalid for this date order — try the other one.');
+  last.cat.warnings.forEach(function (x) { w.push(x); });
+  if (!last.cat.items.length) w.push('Add your products on the left (name | price | aliases).');
+  $('warnings').innerHTML = w.length ? '<ul class="w warn">' + w.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '';
+
+  if (!c.messages.length) { $('out').innerHTML = '<div class="empty">No messages found. Paste a WhatsApp export (<i>Chat → ⋮ → More → Export chat</i>).</div>'; return; }
+  var live = r.orders.filter(function (o) { return o.status !== 'cancelled'; });
+  var rev = live.reduce(function (s, o) { return s + o.total; }, 0);
+  var h = '<div class="stats"><div class="stat"><b>' + live.length + '</b><span>orders' + (r.orders.length > live.length ? ' (+' + (r.orders.length - live.length) + ' cancelled)' : '') + '</span></div>' +
+    '<div class="stat"><b>' + money(rev) + '</b><span>total</span></div><div class="stat"><b>' + r.unmatched.length + '</b><span>messages to check</span></div></div>';
+  h += '<div class="tabs">' + [['orders', 'Orders'], ['pick', 'Pick list'], ['check', 'Check (' + r.unmatched.length + ')']].map(function (t) {
+    return '<button class="tab' + (tab === t[0] ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
+  if (tab === 'orders') {
+    h += r.orders.length ? '<div style="overflow:auto"><table><tr><th>#</th><th>When</th><th>Customer</th><th>Items</th><th class="n">Total</th><th>Address</th><th></th></tr>' +
+      r.orders.map(function (o) {
+        return '<tr class="' + (o.status === 'cancelled' ? 'cancel' : '') + '"><td>' + o.id + '</td><td>' + o.date + '<br><span class="mute">' + o.time + '</span></td><td>' + esc(o.sender) +
+          (o.phone ? '<br><span class="mute">' + esc(o.phone) + '</span>' : '') + '</td><td>' +
+          o.lines.map(function (l) { return '<span class="chip' + (l.fuzzy ? ' f" title="Matched by similar spelling — please check' : '') + '">' + l.qty + '× ' + esc(l.item) + '</span>'; }).join('') +
+          '</td><td class="n">' + (o.unpriced ? '<span class="warn" title="some items have no price">' + money(o.total) + '+</span>' : money(o.total)) + '</td><td>' + esc(o.address) + '</td><td>' + (o.status === 'cancelled' ? 'cancelled' : '') + '</td></tr>'; }).join('') + '</table></div>'
+      : '<div class="empty">No orders recognised yet. Check your product names/aliases.</div>';
+  } else if (tab === 'pick') {
+    h += last.pick.length ? '<table><tr><th>Item</th><th class="n">Qty</th><th class="n">Orders</th><th class="n">Revenue</th></tr>' + last.pick.map(function (p) {
+      return '<tr><td>' + esc(p.item) + '</td><td class="n"><b>' + p.qty + '</b></td><td class="n">' + p.orders + '</td><td class="n">' + (p.priced ? money(p.revenue) : '—') + '</td></tr>'; }).join('') + '</table>' +
+      '<div class="row noprint"><button class="ghost" onclick="window.print()">Print pick list</button></div>' : '<div class="empty">Nothing to pick yet.</div>';
+  } else {
+    h += r.suggestions.length ? '<div class="sug"><p class="mute">Products customers seem to ask for that aren’t in your list — click to add:</p>' + r.suggestions.map(function (s) {
+      return '<button data-add="' + esc(s.word) + '">+ ' + esc(s.word) + ' ×' + s.count + '</button>'; }).join('') + '</div>' : '';
+    h += r.unmatched.length ? '<table><tr><th>When</th><th>Who</th><th>Message</th></tr>' + r.unmatched.map(function (m) {
+      return '<tr><td>' + m.date + ' ' + m.time + '</td><td>' + esc(m.sender) + '</td><td>' + esc(m.text) + '</td></tr>'; }).join('') + '</table>' : '<div class="empty">Every message with numbers was understood. 🎉</div>';
+  }
+  h += '<div class="row noprint" style="margin-top:14px"><button data-dl="orders">⬇ orders.csv</button><button class="ghost" data-dl="lines">lines.csv</button><button class="ghost" data-dl="pick">pick-list.csv</button><button class="ghost" id="copy">Copy for Sheets</button></div>';
+  $('out').innerHTML = h;
+  $('out').querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; render(); }; });
+  $('out').querySelectorAll('[data-add]').forEach(function (b) { b.onclick = function () { var t = $('catalog'); t.value = t.value.replace(/\s*$/, '\n') + b.dataset.add + ' | | '; persist(); compute(); }; });
+  $('out').querySelectorAll('[data-dl]').forEach(function (b) { b.onclick = function () {
+    var k = b.dataset.dl, csv = k === 'orders' ? OP.ordersCSV(r.orders) : k === 'lines' ? OP.linesCSV(r.orders) : OP.pickCSV(last.pick);
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = (k === 'pick' ? 'pick-list' : k) + '.csv'; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000); }; });
+  var cp = $('copy'); if (cp) cp.onclick = function () {
+    var rows = [['order', 'date', 'time', 'customer', 'items', 'total', 'address', 'status']].concat(r.orders.map(function (o) { return [o.id, o.date, o.time, o.sender, OP.describe(o), o.unpriced ? '' : o.total, o.address, o.status]; }));
+    var text = rows.map(function (x) { return x.map(function (v) { return String(v).replace(/[\t\n\r]+/g, ' '); }).join('\t'); }).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { cp.textContent = 'Copied ✓'; }, function () { cp.textContent = 'Copy failed'; });
+  };
+}
+
+function persist() { store('catalog', $('catalog').value); store('gap', $('gap').value); }
+var timer; function later() { clearTimeout(timer); timer = setTimeout(function () { persist(); compute(); }, 250); }
+['chat', 'catalog', 'gap', 'dateorder'].forEach(function (id) { $(id).addEventListener('input', function () { if (id === 'chat') ignored = {}; later(); }); });
+$('demo').onclick = function () { ignored = { 'Panadería Dulce Hogar': true }; $('chat').value = OP.DEMO_CHAT; $('catalog').value = OP.DEMO_CATALOG; persist(); compute(); };
+$('clear').onclick = function () { ignored = {}; $('chat').value = ''; compute(); };
+
+async function loadFile(f) {
+  try {
+    var text = /\.zip$/i.test(f.name) ? await OP.textFromZip(new Uint8Array(await f.arrayBuffer())) : await f.text();
+    ignored = {}; $('chat').value = text; compute();
+  } catch (e) { $('warnings').innerHTML = '<ul class="w bad"><li>' + esc(e.message || e) + '</li></ul>'; }
+}
+$('drop').onclick = function () { $('file').click(); };
+$('file').onchange = function () { if (this.files[0]) loadFile(this.files[0]); };
+['dragover', 'dragenter'].forEach(function (ev) { $('drop').addEventListener(ev, function (e) { e.preventDefault(); $('drop').classList.add('over'); }); });
+['dragleave', 'drop'].forEach(function (ev) { $('drop').addEventListener(ev, function (e) { e.preventDefault(); $('drop').classList.remove('over'); }); });
+$('drop').addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+
+var sc = store('catalog'); if (sc) $('catalog').value = sc;
+var sg = store('gap'); if (sg) $('gap').value = sg;
+})();
+</script>
+</body>
+</html>
