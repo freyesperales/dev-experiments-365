@@ -63,5 +63,10 @@
     "n": 77,
     "slug": "orderpaste",
     "hook": "Turn a WhatsApp order chat into an order sheet, pick list and CSV \u2014 one HTML file, offline, no API."
+  },
+  {
+    "n": 78,
+    "slug": "cronwise",
+    "hook": "Type a cron schedule and a time zone \u2014 see what it actually fires, including the runs DST silently skips or doubles."
   }
 ]

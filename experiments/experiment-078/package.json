@@ -1,0 +1,8 @@
+{
+  "name": "cronwise",
+  "version": "1.0.0",
+  "description": "Cron simulator that shows what actually fires across DST changes",
+  "bin": { "cronwise": "cli.js" },
+  "scripts": { "test": "node --test test/test.js", "build": "node build.js", "start": "node build.js && echo open index.html" },
+  "license": "MIT"
+}

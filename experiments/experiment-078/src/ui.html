@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cronwise — what your cron actually does across DST</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--fg:#1b1d20;--mut:#667;--line:#e2e2dc;--acc:#2456d6;--bad:#b3261e;--badbg:#fde8e6;--warn:#8a5a00;--warnbg:#fff3d6;--ok:#1d6b3a;--okbg:#e3f5e9}
+@media(prefers-color-scheme:dark){:root{--bg:#121316;--card:#1a1c20;--fg:#e8e8e6;--mut:#9a9fa8;--line:#2c2f35;--acc:#7da2ff;--bad:#ff8a80;--badbg:#3a1d1b;--warn:#f2c46b;--warnbg:#3a2f14;--ok:#7fd69a;--okbg:#17301f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px 60px}
+h1{margin:0 0 4px;font-size:26px}h1 span{color:var(--acc)}p.sub{margin:0 0 20px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:12px;color:var(--mut);margin:0 0 3px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+#expr{font:18px ui-monospace,Menlo,monospace}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chips button{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:4px 10px;cursor:pointer;font:12px ui-monospace,monospace}
+.chips button:hover{border-color:var(--acc)}
+.err{color:var(--bad);background:var(--badbg);padding:8px 12px;border-radius:8px;margin-top:12px;display:none}
+h2{font-size:16px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font:13px ui-monospace,Menlo,monospace}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mut);font-weight:600}
+.wrap{overflow-x:auto}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font:600 11px system-ui;margin-left:6px}
+.t-skipped{background:var(--badbg);color:var(--bad)}.t-repeat-1,.t-repeat-2,.t-first-of-two,.t-shifted{background:var(--warnbg);color:var(--warn)}
+.ok{background:var(--okbg);color:var(--ok);padding:10px 12px;border-radius:8px}
+.note{color:var(--mut);font-size:13px}.hz{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+footer{color:var(--mut);font-size:12px;margin-top:24px}a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+<h1>cron<span>wise</span></h1>
+<p class="sub">Type a cron schedule and a time zone. See what <em>actually</em> fires — including the runs that DST skips or doubles.</p>
+<div class="card">
+  <label for="expr">Cron expression</label>
+  <input id="expr" value="30 2 * * *" spellcheck="false" autocomplete="off">
+  <div class="row">
+    <div><label for="dialect">Dialect</label><select id="dialect"></select></div>
+    <div><label for="zone">Time zone (IANA)</label><input id="zone" list="zones" value="America/New_York"></div>
+    <div><label for="policy">When the clock jumps…</label><select id="policy">
+      <option value="strict">strict: skip missing times, run repeated times twice</option>
+      <option value="once">Vixie-style: missing → run at the jump, repeated → run once</option></select></div>
+    <div><label for="from">Start from (your browser's clock)</label><input id="from" type="datetime-local"></div>
+    <div><label for="also">Also show in (comma-separated zones)</label><input id="also" list="zones" value="UTC"></div>
+    <div><label for="count">Fires to list</label><input id="count" type="number" min="1" max="200" value="12"></div>
+  </div>
+  <datalist id="zones"></datalist>
+  <div class="chips" id="chips"></div>
+  <div class="err" id="err"></div>
+</div>
+<div class="card"><h2>DST hazards for this schedule — next 2 years</h2><div id="haz"></div></div>
+<div class="card"><h2>Next fires</h2><div class="wrap"><table id="tbl"></table></div></div>
+<p class="note">Everything runs locally in this page using your browser's built-in time-zone database. Nothing is uploaded. The "policy" is a model of how a scheduler <em>may</em> treat DST — check your scheduler's docs; see README "Limitations".</p>
+<footer>Development Experiment 078 of <a href="https://github.com/freyesperales/dev-experiments-365">dev-experiments-365</a> · MIT</footer>
+</main>
+<script>
+/*__CORE__*/
+</script>
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const PRESETS = [
+    ['Nightly backup 02:30 NY','30 2 * * *','vixie','America/New_York'],
+    ['01:30 doubles (NY)','30 1 * * *','vixie','America/New_York'],
+    ['Hourly (safe)','0 * * * *','vixie','America/New_York'],
+    ['London 01:15','15 1 * * *','vixie','Europe/London'],
+    ['K8s weekday 09:00 Berlin','0 9 * * 1-5','k8s','Europe/Berlin'],
+    ['Quartz last weekday 02:30','0 30 2 LW * ?','quartz','America/Chicago'],
+    ['Lord Howe (30-min DST)','15 2 * * *','vixie','Australia/Lord_Howe'],
+    ['EventBridge Mon 08:00','0 8 ? * MON *','eventbridge','UTC'],
+  ];
+  for (const k in CronWise.DIALECTS) { const o = document.createElement('option'); o.value = k; o.textContent = CronWise.DIALECTS[k].label; $('dialect').appendChild(o); }
+  try { for (const z of Intl.supportedValuesOf('timeZone').concat(['UTC'])) { const o = document.createElement('option'); o.value = z; $('zones').appendChild(o); } } catch (e) {}
+  PRESETS.forEach((p) => { const b = document.createElement('button'); b.textContent = p[0]; b.onclick = () => { $('expr').value = p[1]; $('dialect').value = p[2]; $('zone').value = p[3]; render(); }; $('chips').appendChild(b); });
+  const pad = (n) => String(n).padStart(2, '0');
+  const now = new Date(); $('from').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  try { const h = location.hash.slice(1); if (h) { const o = JSON.parse(decodeURIComponent(h)); ['expr','dialect','zone','policy','also','count'].forEach((k) => { if (o[k] != null) $(k).value = o[k]; }); } } catch (e) {}
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function render() {
+    const err = $('err'); err.style.display = 'none';
+    try {
+      const c = CronWise.parse($('expr').value, $('dialect').value);
+      const zone = $('zone').value.trim() || 'UTC';
+      const also = $('also').value.split(',').map((s) => s.trim()).filter(Boolean);
+      const from = $('from').value ? new Date($('from').value).getTime() : Date.now();
+      const policy = $('policy').value, limit = Math.min(200, Math.max(1, parseInt($('count').value, 10) || 12));
+      const fires = CronWise.simulate(c, { zone, from, policy, limit, days: 800 });
+      let h = '<tr><th>#</th><th>Local (' + esc(zone) + ')</th><th>UTC</th>' + also.map((z) => '<th>' + esc(z) + '</th>').join('') + '</tr>';
+      fires.forEach((f, i) => {
+        const tag = f.kind === 'normal' ? '' : `<span class="tag t-${f.kind}" title="${esc(CronWise.KIND_TEXT[f.kind])}">${esc(CronWise.KIND_TEXT[f.kind].split(' — ')[0])}</span>`;
+        h += `<tr><td>${i+1}</td><td>${f.instant == null ? esc(f.wall) + ' (never)' : esc(CronWise.fmtInZone(f.instant, zone))}${tag}</td><td>${f.instant == null ? '—' : new Date(f.instant).toISOString().replace('.000Z','Z')}</td>` +
+          also.map((z) => `<td>${f.instant == null ? '—' : esc(CronWise.fmtInZone(f.instant, z))}</td>`).join('') + '</tr>';
+      });
+      $('tbl').innerHTML = fires.length ? h : '<tr><td>No fires found in range.</td></tr>';
+      const hz = CronWise.hazards(c, { zone, from, policy, days: 730 });
+      $('haz').innerHTML = !c.fixed ? '<div class="ok">Wildcard hour/minute: this job follows real elapsed time, so DST cannot skip or double it (hourly jobs simply have 23 or 25 runs on transition days).</div>'
+        : hz.length ? hz.map((f) => `<div class="hz"><span class="tag t-${f.kind}">${esc(CronWise.KIND_TEXT[f.kind].split(' — ')[0])}</span><div><strong>${esc(f.wall)}</strong> ${f.instant != null ? '→ ' + esc(CronWise.fmtInZone(f.instant, zone)) : ''}<div class="note">${esc(CronWise.KIND_TEXT[f.kind])}</div></div></div>`).join('')
+        : '<div class="ok">No DST hazards in the next 2 years for this schedule in ' + esc(zone) + '.</div>';
+      try { history.replaceState(null, '', '#' + encodeURIComponent(JSON.stringify({ expr: $('expr').value, dialect: $('dialect').value, zone: $('zone').value, policy, also: $('also').value, count: $('count').value }))); } catch (e) {}
+    } catch (e) {
+      err.textContent = e instanceof CronWise.CronError ? e.message : 'Unexpected error: ' + e.message; err.style.display = 'block';
+      $('tbl').innerHTML = ''; $('haz').innerHTML = '';
+    }
+  }
+  ['expr','dialect','zone','policy','from','also','count'].forEach((id) => $(id).addEventListener('input', render));
+  render();
+})();
+</script>
+</body>
+</html>
