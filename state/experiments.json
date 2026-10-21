@@ -1,5 +1,5 @@
 {
- "last_number": 64,
+ "last_number": 65,
  "entries": [
   {
    "n": 1,
@@ -511,6 +511,14 @@
    "title": "SheetDiff — git diff for spreadsheets in the browser: compare two Excel/CSV matched by KEY column (reordered rows don't show as changes), free, nothing uploaded.",
    "repo_url": "https://github.com/freyesperales/sheetdiff",
    "mode": "per-repo",
+   "status": "completed"
+  },
+  {
+   "n": 65,
+   "date": "2026-10-21",
+   "title": "ChatLedger — WhatsApp chat export to customer sales ledger (charges vs payments, who owes what), single HTML file + CLI, nothing uploaded.",
+   "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-065",
+   "mode": "monorepo",
    "status": "completed"
   }
  ]

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChatLedger — WhatsApp chat to sales ledger</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1c1c1a;--mut:#6b6b64;--card:#fff;--bd:#deded6;--ac:#128c4a;--red:#c0392b}
+@media(prefers-color-scheme:dark){:root{--bg:#161715;--fg:#ececE6;--mut:#9a9a90;--card:#202220;--bd:#34362f;--ac:#3ecf7e;--red:#ff7b6b}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:980px;margin:0 auto;padding:24px 16px 60px}h1{margin:0}p.s{color:var(--mut);margin:.2em 0 1em}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:14px 0}
+textarea{width:100%;height:120px;font:12px monospace;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:8px}
+button,select{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid var(--bd);background:var(--card);color:var(--fg);cursor:pointer}
+button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}.owe{color:var(--red);font-weight:600}.ok{color:var(--ac)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.msg{max-width:380px;color:var(--mut);font-size:13px;word-break:break-word}
+tr.review td{background:rgba(230,170,0,.12)}tr.ignore{opacity:.4}
+</style></head><body><main>
+<h1>ChatLedger</h1>
+<p class="s">Drop a WhatsApp chat export, get who owes you what. Runs in your browser — nothing is uploaded.</p>
+<div class="card"><div class="row">
+<input type="file" id="file" accept=".txt,text/plain"><button id="sample">Load sample chat</button>
+<label>You are: <select id="owner"></select></label>
+<label>Dates: <select id="order"><option value="">auto</option><option value="dmy">DD/MM</option><option value="mdy">MM/DD</option></select></label>
+</div><textarea id="txt" placeholder="…or paste the contents of _chat.txt here"></textarea>
+<p class="s" id="status">WhatsApp → open chat → ⋮ → More → Export chat → Without media.</p></div>
+<div class="card" id="bal" hidden><div class="row"><h3 style="margin:0;flex:1">Balances</h3><button class="p" id="csv">Download CSV</button></div><table id="balt"></table></div>
+<div class="card" id="ent" hidden><h3 style="margin-top:0">Detected amounts <span class="s">(fix any wrong line — yellow rows need a decision)</span></h3><table id="entt"></table></div>
+<script>
+/*CORE*/
+var $=function(i){return document.getElementById(i)},msgs=[],overrides={},entries=[];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function money(n){return n.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}
+function load(){
+  var r=ChatLedger.parseChat($('txt').value,{dateOrder:$('order').value||undefined});
+  msgs=r.messages;overrides={};
+  if(!msgs.length){$('status').textContent=$('txt').value.trim()?'No messages recognised — is this a WhatsApp "Export chat" .txt file?':'';$('bal').hidden=$('ent').hidden=true;return}
+  var senders=[];msgs.forEach(function(m){if(senders.indexOf(m.sender)<0)senders.push(m.sender)});
+  var prev=$('owner').value,own=senders.indexOf(prev)>=0?prev:ChatLedger.guessOwner(msgs);
+  $('owner').innerHTML=senders.map(function(s){return'<option'+(s===own?' selected':'')+'>'+esc(s)+'</option>'}).join('');
+  $('status').textContent=msgs.length+' messages, '+senders.length+' people, dates read as '+(r.dateOrder==='mdy'?'MM/DD':'DD/MM')+'.';
+  render();
+}
+function render(){
+  entries=ChatLedger.buildEntries(msgs,$('owner').value,overrides);
+  var book=ChatLedger.ledger(entries);
+  $('bal').hidden=$('ent').hidden=false;
+  $('balt').innerHTML='<tr><th>Customer</th><th class=n>Charged</th><th class=n>Paid</th><th class=n>Balance</th><th>Last</th></tr>'+(book.map(function(c){
+    return'<tr><td>'+esc(c.customer)+'</td><td class=n>'+money(c.charged)+'</td><td class=n>'+money(c.paid)+'</td><td class="n '+(c.balance>0?'owe':'ok')+'">'+(c.balance>0?'owes ':'')+money(Math.abs(c.balance))+(c.balance<0?' credit':'')+'</td><td>'+c.last+'</td></tr>'}).join('')||'<tr><td colspan=5>Nothing classified yet.</td></tr>');
+  $('entt').innerHTML='<tr><th>Date</th><th>Customer</th><th>Message</th><th class=n>Amount</th><th>Counts as</th></tr>'+entries.map(function(e){
+    var o=['charge','payment','ignore','review'].map(function(k){return'<option value='+k+(k===e.kind?' selected':'')+'>'+(k==='charge'?'charge (they owe)':k==='payment'?'payment (they paid)':k==='ignore'?'ignore':'needs review')+'</option>'}).join('');
+    return'<tr class="'+e.kind+'"><td>'+e.date+'</td><td>'+esc(e.customer)+'</td><td class=msg>'+esc(e.text)+'</td><td class=n>'+money(e.amount)+'</td><td><select data-i='+e.index+'>'+o+'</select></td></tr>'}).join('');
+}
+$('entt').onchange=function(ev){var s=ev.target;if(s.dataset.i!==undefined){overrides[s.dataset.i]=s.value;render()}};
+$('txt').oninput=load;$('order').onchange=load;$('owner').onchange=render;
+$('sample').onclick=function(){$('txt').value=ChatLedger.SAMPLE;load()};
+$('file').onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){$('txt').value=r.result;load()};r.readAsText(f)};
+$('csv').onclick=function(){var b=new Blob([ChatLedger.toCSV(entries)],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='chatledger.csv';a.click()};
+</script></main></body></html>
