@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EasyReadify — plain text to a printable Easy Read page</title>
+<style>
+:root{--bg:#f7f7f4;--fg:#1a1a1a;--card:#fff;--line:#d8d8d0;--acc:#0b5fff;--warn:#b45309;--warnbg:#fff4e0}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#eee;--card:#1f2228;--line:#383d46;--acc:#7aa7ff;--warn:#fbbf24;--warnbg:#3a2e10}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
+header{padding:16px 20px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:22px}header p{margin:2px 0 0;opacity:.75}
+main{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:16px;padding:16px 20px}
+@media(max-width:800px){main{grid-template-columns:1fr}}
+textarea{width:100%;height:320px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg)}
+button,label.btn{font:inherit;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer}
+button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:center}
+.block{display:grid;grid-template-columns:var(--imgw,160px) 1fr auto;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px;align-items:start}
+.img{aspect-ratio:1;border:2px dashed var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;opacity:.8;cursor:pointer;overflow:hidden;padding:4px}
+.img img{max-width:100%;max-height:100%;object-fit:contain}
+.txt{font-size:calc(var(--fs,20)*1px);line-height:1.5;border:0;outline:1px dashed transparent;width:100%;background:transparent;color:inherit;font-family:inherit;resize:none;overflow:hidden}
+.txt:focus{outline-color:var(--acc)}
+.flags{font-size:13px;color:var(--warn);background:var(--warnbg);border-radius:4px;padding:2px 6px;margin-top:4px}
+.ctl{display:flex;flex-direction:column;gap:4px}.ctl button{padding:2px 8px}
+.stats{font-size:14px;opacity:.85}
+#print{display:none}
+@media print{
+ header,main{display:none!important}#print{display:block}
+ body{background:#fff;color:#000}
+ .pblock{display:grid;grid-template-columns:var(--imgw,160px) 1fr;gap:16px;padding:14px 0;border-bottom:2px solid #000;break-inside:avoid;align-items:center}
+ .pblock .pimg{aspect-ratio:1;border:2px dashed #999;display:flex;align-items:center;justify-content:center}
+ .pblock .pimg img{max-width:100%;max-height:100%}
+ .pblock p{margin:0;font:600 calc(var(--fs,20)*1px)/1.5 Arial,Helvetica,sans-serif}
+ .ptitle{font:700 28px Arial;margin:0 0 8px}
+}
+</style>
+</head>
+<body>
+<header><h1>EasyReadify</h1><p>Paste plain text → one idea per block, big type, a picture slot each. Print to PDF. Nothing leaves your browser.</p></header>
+<main>
+<section>
+ <div class="row"><input id="title" placeholder="Document title" style="flex:1;padding:6px;font:inherit;border:1px solid var(--line);border-radius:6px"></div>
+ <textarea id="src" placeholder="Paste your text here…"></textarea>
+ <div class="row">
+  <button class="primary" id="go">Make blocks</button>
+  <button id="auto">Auto-split long sentences</button>
+  <button id="sample">Load sample</button>
+ </div>
+ <div class="row">
+  <label>Font size <input type="range" id="fs" min="16" max="32" value="22"> <span id="fsv">22</span>pt</label>
+ </div>
+ <div class="row">
+  <label>Max words/sentence <input type="number" id="maxw" min="5" max="40" value="15" style="width:60px"></label>
+ </div>
+ <div class="row"><button id="printbtn">Print / save PDF</button><button id="md">Copy Markdown</button></div>
+ <div class="stats" id="stats"></div>
+</section>
+<section id="blocks"></section>
+</main>
+<div id="print"></div>
+
+<script id="core">
+/* EasyReadify core — pure functions, no DOM. Tested with node. */
+(function (root) {
+  var ABBR = /\b(?:Mr|Mrs|Ms|Dr|Prof|St|vs|etc|e\.g|i\.e|No|approx)\.$/i;
+  var SIMPLER = {
+    utilize:'use', utilise:'use', commence:'start', terminate:'end', assistance:'help', obtain:'get', purchase:'buy',
+    approximately:'about', additional:'more', sufficient:'enough', require:'need', requirements:'needs', regarding:'about',
+    subsequently:'later', prior:'before', individuals:'people', individual:'person', demonstrate:'show', ensure:'make sure',
+    attempt:'try', consequently:'so', however:'but', therefore:'so', inform:'tell', residence:'home', facilitate:'help',
+    eligible:'allowed', accommodation:'housing', remuneration:'pay', endeavour:'try', numerous:'many', modify:'change'
+  };
+  function countWords(s) { var m = s.match(/[A-Za-z0-9À-ɏ'’-]+/g); return m ? m.length : 0; }
+  function syllables(w) {
+    w = w.toLowerCase().replace(/[^a-z]/g, '');
+    if (w.length <= 3) return 1;
+    w = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').replace(/^y/, '');
+    var m = w.match(/[aeiouy]{1,2}/g);
+    return m ? m.length : 1;
+  }
+  function splitSentences(text) {
+    var out = [];
+    String(text || '').replace(/\r/g, '').split(/\n+/).forEach(function (line) {
+      line = line.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '').trim();
+      if (!line) return;
+      var parts = line.split(/(?<=[.!?]["”')\]]?)\s+(?=["“'(\[]?[A-Z0-9])/), cur = '';
+      parts.forEach(function (p) {
+        cur = cur ? cur + ' ' + p : p;
+        if (!ABBR.test(p)) { out.push(cur.trim()); cur = ''; }
+      });
+      if (cur) out.push(cur.trim());
+    });
+    return out;
+  }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function ensureEnd(s) { return /[.!?]["”')]?$/.test(s) ? s : s + '.'; }
+  /* Split at ';' and at ', and|but|so|because|which|while' when both halves keep >=4 words. */
+  function autoSplit(sentence, maxWords) {
+    maxWords = maxWords || 15;
+    if (countWords(sentence) <= maxWords) return [sentence];
+    var pieces = [], rest = sentence;
+    var re = /;\s+|,\s+(?:and|but|so|because|which|while|although)\s+/i;
+    for (var guard = 0; guard < 20; guard++) {
+      var m = re.exec(rest);
+      if (!m) break;
+      var a = rest.slice(0, m.index), b = rest.slice(m.index + m[0].length);
+      if (countWords(a) < 4 || countWords(b) < 4) {
+        var rest2 = rest.slice(m.index + m[0].length);
+        // try a later separator by masking this one
+        var masked = rest.slice(0, m.index + m[0].length) + rest2;
+        var m2 = re.exec(rest2);
+        if (!m2) break;
+        var a2 = rest.slice(0, m.index + m[0].length + m2.index), b2 = rest2.slice(m2.index + m2[0].length);
+        if (countWords(a2) < 4 || countWords(b2) < 4) break;
+        a = a2; b = b2;
+        m = { 0: m2[0] };
+      }
+      var conn = (m[0].match(/(and|but|so|because|which|while|although)/i) || [''])[0].toLowerCase();
+      pieces.push(ensureEnd(a.trim()));
+      rest = (conn && conn !== 'and' && conn !== 'which' ? cap(conn) + ' ' : '') + (conn === 'which' ? 'This ' : '') + b;
+      rest = cap(rest);
+      if (countWords(rest) <= maxWords) break;
+    }
+    pieces.push(rest);
+    return pieces;
+  }
+  function analyze(sentence, maxWords) {
+    maxWords = maxWords || 15;
+    var flags = [], words = countWords(sentence);
+    if (words > maxWords) flags.push('Long: ' + words + ' words (aim for ' + maxWords + ' or fewer)');
+    var hard = [], simple = [];
+    (sentence.match(/[A-Za-z][A-Za-z'’-]*/g) || []).forEach(function (w) {
+      var lw = w.toLowerCase();
+      if (SIMPLER[lw]) simple.push(w + ' → ' + SIMPLER[lw]);
+      else if (syllables(w) >= 4 && !/^[A-Z]/.test(w)) hard.push(w);
+    });
+    if (simple.length) flags.push('Simpler word: ' + simple.join(', '));
+    if (hard.length) flags.push('Hard word? ' + hard.join(', ') + ' — explain or replace');
+    var acr = sentence.match(/\b[A-Z]{2,}\b/g);
+    if (acr) flags.push('Abbreviation: ' + acr.join(', ') + ' — spell out');
+    if (/\b(?:is|are|was|were|be|been|being)\s+\w+ed\b(?:\s+by\b)?/i.test(sentence)) flags.push('Maybe passive — say who does it');
+    if (/[(;]/.test(sentence)) flags.push('Brackets or semicolon — split into separate ideas');
+    return { words: words, flags: flags };
+  }
+  function summarize(sentences, maxWords) {
+    var total = 0, over = 0, flagged = 0;
+    sentences.forEach(function (s) {
+      var a = analyze(s, maxWords); total += a.words;
+      if (a.words > maxWords) over++;
+      if (a.flags.length) flagged++;
+    });
+    return { blocks: sentences.length, avgWords: sentences.length ? Math.round(total / sentences.length * 10) / 10 : 0, over: over, flagged: flagged };
+  }
+  function toMarkdown(title, blocks) {
+    return (title ? '# ' + title + '\n\n' : '') + blocks.map(function (b) { return b.text; }).join('\n\n') + '\n';
+  }
+  var api = { splitSentences: splitSentences, autoSplit: autoSplit, analyze: analyze, summarize: summarize, countWords: countWords, syllables: syllables, toMarkdown: toMarkdown };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ER = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var blocks = [];
+  try { blocks = JSON.parse(localStorage.getItem('er_blocks') || '[]'); $('src').value = localStorage.getItem('er_src') || ''; $('title').value = localStorage.getItem('er_title') || ''; } catch (e) {}
+  function save() { try { localStorage.setItem('er_blocks', JSON.stringify(blocks)); localStorage.setItem('er_src', $('src').value); localStorage.setItem('er_title', $('title').value); } catch (e) { /* quota (big images) — ignore */ } }
+  function maxw() { return Math.max(5, parseInt($('maxw').value, 10) || 15); }
+  function mk(t) { return { text: t, img: null }; }
+  function setFs() { document.documentElement.style.setProperty('--fs', $('fs').value); $('fsv').textContent = $('fs').value; }
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+  function render() {
+    var host = $('blocks'); host.textContent = '';
+    if (!blocks.length) { host.appendChild(el('p', 'stats', 'No blocks yet. Paste text and press "Make blocks".')); }
+    blocks.forEach(function (b, i) {
+      var row = el('div', 'block');
+      var img = el('div', 'img');
+      if (b.img) { var im = el('img'); im.src = b.img; im.alt = ''; img.appendChild(im); } else img.textContent = 'Click to add a picture';
+      img.onclick = function () { pick(i); };
+      var mid = el('div'); var ta = el('textarea', 'txt'); ta.rows = 1; ta.value = b.text;
+      function fit() { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+      ta.oninput = function () { b.text = ta.value; fit(); save(); flags(); stats(); };
+      mid.appendChild(ta); var fl = el('div'); mid.appendChild(fl);
+      function flags() { fl.textContent = ''; var a = ER.analyze(b.text, maxw()); a.flags.forEach(function (f) { fl.appendChild(el('div', 'flags', f)); }); }
+      var ctl = el('div', 'ctl');
+      [['↑', function () { move(i, -1); }], ['↓', function () { move(i, 1); }], ['Split', function () { splitAt(i, ta); }], ['✕', function () { blocks.splice(i, 1); save(); render(); }]].forEach(function (c) {
+        var bt = el('button', '', c[0]); bt.type = 'button'; bt.onclick = c[1]; ctl.appendChild(bt);
+      });
+      row.appendChild(img); row.appendChild(mid); row.appendChild(ctl); host.appendChild(row);
+      fit(); flags();
+    });
+    stats(); save();
+  }
+  function stats() {
+    var s = ER.summarize(blocks.map(function (b) { return b.text; }), maxw());
+    $('stats').textContent = s.blocks + ' blocks · avg ' + s.avgWords + ' words · ' + s.over + ' too long · ' + s.flagged + ' with hints';
+  }
+  function move(i, d) { var j = i + d; if (j < 0 || j >= blocks.length) return; var t = blocks[i]; blocks[i] = blocks[j]; blocks[j] = t; render(); }
+  function splitAt(i, ta) {
+    var pos = ta.selectionStart, t = blocks[i].text;
+    if (pos <= 0 || pos >= t.length) { alert('Put the cursor where the sentence should be split, then press Split.'); return; }
+    var a = t.slice(0, pos).trim(), b = t.slice(pos).trim();
+    blocks[i].text = a; blocks.splice(i + 1, 0, mk(b)); render();
+  }
+  function pick(i) {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = function () {
+      var f = inp.files[0]; if (!f) return;
+      if (f.size > 4e6) { alert('Image is over 4 MB. Please use a smaller picture.'); return; }
+      var r = new FileReader(); r.onload = function () { blocks[i].img = r.result; render(); }; r.onerror = function () { alert('Could not read that image.'); }; r.readAsDataURL(f);
+    }; inp.click();
+  }
+  $('go').onclick = function () {
+    var s = ER.splitSentences($('src').value);
+    if (!s.length) { alert('Paste some text first.'); return; }
+    blocks = s.map(mk); render();
+  };
+  $('auto').onclick = function () {
+    var out = []; blocks.forEach(function (b) { ER.autoSplit(b.text, maxw()).forEach(function (t, k) { out.push(k === 0 ? { text: t, img: b.img } : mk(t)); }); });
+    blocks = out; render();
+  };
+  $('sample').onclick = function () {
+    $('src').value = 'You must apply for the housing benefit before the 30th of April, and you will need to provide documentation regarding your income. If your circumstances change, you should inform the council immediately; failure to do so may result in the payment being terminated. Individuals who are eligible will be contacted by the Housing Team (HT) within 14 days.';
+    $('go').onclick(); $('auto').onclick();
+  };
+  $('maxw').oninput = render;
+  $('fs').oninput = function () { setFs(); save(); };
+  $('src').oninput = save; $('title').oninput = save;
+  $('md').onclick = function () {
+    var md = ER.toMarkdown($('title').value, blocks);
+    (navigator.clipboard ? navigator.clipboard.writeText(md) : Promise.reject()).then(function () { $('md').textContent = 'Copied!'; setTimeout(function () { $('md').textContent = 'Copy Markdown'; }, 1500); }, function () { prompt('Copy:', md); });
+  };
+  $('printbtn').onclick = function () {
+    var p = $('print'); p.textContent = '';
+    if ($('title').value) p.appendChild(el('h1', 'ptitle', $('title').value));
+    blocks.forEach(function (b) {
+      var r = el('div', 'pblock'), im = el('div', 'pimg');
+      if (b.img) { var i = el('img'); i.src = b.img; i.alt = ''; im.appendChild(i); }
+      r.appendChild(im); r.appendChild(el('p', '', b.text)); p.appendChild(r);
+    });
+    window.print();
+  };
+  setFs(); render();
+})();
+</script>
+</body>
+</html>

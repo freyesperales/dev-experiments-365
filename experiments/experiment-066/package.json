@@ -1,0 +1,1 @@
+{"name":"easyreadify","version":"1.0.0","license":"MIT","scripts":{"test":"node --test test/core.test.js","start":"node serve.js"}}

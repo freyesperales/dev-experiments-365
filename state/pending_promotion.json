@@ -1,7 +1,12 @@
 [
- {
-  "n": 65,
-  "slug": "chatledger",
-  "hook": "Drop a WhatsApp chat export, see who owes you what — one HTML file, nothing uploaded."
- }
+  {
+    "n": 65,
+    "slug": "chatledger",
+    "hook": "Drop a WhatsApp chat export, see who owes you what \u2014 one HTML file, nothing uploaded."
+  },
+  {
+    "n": 66,
+    "slug": "easyreadify",
+    "hook": "Paste plain text, get a printable Easy Read page: one idea per block, big type, a picture slot each."
+  }
 ]
