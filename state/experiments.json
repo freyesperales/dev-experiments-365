@@ -1,5 +1,5 @@
 {
-  "last_number": 78,
+  "last_number": 79,
   "entries": [
     {
       "n": 1,
@@ -636,6 +636,14 @@
       "mode": "monorepo",
       "status": "completed",
       "note": "built by the routine on 2026-10-19; published 2026-10-22 (push had failed: GitHub access)"
+    },
+    {
+      "n": 79,
+      "date": "2026-10-23",
+      "title": "Cuepoint — piecewise multi-anchor subtitle re-timing (drift, mid-file jumps, encoding/mojibake repair, cleanup); single offline HTML + zero-dep CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-079",
+      "mode": "monorepo",
+      "status": "completed"
     }
   ]
 }

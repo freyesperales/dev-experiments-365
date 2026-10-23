@@ -1,0 +1,8 @@
+{
+  "name": "cuepoint",
+  "version": "1.0.0",
+  "description": "Fix out-of-sync subtitles: constant shift, drift and mid-file jumps, plus encoding and cleanup. Offline.",
+  "bin": { "cuepoint": "cli.js" },
+  "scripts": { "test": "node --test test/test.js", "build": "node build.js", "start": "node build.js && echo open index.html" },
+  "license": "MIT"
+}

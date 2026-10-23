@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cuepoint — fix subtitles that drift, jump or show mojibake</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--fg:#1b1d20;--mut:#667;--line:#e2e2dc;--acc:#2456d6;--bad:#b3261e;--badbg:#fde8e6;--ok:#1d6b3a;--okbg:#e3f5e9;--hl:#fff3d6}
+@media(prefers-color-scheme:dark){:root{--bg:#121316;--card:#1a1c20;--fg:#e8e8e6;--mut:#9a9fa8;--line:#2c2f35;--acc:#7da2ff;--bad:#ff8a80;--badbg:#3a1d1b;--ok:#7fd69a;--okbg:#17301f;--hl:#3a2f14}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:24px 16px 60px}
+h1{margin:0 0 4px;font-size:26px}h1 span{color:var(--acc)}p.sub{margin:0 0 20px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+h2{font-size:16px;margin:0 0 10px}
+#drop{border:2px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--mut);cursor:pointer}
+#drop.over{border-color:var(--acc);color:var(--acc)}
+label{display:block;font-size:12px;color:var(--mut);margin:0 0 3px}
+input,select,button,textarea{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+button{cursor:pointer}button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}button:disabled{opacity:.5;cursor:default}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.chk{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:14px}.chk label{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--fg);margin:0}
+.msg{padding:8px 12px;border-radius:8px;margin-top:10px;font-size:14px}.err{background:var(--badbg);color:var(--bad)}.ok{background:var(--okbg);color:var(--ok)}
+.wrap{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{position:sticky;top:0;background:var(--card);color:var(--mut)}
+td.t{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}td.x{white-space:pre-wrap}
+tr.anc td{background:var(--hl)}tr.dim td{opacity:.45}
+td input{width:128px;font:12px ui-monospace,monospace;padding:3px 6px}
+.note{color:var(--mut);font-size:13px}footer{color:var(--mut);font-size:12px;margin-top:24px}a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+<h1>cue<span>point</span></h1>
+<p class="sub">Subtitles off by a constant, drifting (23.976 vs 25 fps), or jumping after the ad break? Pin two or more cues to where they should be. Offline — nothing leaves this page.</p>
+
+<div class="card">
+  <div id="drop">Drop a subtitle file here (.srt .vtt .ass .ssa .sub) or click to choose<input id="file" type="file" accept=".srt,.vtt,.ass,.ssa,.sub,.txt" hidden></div>
+  <div id="loadmsg"></div>
+  <div class="row" style="margin-top:12px">
+    <div><label>Input encoding</label><select id="enc"><option value="auto">Auto (UTF-8, else Windows-1252)</option><option>windows-1252</option><option>windows-1250</option><option>windows-1251</option><option>windows-1253</option><option>windows-1254</option><option>iso-8859-2</option><option>iso-8859-7</option><option>shift_jis</option><option>gbk</option><option>big5</option><option>euc-kr</option><option>utf-8</option></select></div>
+    <div><label>MicroDVD (.sub) frame rate</label><input id="subfps" value="23.976"></div>
+  </div>
+</div>
+
+<div class="card" id="work" hidden>
+  <h2>1 · Fix the timing</h2>
+  <p class="note">Click <b>Pin</b> on a cue, then type when it <i>should</i> appear (e.g. <code>1:02:03.5</code>). Pin one cue for a constant shift, two or more to fix drift. <b>Step</b> mode keeps a constant offset between pins, for files that jump.</p>
+  <div class="row">
+    <div><label>Pins behave as</label><select id="mode"><option value="smooth">Smooth — stretch between pins</option><option value="step">Step — constant offset per segment</option></select></div>
+    <div><label>Extra shift (e.g. +2.5)</label><input id="shift" placeholder="0"></div>
+    <div><label>Frame rate: file made for</label><select id="fpsFrom"><option value="">— no change —</option></select></div>
+    <div><label>…video plays at</label><select id="fpsTo"></select></div>
+  </div>
+  <div style="margin-top:10px"><label>Show cues starting at #</label><input id="from" value="1" style="width:90px"></div>
+  <div id="fixmsg" class="note" style="margin-top:8px"></div>
+  <div class="wrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>Now</th><th>Pin: should be</th><th>Result</th><th>Text</th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="note" id="more"></div>
+
+  <h2 style="margin-top:18px">2 · Clean up</h2>
+  <div class="chk">
+    <label><input type="checkbox" id="repair" checked> Fix order, overlaps, zero-length, duplicates</label>
+    <label><input type="checkbox" id="hi"> Strip [sound effects], ♪ lines, SPEAKER: labels</label>
+    <label><input type="checkbox" id="tags"> Strip &lt;i&gt; / {\an8} tags</label>
+    <label><input type="checkbox" id="wm"> Remove ad / credit cues</label>
+  </div>
+
+  <h2 style="margin-top:18px">3 · Save</h2>
+  <div class="row">
+    <div><label>Output format</label><select id="out"><option value="srt">SRT</option><option value="vtt">WebVTT</option><option value="ass">ASS</option><option value="sub">MicroDVD .sub</option></select></div>
+    <div style="align-self:end"><button class="pri" id="dl">Download</button> <button id="cp">Copy text</button></div>
+  </div>
+  <div id="savemsg"></div>
+</div>
+
+<footer>Development Experiment 079 of dev-experiments-365 · <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-079">source</a> · MIT</footer>
+</main>
+<script>
+/*__CORE__*/
+</script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let src = null; // {cues, format, name, mojibake, encoding}
+  let pins = new Map(); // cue index -> target text
+  let rawBytes = null;
+  const FPS = [23.976, 24, 25, 29.97, 30];
+  FPS.forEach((f) => { $('fpsFrom').add(new Option(f, f)); });
+  FPS.forEach((f) => { $('fpsTo').add(new Option(f, f)); });
+  $('fpsTo').value = '23.976';
+
+  function msg(el, cls, text) { el.innerHTML = ''; if (!text) return; const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text; el.appendChild(d); }
+  function load() {
+    if (!rawBytes) return;
+    try {
+      const d = Cuepoint.decode(rawBytes, $('enc').value);
+      const mj = Cuepoint.fixMojibake(d.text);
+      const ext = (src && src.name || '').split('.').pop().toLowerCase();
+      const p = Cuepoint.parse(mj.text, { fps: parseFloat($('subfps').value) || 23.976, format: ext === 'sub' ? 'sub' : 'auto' });
+      src = { cues: p.cues, format: p.format, name: (src && src.name) || 'subtitles.srt', mojibake: mj.fixed, encoding: d.encoding };
+      pins = new Map();
+      $('out').value = p.format === 'sub' || p.format === 'ass' || p.format === 'vtt' ? p.format : 'srt';
+      msg($('loadmsg'), 'ok', `${src.name}: ${p.format.toUpperCase()}, ${p.cues.length} cues, ${Cuepoint.fmtTime(p.cues[0].start)} → ${Cuepoint.fmtTime(p.cues[p.cues.length - 1].end)}, read as ${d.encoding}${mj.fixed ? ' — garbled UTF-8 characters repaired' : ''}`);
+      $('work').hidden = false; render();
+    } catch (e) { src = null; $('work').hidden = true; msg($('loadmsg'), 'err', e.message); }
+  }
+  function anchors() {
+    const out = [];
+    for (const [i, v] of pins) { const to = Cuepoint.parseTime(v); if (to != null) out.push({ from: src.cues[i].start, to, idx: i }); }
+    return out;
+  }
+  function compute() {
+    let cues = src.cues; const notes = [];
+    const ff = parseFloat($('fpsFrom').value), ft = parseFloat($('fpsTo').value);
+    if (ff && ft && ff !== ft) { cues = Cuepoint.fpsConvert(cues, ff, ft); notes.push(`frame rate ${ff}→${ft}`); }
+    const sh = $('shift').value.trim();
+    if (sh) { const v = Cuepoint.parseTime(sh); if (v == null) throw new Cuepoint.SubError(`cannot read shift "${sh}"`); cues = Cuepoint.shift(cues, v); notes.push(`shift ${sh}`); }
+    const a = anchors();
+    if (a.length) {
+      // pins are expressed against the ORIGINAL times; map them through the earlier steps
+      const base = src.cues.map((c, i) => [c, cues[i]]);
+      const aa = a.map((x) => ({ from: base[x.idx][1].start, to: x.to }));
+      cues = Cuepoint.retime(cues, aa, $('mode').value); notes.push(Cuepoint.describeFix(aa, $('mode').value));
+    }
+    return { cues, notes };
+  }
+  function render() {
+    if (!src) return;
+    let res;
+    try { res = compute(); msg($('fixmsg'), '', ''); $('fixmsg').textContent = res.notes.length ? 'Applying: ' + res.notes.join(' · ') : 'No timing change yet.'; }
+    catch (e) { res = { cues: src.cues }; $('fixmsg').innerHTML = ''; msg($('fixmsg'), 'err', e.message); }
+    const LIMIT = 400, tb = $('rows'); tb.innerHTML = '';
+    const off = Math.max(0, Math.min(src.cues.length - 1, (parseInt($('from').value, 10) || 1) - 1));
+    src.cues.slice(off, off + LIMIT).forEach((c, i0) => {
+      const i = i0 + off;
+      const tr = document.createElement('tr'); if (pins.has(i)) tr.className = 'anc';
+      const td = (cls, t) => { const x = document.createElement('td'); if (cls) x.className = cls; x.textContent = t; tr.appendChild(x); return x; };
+      td('', i + 1); td('t', Cuepoint.fmtTime(c.start));
+      const cell = document.createElement('td');
+      if (pins.has(i)) {
+        const inp = document.createElement('input'); inp.value = pins.get(i);
+        inp.addEventListener('change', () => { pins.set(i, inp.value); render(); });
+        const x = document.createElement('button'); x.textContent = '×'; x.title = 'remove pin'; x.addEventListener('click', () => { pins.delete(i); render(); });
+        cell.append(inp, ' ', x);
+      } else {
+        const b = document.createElement('button'); b.textContent = 'Pin'; b.addEventListener('click', () => { pins.set(i, Cuepoint.fmtTime(res.cues[i].start, '.')); render(); });
+        cell.appendChild(b);
+      }
+      tr.appendChild(cell); td('t', Cuepoint.fmtTime(res.cues[i].start)); td('x', c.text);
+      tb.appendChild(tr);
+    });
+    $('more').textContent = src.cues.length > LIMIT ? `Showing ${LIMIT} of ${src.cues.length} cues from #${off + 1}; pins apply to the whole file — change “Show cues starting at” to reach others.` : '';
+  }
+  function output() {
+    const res = compute();
+    const cl = Cuepoint.clean(res.cues, { repair: $('repair').checked, stripHI: $('hi').checked, stripTags: $('tags').checked, stripWatermarks: $('wm').checked });
+    const fmt = $('out').value;
+    return { text: Cuepoint.stringify(cl.cues, fmt, { fps: parseFloat($('subfps').value) || 23.976 }), fmt, report: cl.report };
+  }
+  function reportText(r) { const b = Object.entries(r).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`); return b.length ? ' Cleaned — ' + b.join(', ') + '.' : ''; }
+  $('dl').addEventListener('click', () => {
+    try {
+      const o = output(); const base = src.name.replace(/\.[^.]+$/, '');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([o.text], { type: 'text/plain;charset=utf-8' }));
+      a.download = `${base}.synced.${o.fmt}`; document.body.appendChild(a); a.click(); a.remove();
+      msg($('savemsg'), 'ok', `Saved ${a.download} (UTF-8).` + reportText(o.report));
+    } catch (e) { msg($('savemsg'), 'err', e.message); }
+  });
+  $('cp').addEventListener('click', async () => {
+    try { const o = output(); await navigator.clipboard.writeText(o.text); msg($('savemsg'), 'ok', 'Copied to clipboard.' + reportText(o.report)); }
+    catch (e) { msg($('savemsg'), 'err', e.message || 'clipboard unavailable'); }
+  });
+  ['mode', 'shift', 'fpsFrom', 'fpsTo', 'from'].forEach((id) => $(id).addEventListener('input', render));
+  ['enc', 'subfps'].forEach((id) => $(id).addEventListener('change', load));
+  function takeFile(f) {
+    if (!f) return;
+    if (f.size > 20 * 1024 * 1024) { msg($('loadmsg'), 'err', 'That file is over 20 MB — it does not look like a subtitle file.'); return; }
+    const r = new FileReader();
+    r.onload = () => { rawBytes = new Uint8Array(r.result); src = { name: f.name }; load(); };
+    r.onerror = () => msg($('loadmsg'), 'err', 'Could not read that file.');
+    r.readAsArrayBuffer(f);
+  }
+  $('drop').addEventListener('click', () => $('file').click());
+  $('file').addEventListener('change', (e) => takeFile(e.target.files[0]));
+  ['dragenter', 'dragover'].forEach((ev) => $('drop').addEventListener(ev, (e) => { e.preventDefault(); $('drop').classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => $('drop').addEventListener(ev, (e) => { e.preventDefault(); $('drop').classList.remove('over'); }));
+  $('drop').addEventListener('drop', (e) => takeFile(e.dataTransfer.files[0]));
+})();
+</script>
+</body>
+</html>
