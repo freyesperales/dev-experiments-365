@@ -1,0 +1,8 @@
+{
+  "name": "harbor-har",
+  "version": "1.0.0",
+  "description": "Private, offline HAR viewer: waterfall, filter, copy-as-curl, redact secrets, diff two captures.",
+  "bin": { "harbor": "cli.js" },
+  "scripts": { "test": "node --test test/test.js", "build": "node build.js", "start": "node build.js && echo open index.html" },
+  "license": "MIT"
+}

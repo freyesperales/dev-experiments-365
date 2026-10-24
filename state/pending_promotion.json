@@ -73,5 +73,10 @@
     "n": 79,
     "slug": "cuepoint",
     "hook": "Subtitles drift or jump? Pin two cues to where they belong and re-time the whole file — offline, one HTML file."
+  },
+  {
+    "n": 80,
+    "slug": "harbor",
+    "hook": "Open a HAR file privately: waterfall, filter, copy-as-curl, strip the secrets, and diff two captures — one HTML file, nothing uploaded."
   }
 ]

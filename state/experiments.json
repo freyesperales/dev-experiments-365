@@ -1,5 +1,5 @@
 {
-  "last_number": 79,
+  "last_number": 80,
   "entries": [
     {
       "n": 1,
@@ -642,6 +642,14 @@
       "date": "2026-10-23",
       "title": "Cuepoint — piecewise multi-anchor subtitle re-timing (drift, mid-file jumps, encoding/mojibake repair, cleanup); single offline HTML + zero-dep CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-079",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 80,
+      "date": "2026-10-24",
+      "title": "HARbor — private offline HAR viewer: waterfall, filter language, copy-as-curl, verified secret redaction, and before/after capture diff with CI gate (single HTML file + zero-dep CLI)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-080",
       "mode": "monorepo",
       "status": "completed"
     }
