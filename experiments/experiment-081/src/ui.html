@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caddify — nginx.conf to Caddyfile</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#16181d;--mute:#5f6673;--line:#dfe3ea;--acc:#1f7a4d;--man:#b42318;--dif:#9a6700;--noop:#5f6673;--code:#0d1117;--codeink:#e6edf3}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1115;--panel:#171a21;--ink:#e8eaee;--mute:#99a1ae;--line:#2a2f3a;--acc:#4cc38a;--man:#ff7b72;--dif:#e3b341;--noop:#99a1ae}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+header{padding:14px 20px;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-size:20px;margin:0}header p{margin:0;color:var(--mute)}
+main{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 20px}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:420px;overflow:hidden}
+.bar{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.bar b{flex:1}button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:4px 10px;border-radius:7px;cursor:pointer}button:hover{border-color:var(--acc)}
+textarea,pre{flex:1;margin:0;border:0;padding:12px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;resize:none;outline:0;width:100%;overflow:auto;white-space:pre;tab-size:4}
+textarea{background:var(--panel);color:var(--ink)}pre{background:var(--code);color:var(--codeink)}
+.score{padding:12px 20px}.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chip{border:1px solid var(--line);border-radius:99px;padding:3px 12px;cursor:pointer;background:var(--panel)}.chip.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.sites{color:var(--mute);margin:0 0 8px}
+ul{list-style:none;margin:0;padding:0;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+li{padding:9px 14px;border-bottom:1px solid var(--line);cursor:pointer}li:last-child{border:0}li:hover{background:var(--bg)}
+.k{display:inline-block;min-width:68px;font-weight:700;font-size:12px;letter-spacing:.04em}.manual .k{color:var(--man)}.differs .k{color:var(--dif)}.noop .k{color:var(--noop)}
+code{font:12.5px ui-monospace,Menlo,monospace;background:var(--bg);padding:1px 5px;border-radius:4px}.hint{color:var(--mute);display:block;margin-left:72px}.err{color:var(--man);padding:12px}
+footer{padding:10px 20px 24px;color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<header><h1>Caddify</h1><p>Paste an nginx config. Get a Caddyfile — and an honest list of what couldn't be translated. Nothing leaves your browser.</p></header>
+<main>
+  <section class="pane"><div class="bar"><b>nginx.conf</b><button id="sample">Load sample</button><button id="clear">Clear</button></div>
+    <textarea id="in" spellcheck="false" placeholder="Paste nginx.conf here, or drop a file…"></textarea></section>
+  <section class="pane"><div class="bar"><b>Caddyfile</b><button id="copy">Copy</button><button id="dl">Download</button></div>
+    <pre id="out"></pre></section>
+</main>
+<div class="score"><div id="sum" class="sites"></div><div class="chips" id="chips"></div><ul id="rep"></ul></div>
+<footer>Caddify translates the common 90% (server/location/proxy_pass/upstream/rewrite/return/try_files/php/TLS/headers/gzip/auth/ACL). Always run <code>caddy validate</code> before deploying. Development Experiment 081 of dev-experiments-365.</footer>
+<script>
+/*__CORE__*/
+</script>
+<script>
+(function(){
+'use strict';
+var SAMPLE = /*__SAMPLE__*/;
+var $ = function(id){return document.getElementById(id)}, inp=$('in'), out=$('out'), rep=$('rep'), chips=$('chips'), sum=$('sum');
+var filter='manual', last=null, timer=null;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function run(){
+  var t=inp.value; try{history.replaceState(null,'',t&&t.length<6000?'#'+btoa(unescape(encodeURIComponent(t))):location.pathname)}catch(e){}
+  if(!t.trim()){out.textContent='';rep.innerHTML='';chips.innerHTML='';sum.textContent='';last=null;return}
+  var r; try{ r=Caddify.convert(t) }catch(e){ out.textContent='';chips.innerHTML='';sum.textContent='';rep.innerHTML='<div class="err">Could not parse the config: '+esc(e.message)+'</div>';return }
+  last=r; out.textContent=r.caddyfile;
+  var s=r.stats; sum.innerHTML=r.sites.filter(function(x){return !x.dropped}).length+' site block(s) written'+(r.sites.some(function(x){return x.dropped})?' (HTTP→HTTPS redirect servers dropped — Caddy does that itself)':'')+'.';
+  var defs=[['manual','Manual work',s.manual],['differs','Approximate',s.differs],['noop','Handled / not needed',s.noop],['ok','Translated',s.ok]];
+  if(!s.manual&&filter==='manual')filter=s.differs?'differs':'noop';
+  chips.innerHTML=defs.map(function(d){return '<span class="chip'+(filter===d[0]?' on':'')+'" data-k="'+d[0]+'">'+d[1]+' · '+d[2]+'</span>'}).join('');
+  var rows=r.report.filter(function(x){return x.kind===filter});
+  rep.innerHTML=rows.length?rows.map(function(x){return '<li class="'+x.kind+'" data-l="'+x.line+'"><span class="k">'+x.kind.toUpperCase()+'</span>line '+x.line+' · <code>'+esc(x.directive)+'</code> '+esc(x.message)+(x.hint?'<span class="hint">→ '+esc(x.hint)+'</span>':'')+'</li>'}).join(''):'<li>Nothing in this category.</li>';
+}
+function later(){clearTimeout(timer);timer=setTimeout(run,150)}
+inp.addEventListener('input',later);
+chips.addEventListener('click',function(e){var k=e.target.getAttribute&&e.target.getAttribute('data-k'); if(k){filter=k;run()}});
+rep.addEventListener('click',function(e){var li=e.target.closest('li'); if(!li||!li.dataset.l)return; var n=+li.dataset.l, lines=inp.value.split('\n'), p=0; for(var i=0;i<n-1;i++)p+=lines[i].length+1; inp.focus(); inp.setSelectionRange(p,p+(lines[n-1]||'').length); inp.scrollTop=Math.max(0,(n-4))*18});
+$('sample').onclick=function(){inp.value=SAMPLE;filter='manual';run()};
+$('clear').onclick=function(){inp.value='';run()};
+$('copy').onclick=function(){if(!last)return;var b=$('copy');(navigator.clipboard?navigator.clipboard.writeText(last.caddyfile):Promise.reject()).then(function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1200)},function(){var r=document.createRange();r.selectNodeContents(out);var s=getSelection();s.removeAllRanges();s.addRange(r)})};
+$('dl').onclick=function(){if(!last)return;var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([last.caddyfile],{type:'text/plain'}));a.download='Caddyfile';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},500)};
+['dragover','drop'].forEach(function(ev){inp.addEventListener(ev,function(e){e.preventDefault(); if(ev==='drop'&&e.dataTransfer.files[0]){var f=e.dataTransfer.files[0], fr=new FileReader(); fr.onload=function(){inp.value=fr.result;run()}; fr.readAsText(f)}})});
+try{ if(location.hash.length>1){inp.value=decodeURIComponent(escape(atob(location.hash.slice(1))))} }catch(e){}
+if(!inp.value){inp.value=SAMPLE}
+run();
+})();
+</script>
+</body>
+</html>

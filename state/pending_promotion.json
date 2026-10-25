@@ -78,5 +78,10 @@
     "n": 80,
     "slug": "harbor",
     "hook": "Open a HAR file privately: waterfall, filter, copy-as-curl, strip the secrets, and diff two captures — one HTML file, nothing uploaded."
+  },
+  {
+    "n": 81,
+    "slug": "caddify",
+    "hook": "Paste an nginx config, get a Caddyfile — plus an honest list of what couldn't be translated and why. One HTML file, nothing uploaded."
   }
 ]

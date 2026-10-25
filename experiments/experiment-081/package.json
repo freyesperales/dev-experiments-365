@@ -1,0 +1,8 @@
+{
+  "name": "caddify",
+  "version": "1.0.0",
+  "description": "Translate nginx.conf into a Caddyfile — and get a precise list of what could not be translated, and why.",
+  "bin": { "caddify": "cli.js" },
+  "scripts": { "test": "node --test test/test.js", "build": "node build.js", "start": "node build.js && echo open index.html" },
+  "license": "MIT"
+}
