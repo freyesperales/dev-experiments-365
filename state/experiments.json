@@ -1,5 +1,5 @@
 {
-  "last_number": 81,
+  "last_number": 82,
   "entries": [
     {
       "n": 1,
@@ -658,6 +658,14 @@
       "date": "2026-10-25",
       "title": "Caddify — nginx.conf to Caddyfile translator that reports exactly what could not be translated (and why); single offline HTML file + zero-dep CLI (devtools lane)",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-081",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 82,
+      "date": "2026-10-26",
+      "title": "SafeCSV — shows what Excel would silently destroy in a CSV (leading zeros, 16+ digit IDs, SEPT1→1-Sep, formula injection), diagnoses already-damaged files, and writes a verified Excel-safe .xlsx; single offline HTML file + zero-dep CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-082",
       "mode": "monorepo",
       "status": "completed"
     }

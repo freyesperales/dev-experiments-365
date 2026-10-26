@@ -1,0 +1,5 @@
+id,name,zip,phone,account_no,gene,version,joined,note
+1,Ana Pérez,02134,+34600123456,1234567890123456789,SEPT1,1.10,2024-03-05,ok
+2,Bo Lindqvist,07030,+46701234567,9876543210987654321,MARCH1,2.0,2024-03-06,"=HYPERLINK(""http://evil.example"",""click"")"
+3,Chen Wei,90210,(415) 555-0100,1E3,DEC1,3.5,3/4,(5)
+4,Dee Okafor,00501,+2348012345678,0007,TP53,1.20,Jan 19,true

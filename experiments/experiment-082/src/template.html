@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SafeCSV: stop Excel from eating your CSV</title>
+<style>
+:root{--bg:#f7f7f4;--card:#fff;--ink:#1b1b18;--mute:#66665e;--line:#e2e1da;--acc:#0b6b4f;--acc-ink:#fff;--bad:#b3261e;--badbg:#fdecea;--warn:#8a5a00;--warnbg:#fff4d6;--ok:#1b6e3c;--okbg:#e5f4ea;--info:#44546a;--infobg:#eaeff5;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#14140f;--card:#1d1d17;--ink:#ecebe3;--mute:#9a998d;--line:#33332a;--acc:#4fc29a;--acc-ink:#07261b;--bad:#ff8a80;--badbg:#3a1b19;--warn:#f0c15a;--warnbg:#38300f;--ok:#7fd8a0;--okbg:#14301f;--info:#a9b8cc;--infobg:#222a35}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:28px;margin:0 0 2px;letter-spacing:-.02em}
+.hook{color:var(--mute);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0}
+#drop{border:2px dashed var(--line);border-radius:12px;padding:30px 16px;text-align:center;cursor:pointer;background:var(--card)}
+#drop.over{border-color:var(--acc);background:var(--okbg)}
+#drop b{font-size:17px}
+button,.btn{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 13px;cursor:pointer}
+button.primary{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,#drop:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.mute{color:var(--mute)}
+.pill{display:inline-block;border-radius:99px;padding:1px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.destructive{background:var(--badbg);color:var(--bad)}
+.pill.altered{background:var(--warnbg);color:var(--warn)}
+.pill.cosmetic,.pill.injection{background:var(--infobg);color:var(--info)}
+.pill.ok{background:var(--okbg);color:var(--ok)}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+code,.mono{font-family:var(--mono);font-size:13px}
+.tablewrap{overflow-x:auto}
+.arrow{color:var(--mute)}
+.bad{color:var(--bad)}
+.tabs{display:flex;gap:6px;margin:18px 0 0}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stat{font-size:22px;font-weight:700}
+.stats{display:flex;gap:26px;flex-wrap:wrap}
+.err{background:var(--badbg);color:var(--bad);border-radius:8px;padding:10px 12px}
+textarea{width:100%;min-height:90px;font-family:var(--mono);font-size:13px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px}
+label{cursor:pointer}
+footer{color:var(--mute);margin-top:30px;font-size:13px}
+.hidden{display:none!important}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<main>
+<h1>SafeCSV</h1>
+<p class="hook">Drop a CSV. See exactly what Excel would silently destroy: leading zeros, long IDs, SEPT1 → 1-Sep. Then download a copy it can't ruin. Everything stays in your browser.</p>
+
+<div id="drop" tabindex="0" role="button" aria-label="Choose or drop a CSV file">
+  <b>Drop a .csv here</b><br><span class="mute">or click to choose (also .tsv, .txt). Nothing is uploaded.</span>
+  <input id="file" type="file" accept=".csv,.tsv,.txt,text/csv,text/plain" class="sr">
+</div>
+<div class="row" style="margin-top:8px">
+  <button id="sample">Try a sample</button>
+  <button id="sample2">Try a damaged sample</button>
+  <button id="togglePaste">Paste text instead</button>
+</div>
+<div id="pasteBox" class="hidden card"><textarea id="paste" placeholder="Paste CSV text here" aria-label="CSV text"></textarea><div class="row" style="margin-top:8px"><button id="pasteGo" class="primary">Analyze</button></div></div>
+<div id="error" class="err hidden" role="alert"></div>
+
+<section id="result" class="hidden">
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div><b id="fname"></b> <span class="mute" id="finfo"></span></div>
+      <div class="row">
+        <label>Delimiter <select id="delim"><option value=",">comma ,</option><option value=";">semicolon ;</option><option value="&#9;">tab</option><option value="|">pipe |</option></select></label>
+        <label><input type="checkbox" id="hdr" checked> first row is a header</label>
+      </div>
+    </div>
+    <div class="stats" id="stats" style="margin-top:10px"></div>
+    <div id="warnings" class="mute"></div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tabBefore" aria-selected="true">Before you open it</button>
+    <button role="tab" id="tabAfter" aria-selected="false">Already damaged?</button>
+  </div>
+
+  <div id="paneBefore">
+    <div class="card">
+      <h3 style="margin-top:0">Columns</h3>
+      <div class="tablewrap"><table id="cols"><thead><tr><th>Column</th><th>Excel will…</th><th>What happens</th><th>Force Text</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">What Excel would show <span class="mute" style="font-weight:400">(first 40 risky cells; US-English Excel)</span></h3>
+      <div class="tablewrap"><table id="cells"><thead><tr><th>Row</th><th>Column</th><th>Your file</th><th></th><th>Excel shows</th><th>Why</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Get a safe copy</h3>
+      <div class="row">
+        <button class="primary" id="dlXlsx">Download safe .xlsx</button>
+        <button id="dlCsv">Download UTF-8 .csv</button>
+        <label><input type="checkbox" id="guard"> neutralize =,+,-,@ formulas in the CSV (adds a leading ')</label>
+      </div>
+      <p class="mute" style="margin-bottom:0">The .xlsx stores flagged columns as Text, so every cell reads back exactly as in your CSV (verified before download). A plain .csv cannot protect itself: Excel decides how to read it when you open it, so use the .xlsx for flagged columns.</p>
+    </div>
+  </div>
+
+  <div id="paneAfter" class="hidden">
+    <div class="card" id="damage"></div>
+  </div>
+</section>
+
+<footer>SafeCSV · Development Experiment 082 of dev-experiments-365 · MIT · Excel behaviour modeled for US-English "General" format; other locales differ.</footer>
+</main>
+
+<script>
+/*__CORE__*/
+</script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { name: '', bytes: null, text: '', enc: '', rows: [], delim: ',', analysis: null, forced: {} };
+
+  var SAMPLE = 'id,name,zip,phone,account_no,gene,version,joined,note\n1,Ana Pérez,02134,+34600123456,1234567890123456789,SEPT1,1.10,2024-03-05,ok\n2,Bo Lindqvist,07030,+46701234567,9876543210987654321,MARCH1,2.0,2024-03-06,"=HYPERLINK(""http://evil.example"",""click"")"\n3,Chen Wei,90210,(415) 555-0100,1E3,DEC1,3.5,3/4,(5)\n4,Dee Okafor,00501,+2348012345678,0007,TP53,1.20,Jan 19,true\n';
+  var DAMAGED = 'id,zip,gene,account_no,total\n1,02134,TP53,1.23457E+18,10\n2,7030,1-Sep,9876543210987650000,#NAME?\n3,90210,2-Mar,5,12\n4,10001,BRCA1,6,13\n5,2134,EGFR,7,14\n6,60601,MYC,8,15\n7,94105,KRAS,9,16\n8,30301,APC,10,17\n';
+
+  function el(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    if (attrs) for (var k in attrs) { if (k === 'class') e.className = attrs[k]; else e.setAttribute(k, attrs[k]); }
+    (kids || []).forEach(function (c) { e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function show(id, on) { $(id).classList.toggle('hidden', !on); }
+  function fail(msg) { var e = $('error'); e.textContent = msg; show('error', !!msg); }
+  function vis(s) { return s.replace(/\t/g, '⇥').replace(/\n/g, '⏎').replace(/\r/g, '␍'); }
+
+  function loadBytes(name, bytes) {
+    try {
+      fail('');
+      if (!bytes.length) throw new Error('That file is empty.');
+      var d = SafeCSV.decode(bytes);
+      state.name = name; state.text = d.text; state.enc = d.encoding;
+      state.delim = SafeCSV.detectDelimiter(d.text);
+      $('delim').value = state.delim; $('hdr').checked = true;
+      state.forced = {};
+      run();
+    } catch (e) { fail(e.message); show('result', false); }
+  }
+  function run() {
+    try {
+      fail('');
+      state.delim = $('delim').value;
+      state.rows = SafeCSV.parseCSV(state.text, state.delim);
+      if (!state.rows.length) throw new Error('No rows found.');
+      var header = $('hdr').checked;
+      state.analysis = SafeCSV.analyze(state.rows, { header: header });
+      state.dx = SafeCSV.diagnose(state.rows, { header: header });
+      render();
+    } catch (e) { fail(e.message); show('result', false); }
+  }
+
+  function render() {
+    var a = state.analysis;
+    show('result', true);
+    $('fname').textContent = state.name;
+    $('finfo').textContent = state.enc + ' · ' + a.rowCount.toLocaleString() + ' rows × ' + a.colCount + ' columns';
+    var st = $('stats'); st.textContent = '';
+    [['destructive', 'cells Excel would destroy'], ['altered', 'cells it would change'], ['cosmetic', 'cosmetic'], ['injection', 'formula-injection risks']].forEach(function (p) {
+      st.appendChild(el('div', null, [el('div', { class: 'stat ' + (p[0] === 'destructive' && a.bySeverity[p[0]] ? 'bad' : '') }, [String(a.bySeverity[p[0]])]), el('div', { class: 'mute' }, [p[1]])]));
+    });
+    $('warnings').textContent = a.warnings.join(' ');
+    // columns
+    var tb = $('cols').tBodies[0]; tb.textContent = '';
+    a.columns.forEach(function (c) {
+      var sev = c.hazardCells ? c.severity : 'ok';
+      var label = { ok: 'Open fine', cosmetic: 'Reformat', altered: 'Alter', destructive: 'Destroy data', injection: 'Run as formula' }[sev];
+      var counts = Object.keys(c.counts).map(function (k) { return c.counts[k] + '× ' + SafeCSV.KIND_INFO[k].label; }).join('; ');
+      var cb = el('input', { type: 'checkbox', 'aria-label': 'Force ' + c.name + ' to Text' });
+      var auto = c.needsText || c.severity === 'injection';
+      cb.checked = state.forced[c.index] === undefined ? auto : state.forced[c.index];
+      cb.addEventListener('change', function () { state.forced[c.index] = cb.checked; });
+      tb.appendChild(el('tr', null, [
+        el('td', null, [el('b', null, [c.name])]),
+        el('td', null, [el('span', { class: 'pill ' + sev }, [label])]),
+        el('td', { class: 'mute' }, [counts || 'Nothing risky found']),
+        el('td', null, [cb])
+      ]));
+    });
+    // cells
+    var cb2 = $('cells').tBodies[0]; cb2.textContent = '';
+    a.cells.filter(function (x) { return x.severity !== 'cosmetic'; }).concat(a.cells.filter(function (x) { return x.severity === 'cosmetic'; })).slice(0, 40).forEach(function (x) {
+      cb2.appendChild(el('tr', null, [
+        el('td', { class: 'mono' }, [String(x.row)]),
+        el('td', null, [a.columns[x.col].name]),
+        el('td', { class: 'mono' }, [vis(x.value.length > 60 ? x.value.slice(0, 60) + '…' : x.value)]),
+        el('td', { class: 'arrow' }, ['→']),
+        el('td', { class: 'mono ' + (x.severity === 'destructive' ? 'bad' : '') }, [vis(x.excel)]),
+        el('td', { class: 'mute' }, [x.label])
+      ]));
+    });
+    if (!a.cells.length) cb2.appendChild(el('tr', null, [el('td', { colspan: '6' }, ['Nothing risky: Excel will open this exactly as written.'])]));
+    // damage
+    var dm = $('damage'); dm.textContent = '';
+    var d = state.dx;
+    dm.appendChild(el('h3', { style: 'margin-top:0' }, ['Damage Excel may already have done to this file']));
+    if (!d.issues.length) dm.appendChild(el('p', null, ['No tell-tale signs found (date-converted IDs, scientific notation, 15-digit rounding, stripped zeros, Excel error values).']));
+    d.issues.forEach(function (i) {
+      dm.appendChild(el('div', { style: 'margin:10px 0' }, [
+        el('span', { class: 'pill ' + (i.confidence === 'high' ? 'destructive' : 'altered') }, [i.confidence]), ' ',
+        el('b', null, [i.name]), ' · ' + i.kind + ' ×' + i.count,
+        el('div', { class: 'mute' }, [i.message]),
+        el('div', { class: 'mono' }, [i.examples.map(function (e) { return 'row ' + e.row + ': ' + e.value + (e.fixed ? ' → ' + e.fixed : ''); }).join('   |   ')])
+      ]));
+    });
+    if (d.fixable) {
+      var b = el('button', { class: 'primary' }, ['Download CSV with leading zeros restored']);
+      b.addEventListener('click', function () {
+        var r = SafeCSV.repairZeros(state.rows, d.issues, { header: $('hdr').checked });
+        save(new Blob([SafeCSV.toCSV(r.rows, { delim: state.delim, bom: true, header: $('hdr').checked })], { type: 'text/csv' }), base() + '.repaired.csv');
+      });
+      dm.appendChild(b);
+    }
+    $('tabAfter').textContent = 'Already damaged?' + (d.issues.length ? ' (' + d.issues.length + ')' : '');
+  }
+
+  function base() { return (state.name || 'data').replace(/\.[^.]*$/, ''); }
+  function save(blob, name) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+  function textCols() {
+    var s = new Set();
+    state.analysis.columns.forEach(function (c) {
+      var f = state.forced[c.index];
+      if (f === undefined ? (c.needsText || c.severity === 'injection') : f) s.add(c.index);
+    });
+    return s;
+  }
+
+  $('dlXlsx').addEventListener('click', function () {
+    try {
+      var header = $('hdr').checked, bytes = SafeCSV.toXlsx(state.rows, { header: header, textCols: textCols(), sheetName: base() });
+      var back = SafeCSV.readXlsxCells(bytes);
+      var same = state.rows.every(function (r, i) { return r.every(function (v, j) { return (back[i] && back[i][j] !== undefined ? back[i][j] : '') === v; }); });
+      if (!same) throw new Error('Round-trip check failed; refusing to give you a file that does not match your CSV.');
+      save(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), base() + '.safe.xlsx');
+    } catch (e) { fail(e.message); }
+  });
+  $('dlCsv').addEventListener('click', function () {
+    save(new Blob([SafeCSV.toCSV(state.rows, { delim: state.delim, bom: true, guardFormulas: $('guard').checked, header: $('hdr').checked })], { type: 'text/csv' }), base() + '.utf8.csv');
+  });
+
+  function pick(f) { if (!f) return; var r = new FileReader(); r.onerror = function () { fail('Could not read that file.'); }; r.onload = function () { loadBytes(f.name, new Uint8Array(r.result)); }; r.readAsArrayBuffer(f); }
+  var drop = $('drop');
+  drop.addEventListener('click', function () { $('file').click(); });
+  drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } });
+  $('file').addEventListener('change', function (e) { pick(e.target.files[0]); e.target.value = ''; });
+  ['dragenter', 'dragover'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { pick(e.dataTransfer.files[0]); });
+  document.addEventListener('dragover', function (e) { e.preventDefault(); });
+  document.addEventListener('drop', function (e) { e.preventDefault(); });
+  $('sample').addEventListener('click', function () { loadBytes('customers.csv', new TextEncoder().encode(SAMPLE)); });
+  $('sample2').addEventListener('click', function () { loadBytes('damaged.csv', new TextEncoder().encode(DAMAGED)); show('paneBefore', false); show('paneAfter', true); tab('After'); });
+  $('togglePaste').addEventListener('click', function () { $('pasteBox').classList.toggle('hidden'); });
+  $('pasteGo').addEventListener('click', function () { var t = $('paste').value; if (t.trim()) loadBytes('pasted.csv', new TextEncoder().encode(t)); });
+  $('delim').addEventListener('change', run);
+  $('hdr').addEventListener('change', run);
+  function tab(w) {
+    var after = w === 'After';
+    show('paneBefore', !after); show('paneAfter', after);
+    $('tabBefore').setAttribute('aria-selected', String(!after)); $('tabAfter').setAttribute('aria-selected', String(after));
+  }
+  $('tabBefore').addEventListener('click', function () { tab('Before'); });
+  $('tabAfter').addEventListener('click', function () { tab('After'); });
+})();
+</script>
+</body>
+</html>

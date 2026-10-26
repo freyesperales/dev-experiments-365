@@ -1,0 +1,5 @@
+node_modules/
+*.safe.xlsx
+*.repaired.csv
+*.utf8.csv
+.DS_Store

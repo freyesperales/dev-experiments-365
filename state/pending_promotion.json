@@ -83,5 +83,10 @@
     "n": 81,
     "slug": "caddify",
     "hook": "Paste an nginx config, get a Caddyfile — plus an honest list of what couldn't be translated and why. One HTML file, nothing uploaded."
+  },
+  {
+    "n": 82,
+    "slug": "safecsv",
+    "hook": "Drop a CSV, see exactly what Excel would silently destroy (leading zeros, long IDs, SEPT1 -> 1-Sep), and get a copy it can't ruin. One HTML file, nothing uploaded."
   }
 ]

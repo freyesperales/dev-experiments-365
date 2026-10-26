@@ -1,0 +1,8 @@
+{
+  "name": "safecsv",
+  "version": "1.0.0",
+  "description": "Stop Excel from eating your CSV: see what it would destroy, get a safe .xlsx.",
+  "bin": { "safecsv": "cli.js" },
+  "scripts": { "test": "node --test test/test.js", "build": "node build.js", "demo": "node cli.js scan samples/customers.csv" },
+  "license": "MIT"
+}
