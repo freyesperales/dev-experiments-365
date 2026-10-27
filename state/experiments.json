@@ -1,5 +1,5 @@
 {
-  "last_number": 82,
+  "last_number": 83,
   "entries": [
     {
       "n": 1,
@@ -666,6 +666,14 @@
       "date": "2026-10-26",
       "title": "SafeCSV — shows what Excel would silently destroy in a CSV (leading zeros, 16+ digit IDs, SEPT1→1-Sep, formula injection), diagnoses already-damaged files, and writes a verified Excel-safe .xlsx; single offline HTML file + zero-dep CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-082",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 83,
+      "date": "2026-10-27",
+      "title": "Unbilled — finds the hours you worked but never billed: Toggl/Clockify/Harvest export vs retainer caps, out-of-scope work and invoiced hours, with ready-to-send invoice notes (single offline HTML file + zero-dep CLI; freelancer/agency lane)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-083",
       "mode": "monorepo",
       "status": "completed"
     }

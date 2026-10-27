@@ -1,0 +1,8 @@
+{
+  "currency": "$",
+  "clients": {
+    "Acme Bakery": { "rate": 85, "retainerHours": 20, "outOfScope": ["extra:", "redesign"] },
+    "Northwind Legal": { "rate": 110, "minIncrementMinutes": 15 },
+    "Globex": { "rate": 120 }
+  }
+}

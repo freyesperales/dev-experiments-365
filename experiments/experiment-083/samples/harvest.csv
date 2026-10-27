@@ -1,0 +1,5 @@
+Date,Client,Project,Project Code,Task,Notes,Hours,Billable?,Invoiced?,First Name,Last Name,Billable Rate
+2026-08-03,Initech,App,,Development,Sprint planning,2.5,Yes,Yes,Sam,Lee,95
+2026-08-05,Initech,App,,Development,Build report export,6,Yes,Yes,Sam,Lee,95
+2026-08-12,Initech,App,,Development,Hotfix prod outage,3.25,Yes,No,Sam,Lee,95
+2026-08-19,Initech,App,,Support,Training session for ops team,2,No,No,Sam,Lee,95

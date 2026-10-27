@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unbilled</title>
+<style>
+:root{--bg:#faf8f4;--card:#fff;--ink:#1d1b16;--mute:#6b6759;--line:#e6e1d6;--accent:#c2410c;--ok:#15803d;--soft:#fff3e8}
+@media(prefers-color-scheme:dark){:root{--bg:#16140f;--card:#1f1c16;--ink:#f1ede3;--mute:#a39e8d;--line:#352f25;--accent:#fb923c;--ok:#4ade80;--soft:#2b1f14}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px 64px}
+h1{margin:0;font-size:28px;letter-spacing:-.02em}h1 span{color:var(--accent)}
+.sub{color:var(--mute);margin:4px 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--mute);cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--soft)}
+button,.btn{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.hero{font-size:34px;font-weight:700;color:var(--accent);letter-spacing:-.02em}.hero.ok{color:var(--ok)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;color:var(--mute);letter-spacing:.04em}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+input[type=number],input[type=text]{font:inherit;width:100%;max-width:150px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.warn{background:var(--soft);border:1px solid var(--accent);border-radius:8px;padding:8px 12px;margin-bottom:12px}
+.err{color:#b91c1c;font-weight:600}
+.leak h3{margin:0 0 2px}.leak .amt{float:right;font-weight:700;color:var(--accent)}
+.leak ul{margin:6px 0;padding-left:20px}.mute{color:var(--mute);font-size:13px}
+pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+@media(max-width:640px){.hero{font-size:26px}.cfg td:nth-child(n+4),.cfg th:nth-child(n+4){display:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>Un<span>billed</span></h1>
+<p class="sub">Drop a Toggl, Clockify or Harvest export. See the hours you worked but never billed. Everything stays in this tab.</p>
+
+<div class="card">
+  <div class="drop" id="drop" tabindex="0" role="button">Drop a detailed time-entry CSV here, or click to choose<br><span class="mute">Toggl / Clockify / Harvest export, one row per entry</span></div>
+  <input type="file" id="file" accept=".csv,text/csv" hidden>
+  <div class="row" style="margin-top:10px">
+    <button id="inv">+ Invoiced hours CSV (optional)</button><input type="file" id="invfile" accept=".csv" hidden>
+    <button id="cfgload">Load config JSON</button><input type="file" id="cfgfile" accept=".json" hidden>
+    <button id="demo">Try the sample data</button>
+    <span class="mute" id="invname"></span>
+  </div>
+  <div id="msg"></div>
+</div>
+
+<div id="out" hidden>
+  <div class="card"><div class="hero" id="hero"></div><div class="mute" id="herosub"></div>
+    <div class="row" style="margin-top:10px">
+      <label>Month <select id="month"></select></label>
+      <button id="dlcsv">Download report CSV</button><button id="dlcfg">Download config JSON</button>
+    </div></div>
+  <div class="card"><b>Clients</b> <span class="mute">rates, retainers and scope drive the result</span>
+    <table class="cfg" id="cfgtbl"></table></div>
+  <div id="leaks"></div>
+</div>
+<p class="mute">Limitations: results are only as good as your tracking, rates and scope keywords. Not accounting or legal advice. Development Experiment 083 of dev-experiments-365.</p>
+</main>
+<script>
+/*__CORE__*/
+</script>
+<script>
+(function(){
+'use strict';
+const U=window.Unbilled,$=id=>document.getElementById(id);
+let entries=null,loaded=null,invoiced=null,config={clients:{}},last=null;
+const SAMPLE_TIME=/*__SAMPLE_TIME__*/'';
+const SAMPLE_INV=/*__SAMPLE_INV__*/'';
+const SAMPLE_CFG=/*__SAMPLE_CFG__*/'{}';
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function msg(t,cls){$('msg').innerHTML=t?'<div class="'+(cls||'warn')+'" style="margin-top:10px">'+t+'</div>':''}
+function readFile(f,cb){const r=new FileReader();r.onload=()=>cb(String(r.result),f.name);r.onerror=()=>msg('Could not read file.','err');r.readAsText(f)}
+function loadTime(text){
+  try{loaded=U.loadEntries(text);entries=loaded.entries}catch(e){msg(esc(e.message),'err');return}
+  const starter=U.starterConfig(entries);
+  for(const[k,v]of Object.entries(starter.clients)) if(!config.clients[k]) config.clients[k]=v;
+  msg(loaded.warnings.map(esc).join('<br>')||'');
+  const months=[...new Set(entries.map(e=>e.month))].sort();
+  $('month').innerHTML='<option value="">All months</option>'+months.map(m=>'<option>'+m+'</option>').join('');
+  $('out').hidden=false;render(true);
+}
+function render(rebuildCfg){
+  if(!entries)return;
+  last=U.analyze(entries,config,invoiced,{month:$('month').value||undefined});
+  const t=last.totals,cur=last.currency;
+  $('hero').textContent=t.unbilledHours>0?U.money(t.unbilledAmount,cur)+' unbilled':'Nothing unbilled';
+  $('hero').className='hero'+(t.unbilledHours>0?'':' ok');
+  $('herosub').textContent=t.unbilledHours>0?t.unbilledHours+'h across '+t.leakingClientMonths+' of '+t.clientMonths+' client-months ('+loaded.preset+' export)':t.workHours+'h of client work, all accounted for ('+loaded.preset+' export)';
+  if(rebuildCfg){
+    let h='<tr><th>Client</th><th>Rate/h</th><th>Retainer h/mo</th><th>Out-of-scope words (comma sep.)</th><th>Round up to (min)</th></tr>';
+    for(const[name,c]of Object.entries(config.clients)){
+      h+='<tr data-c="'+esc(name)+'"><td>'+esc(name)+'</td><td><input type="number" min="0" step="any" data-k="rate" value="'+(c.rate||'')+'"></td><td><input type="number" min="0" step="any" data-k="retainerHours" value="'+(c.retainerHours==null?'':c.retainerHours)+'"></td><td><input type="text" data-k="outOfScope" value="'+esc((c.outOfScope||[]).join(', '))+'"></td><td><input type="number" min="0" step="any" data-k="minIncrementMinutes" value="'+(c.minIncrementMinutes||'')+'"></td></tr>';
+    }
+    $('cfgtbl').innerHTML=h;
+  }
+  let o='';
+  for(const r of last.results){
+    if(r.unbilledHours<=0)continue;
+    const d=U.draft(r,cur);
+    o+='<div class="card leak"><h3>'+esc(r.client)+' <span class="mute">'+r.month+'</span><span class="amt">'+U.money(r.unbilledAmount,cur)+'</span></h3><div class="mute">'+r.unbilledHours+'h'+(r.rate?' x '+U.money(r.rate,cur)+'/h':'')+'</div><ul>'+r.reasons.map(x=>'<li>'+esc(x.text)+'</li>').join('')+'</ul>'+
+      (r.evidence.length?'<table>'+r.evidence.slice(0,6).map(e=>'<tr><td class="n" style="width:60px">'+e.hours+'h</td><td>'+esc(e.label)+'</td><td class="mute">'+e.first+(e.last!==e.first?' to '+e.last:'')+'</td></tr>').join('')+'</table>':'')+
+      r.notes.map(n=>'<div class="mute">note: '+esc(n)+'</div>').join('')+
+      (d?'<details><summary>Draft invoice / change-request note</summary><pre>'+esc(d)+'</pre><button data-copy="'+esc(r.client+'|'+r.month)+'">Copy</button></details>':'')+'</div>';
+  }
+  $('leaks').innerHTML=o;
+}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('cfgtbl').addEventListener('input',e=>{
+  const tr=e.target.closest('tr[data-c]');if(!tr)return;
+  const c=config.clients[tr.dataset.c],k=e.target.dataset.k,v=e.target.value;
+  if(k==='outOfScope')c.outOfScope=v.split(',').map(s=>s.trim()).filter(Boolean);
+  else c[k]=v===''?(k==='retainerHours'?null:0):Number(v);
+  render(false);
+});
+$('leaks').addEventListener('click',e=>{
+  const b=e.target.closest('[data-copy]');if(!b)return;
+  const[cl,mo]=b.dataset.copy.split('|');const r=last.results.find(x=>x.client===cl&&x.month===mo);
+  if(r&&navigator.clipboard)navigator.clipboard.writeText(U.draft(r,last.currency)).then(()=>{b.textContent='Copied'},()=>{b.textContent='Copy failed'});
+});
+$('month').addEventListener('change',()=>render(false));
+$('dlcsv').onclick=()=>last&&download('unbilled-report.csv',U.renderCSV(last),'text/csv');
+$('dlcfg').onclick=()=>download('unbilled-config.json',JSON.stringify(config,null,2),'application/json');
+const drop=$('drop');
+drop.onclick=()=>$('file').click();
+drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' ')$('file').click()};
+['dragover','dragenter'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)readFile(f,loadTime)});
+$('file').onchange=e=>{const f=e.target.files[0];if(f)readFile(f,loadTime)};
+$('inv').onclick=()=>$('invfile').click();
+$('invfile').onchange=e=>{const f=e.target.files[0];if(f)readFile(f,(t,n)=>{try{invoiced=U.loadInvoiced(t);$('invname').textContent=n;render(false)}catch(x){msg(esc(x.message),'err')}})};
+$('cfgload').onclick=()=>$('cfgfile').click();
+$('cfgfile').onchange=e=>{const f=e.target.files[0];if(f)readFile(f,t=>{try{config=JSON.parse(t);config.clients=config.clients||{};if(entries){loadTime2()}}catch(x){msg('Config is not valid JSON: '+esc(x.message),'err')}})};
+function loadTime2(){const s=U.starterConfig(entries);for(const[k,v]of Object.entries(s.clients))if(!config.clients[k])config.clients[k]=v;render(true)}
+$('demo').onclick=()=>{config=JSON.parse(SAMPLE_CFG);invoiced=U.loadInvoiced(SAMPLE_INV);$('invname').textContent='sample invoiced.csv';loadTime(SAMPLE_TIME)};
+})();
+</script>
+</body>
+</html>

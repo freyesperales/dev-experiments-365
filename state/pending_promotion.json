@@ -88,5 +88,10 @@
     "n": 82,
     "slug": "safecsv",
     "hook": "Drop a CSV, see exactly what Excel would silently destroy (leading zeros, long IDs, SEPT1 -> 1-Sep), and get a copy it can't ruin. One HTML file, nothing uploaded."
+  },
+  {
+    "n": 83,
+    "slug": "unbilled",
+    "hook": "Drop a Toggl, Clockify or Harvest export and see the hours you worked but never billed — plus the invoice note to send. One HTML file, nothing uploaded."
   }
 ]

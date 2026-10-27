@@ -1,0 +1,8 @@
+{
+  "name": "unbilled",
+  "version": "1.0.0",
+  "description": "Find the hours you worked but never billed: Toggl/Clockify/Harvest export vs retainer, scope and invoices.",
+  "bin": { "unbilled": "cli.js" },
+  "scripts": { "test": "node --test test/test.js", "build": "node build.js", "demo": "node cli.js report samples/toggl.csv --config samples/config.json --invoiced samples/invoiced.csv" },
+  "license": "MIT"
+}
