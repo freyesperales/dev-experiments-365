@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__TITLE__ · churnmap</title>
+<style>
+:root{--bg:#0f1115;--fg:#e6e8ee;--mut:#8b91a1;--card:#171a21;--bd:#262a35}
+@media(prefers-color-scheme:light){:root{--bg:#f6f7f9;--fg:#1b1e26;--mut:#636a7a;--card:#fff;--bd:#dde0e7}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg);display:flex;flex-direction:column;height:100vh}
+header{flex:none;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--bd)}
+h1{font-size:16px;margin:0}h1 small{color:var(--mut);font-weight:400}
+label{color:var(--mut);font-size:12px;display:flex;gap:6px;align-items:center}
+select,input{background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:4px 8px;font:inherit}
+#crumbs{flex:none;padding:6px 16px;color:var(--mut);font-size:13px}#crumbs a{color:var(--fg);cursor:pointer;text-decoration:underline}
+main{flex:1 1 0;position:relative;margin:0 16px;min-height:200px;overflow:hidden}#map{position:absolute;inset:0}
+.cell{position:absolute;overflow:hidden;border:1px solid var(--bg);border-radius:3px;font-size:11px;padding:2px 4px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);cursor:default}
+.cell.dir{cursor:pointer;background:transparent!important;border:1px solid var(--bd);color:var(--mut);text-shadow:none}
+.cell.dim{opacity:.18}
+footer{flex:none;display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding:8px 16px;color:var(--mut);font-size:12px}
+#ramp{width:160px;height:10px;border-radius:5px}
+#tip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;font-size:12px;display:none;max-width:340px;box-shadow:0 6px 24px rgba(0,0,0,.35);z-index:9}
+#tip b{word-break:break-all}#tip div{color:var(--mut)}
+#list{max-height:0}
+</style></head><body>
+<header>
+<h1>__TITLE__ <small id="sub"></small></h1>
+<label>Color <select id="color">
+<option value="c">commits</option><option value="ch">lines changed</option><option value="rec">recency of last change</option>
+<option value="au">distinct authors</option><option value="hot">hotspot (churn × size)</option><option value="bus">bus factor 1</option></select></label>
+<label>Size <select id="size"><option value="loc">lines of code</option><option value="c">commits</option><option value="ch">lines changed</option></select></label>
+<label>Find <input id="q" placeholder="path substring"></label>
+<label>Min commits <input id="minc" type="number" min="0" value="0" style="width:64px"></label>
+</header>
+<div id="crumbs"></div>
+<main><div id="map"></div></main>
+<footer><span id="legendlbl"></span><canvas id="ramp" width="160" height="10"></canvas><span id="legendrange"></span><span id="stats"></span></footer>
+<div id="tip"></div>
+<script>
+const DATA = /*__DATA__*/null;
+const $ = (id) => document.getElementById(id);
+const metric = {
+  c: (f) => f.c, ch: (f) => f.a + f.d, au: (f) => f.au,
+  hot: (f) => f.c * Math.log2(f.loc + 1), loc: (f) => f.loc,
+  rec: (f) => f.l ? f.l : 0, bus: (f) => (f.c >= 5 && f.au === 1 ? f.c : 0),
+};
+let cwd = '';
+// Build tree
+function buildTree(files) {
+  const root = { name: '', path: '', kids: new Map(), files: [] };
+  for (const f of files) {
+    const parts = f.p.split('/'); let n = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const k = parts[i];
+      if (!n.kids.has(k)) n.kids.set(k, { name: k, path: parts.slice(0, i + 1).join('/'), kids: new Map(), files: [] });
+      n = n.kids.get(k);
+    }
+    n.files.push(f);
+  }
+  return root;
+}
+const TREE = buildTree(DATA.files);
+function find(path) { let n = TREE; if (!path) return n; for (const k of path.split('/')) { n = n.kids.get(k); if (!n) return TREE; } return n; }
+function weight(node, sz, pred) { // total size of subtree
+  let s = 0; for (const f of node.files) if (pred(f)) s += Math.max(sz(f), 0.0001);
+  for (const k of node.kids.values()) s += weight(k, sz, pred); return s;
+}
+function squarify(items, x, y, w, h) { // items: [{v,...}] sorted desc
+  const out = []; let rest = items.slice(); const total = rest.reduce((a, b) => a + b.v, 0);
+  if (!total || w <= 0 || h <= 0) return out;
+  const scale = (w * h) / total; rest.forEach((r) => (r.a = r.v * scale));
+  while (rest.length) {
+    const side = Math.min(w, h); let row = [rest[0]], sum = rest[0].a;
+    const worst = (r, s) => { const mx = Math.max(...r.map((i) => i.a)), mn = Math.min(...r.map((i) => i.a)); return Math.max((side * side * mx) / (s * s), (s * s) / (side * side * mn)); };
+    let i = 1;
+    while (i < rest.length) { const nr = row.concat(rest[i]), ns = sum + rest[i].a; if (worst(nr, ns) <= worst(row, sum)) { row = nr; sum = ns; i++; } else break; }
+    const thick = sum / side;
+    let off = 0;
+    for (const r of row) {
+      const len = r.a / thick;
+      if (w >= h) out.push({ ...r, x, y: y + off, w: thick, h: len }); else out.push({ ...r, x: x + off, y, w: len, h: thick });
+      off += len;
+    }
+    if (w >= h) { x += thick; w -= thick; } else { y += thick; h -= thick; }
+    rest = rest.slice(row.length);
+  }
+  return out;
+}
+function color(v, lo, hi, kind) {
+  if (kind === 'bus') return v > 0 ? 'hsl(8 80% 48%)' : 'hsl(220 12% 28%)';
+  if (hi <= lo) return 'hsl(220 12% 28%)';
+  const t = Math.max(0, Math.min(1, (Math.log1p(v - lo)) / Math.log1p(hi - lo)));
+  const tt = kind === 'rec' ? (v - lo) / (hi - lo) : t;
+  return ramp(Math.max(0, Math.min(1, v === 0 && kind !== 'rec' ? 0 : tt)));
+}
+function ramp(t) { const h = 215 - 215 * t, l = 30 + 22 * t; return `hsl(${h.toFixed(0)} 65% ${l.toFixed(0)}%)`; }
+function fmtDate(ts) { return ts ? new Date(ts * 1000).toISOString().slice(0, 10) : 'never (in range)'; }
+function render() {
+  const map = $('map'); map.innerHTML = '';
+  const W = map.clientWidth, H = map.clientHeight;
+  const colorKind = $('color').value, sizeKind = $('size').value, q = $('q').value.toLowerCase(), minc = +$('minc').value || 0;
+  const sz = metric[sizeKind], col = metric[colorKind];
+  const pred = (f) => f.c >= minc;
+  const all = DATA.files.filter(pred); const vals = all.map(col);
+  let lo = Math.min(...vals), hi = Math.max(...vals); if (colorKind === 'rec') { const nz = vals.filter((v) => v); lo = nz.length ? Math.min(...nz) : 0; }
+  const node = find(cwd);
+  const crumbs = ['<a data-p="">' + DATA.name + '</a>'];
+  if (cwd) { let acc = ''; for (const p of cwd.split('/')) { acc += (acc ? '/' : '') + p; crumbs.push('<a data-p="' + acc.replace(/"/g, '&quot;') + '">' + esc(p) + '</a>'); } }
+  $('crumbs').innerHTML = crumbs.join(' / ');
+  $('crumbs').querySelectorAll('a').forEach((a) => (a.onclick = () => { cwd = a.dataset.p; render(); }));
+  layout(node, 0, 0, W, H, 0);
+  function layout(n, x, y, w, h, depth) {
+    const items = [];
+    for (const k of n.kids.values()) { const v = weight(k, sz, pred); if (v > 0) items.push({ v, dir: k }); }
+    for (const f of n.files) if (pred(f)) items.push({ v: Math.max(sz(f), 0.0001), file: f });
+    items.sort((a, b) => b.v - a.v);
+    for (const r of squarify(items, x, y, w, h)) {
+      if (r.w < 2 || r.h < 2) continue;
+      const d = document.createElement('div'); d.className = 'cell'; d.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
+      if (r.dir) {
+        d.classList.add('dir'); if (r.w > 40 && r.h > 16) d.textContent = r.dir.name + '/';
+        d.onclick = (e) => { e.stopPropagation(); cwd = r.dir.path; render(); };
+        d.onmousemove = (e) => tip(e, `<b>${esc(r.dir.path)}/</b><div>click to zoom in</div>`);
+        map.appendChild(d);
+        if (r.w > 24 && r.h > 24) layout(r.dir, r.x + 2, r.y + (r.h > 22 ? 16 : 2), r.w - 4, r.h - (r.h > 22 ? 18 : 4), depth + 1);
+        else d.style.background = 'var(--card)';
+      } else {
+        const f = r.file; d.style.background = color(col(f), lo, hi, colorKind);
+        if (q && !f.p.toLowerCase().includes(q)) d.classList.add('dim');
+        if (r.w > 50 && r.h > 14) d.textContent = f.p.split('/').pop();
+        d.onmousemove = (e) => tip(e, `<b>${esc(f.p)}</b><div>${f.loc} lines · ${f.c} commits · +${f.a} −${f.d}</div><div>${f.au} author${f.au === 1 ? '' : 's'}${f.au ? ` (top owner ${Math.round(f.top * 100)}%)` : ''}</div><div>last change ${fmtDate(f.l)}${f.f ? ' · first ' + fmtDate(f.f) : ''}</div>`);
+        map.appendChild(d);
+      }
+      d.onmouseleave = () => ($('tip').style.display = 'none');
+    }
+  }
+  // legend
+  const cv = $('ramp').getContext('2d'); for (let i = 0; i < 160; i++) { cv.fillStyle = colorKind === 'bus' ? (i < 80 ? 'hsl(220 12% 28%)' : 'hsl(8 80% 48%)') : ramp(i / 159); cv.fillRect(i, 0, 1, 10); }
+  $('legendlbl').textContent = $('color').selectedOptions[0].text;
+  $('legendrange').textContent = colorKind === 'rec' ? `${fmtDate(lo)} → ${fmtDate(hi)}` : colorKind === 'bus' ? 'shared → single owner' : `${Math.round(lo)} → ${Math.round(hi)}`;
+  $('stats').textContent = `${all.length} files shown`;
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function tip(e, html) { const t = $('tip'); t.innerHTML = html; t.style.display = 'block'; t.style.left = Math.min(e.clientX + 14, innerWidth - 350) + 'px'; t.style.top = Math.min(e.clientY + 14, innerHeight - 110) + 'px'; }
+$('sub').textContent = `@${DATA.head} · ${DATA.commits} commits${DATA.since ? ' since ' + DATA.since : ''} · generated ${fmtDate(DATA.generated)}`;
+for (const id of ['color', 'size', 'q', 'minc']) $(id).addEventListener('input', render);
+addEventListener('resize', render);
+render();
+</script></body></html>

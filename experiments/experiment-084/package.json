@@ -1,0 +1,9 @@
+{
+  "name": "churnmap",
+  "version": "1.0.0",
+  "description": "Turn git history into a self-contained treemap of where your repo's churn and risk live.",
+  "bin": { "churnmap": "cli.js" },
+  "scripts": { "test": "node --test test/*.test.js", "start": "node cli.js" },
+  "license": "MIT",
+  "engines": { "node": ">=18" }
+}

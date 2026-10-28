@@ -1,5 +1,5 @@
 {
-  "last_number": 83,
+  "last_number": 84,
   "entries": [
     {
       "n": 1,
@@ -674,6 +674,14 @@
       "date": "2026-10-27",
       "title": "Unbilled — finds the hours you worked but never billed: Toggl/Clockify/Harvest export vs retainer caps, out-of-scope work and invoiced hours, with ready-to-send invoice notes (single offline HTML file + zero-dep CLI; freelancer/agency lane)",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-083",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 84,
+      "date": "2026-10-28",
+      "title": "Churnmap — git history as a self-contained treemap of churn, recency, ownership, hotspots and bus-factor-1 files; zero-dep Node CLI writing one HTML file",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-084",
       "mode": "monorepo",
       "status": "completed"
     }

@@ -93,5 +93,10 @@
     "n": 83,
     "slug": "unbilled",
     "hook": "Drop a Toggl, Clockify or Harvest export and see the hours you worked but never billed — plus the invoice note to send. One HTML file, nothing uploaded."
+  },
+  {
+    "n": 84,
+    "slug": "churnmap",
+    "hook": "See where your repo's churn, ownership and risk live — one git log, one self-contained HTML treemap."
   }
 ]
