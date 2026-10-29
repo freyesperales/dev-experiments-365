@@ -98,5 +98,10 @@
     "n": 84,
     "slug": "churnmap",
     "hook": "See where your repo's churn, ownership and risk live — one git log, one self-contained HTML treemap."
+  },
+  {
+    "n": 85,
+    "slug": "detour",
+    "hook": "Drop your old and new site URLs, get a reviewed redirect map plus Netlify, Vercel, Apache, nginx and Cloudflare rules — chains and loops caught, nothing uploaded."
   }
 ]

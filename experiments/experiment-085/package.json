@@ -1,0 +1,9 @@
+{
+  "name": "detour",
+  "version": "1.0.0",
+  "description": "Match old URLs to new ones, catch chains and loops, export redirect rules for Netlify, Vercel, Apache, nginx and Cloudflare.",
+  "bin": { "detour": "cli.js" },
+  "scripts": { "build": "node build.js", "test": "node build.js && node --test test/*.test.js", "start": "node cli.js" },
+  "license": "MIT",
+  "engines": { "node": ">=18" }
+}

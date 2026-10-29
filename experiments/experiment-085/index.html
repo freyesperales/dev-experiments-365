@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Detour — redirect map builder</title>
+<style>
+:root{--bg:#f7f7f5;--fg:#1c1c1a;--mut:#6b6b66;--card:#fff;--line:#e3e3de;--acc:#0b6bcb;--ok:#1a7f45;--warn:#a86400;--bad:#c62828;--chip:#efefea}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ecece8;--mut:#9a9a93;--card:#1f1f1d;--line:#34342f;--acc:#5aa2f0;--ok:#4cc27f;--warn:#e0a03a;--bad:#ef6b6b;--chip:#2a2a27}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif}
+header{padding:20px 20px 8px;max-width:1200px;margin:auto}h1{margin:0;font-size:24px}h1 span{color:var(--acc)}
+.sub{color:var(--mut);margin:2px 0 0}main{max-width:1200px;margin:auto;padding:8px 20px 60px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+label.h{display:flex;justify-content:space-between;font-weight:600;margin-bottom:6px}
+textarea{width:100%;height:150px;font:12px/1.4 ui-monospace,monospace;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px;resize:vertical}
+textarea.drag{outline:2px dashed var(--acc)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+button,select,input[type=text],input[type=number]{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:5px 9px}
+button{cursor:pointer}button.pri{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}button:disabled{opacity:.5;cursor:default}
+.mut{color:var(--mut)}.stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}.stat b{font-size:18px;display:block}.stat.on{border-color:var(--acc)}
+.stat.bad b{color:var(--bad)}.stat.warn b{color:var(--warn)}.stat.ok b{color:var(--ok)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;word-break:break-all}th{font-size:12px;color:var(--mut);background:var(--chip)}
+td.u{font:12px ui-monospace,monospace}tr.skip td.u.d{opacity:.45}
+.bar{display:inline-block;width:46px;height:6px;background:var(--chip);border-radius:3px;vertical-align:middle;margin-right:5px}.bar i{display:block;height:100%;border-radius:3px}
+.fl{display:inline-block;font-size:11px;border-radius:9px;padding:0 7px;margin:0 3px 2px 0;background:var(--chip)}.fl.bad{background:var(--bad);color:#fff}.fl.warn{background:var(--warn);color:#fff}
+td select{max-width:100%;width:100%;font:12px ui-monospace,monospace}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:340px;font-size:12px}
+.tabs button{border-radius:6px 6px 0 0}.tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+#notes div{color:var(--warn);margin:2px 0}.empty{padding:30px;text-align:center;color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <h1>De<span>tour</span></h1>
+  <p class="sub">Match old URLs to new ones, catch chains and loops, export redirect rules. Runs entirely in this page — nothing is uploaded.</p>
+</header>
+<main>
+  <div class="grid">
+    <div class="card"><label class="h"><span>Old site URLs</span><span class="mut" id="oldN"></span></label>
+      <textarea id="old" placeholder="Paste URLs, a CSV (Screaming Frog export works), or sitemap.xml — or drop a file here" spellcheck="false"></textarea></div>
+    <div class="card"><label class="h"><span>New site URLs</span><span class="mut" id="newN"></span></label>
+      <textarea id="new" placeholder="Same formats. Add a title/H1 column to both for better matching" spellcheck="false"></textarea></div>
+  </div>
+  <div class="row">
+    <button class="pri" id="go">Match</button>
+    <button id="demo">Load demo</button>
+    <label>Auto-accept ≥ <input type="number" id="thr" min="0" max="1" step="0.05" value="0.55" style="width:70px"></label>
+    <label>Unmatched go to <input type="text" id="fb" placeholder="(leave out)  e.g. /blog/" style="width:150px"></label>
+    <label><input type="checkbox" id="kq"> match ?query strings</label>
+    <label><input type="checkbox" id="fl" checked> collapse chains</label>
+  </div>
+  <div id="notes"></div>
+  <div id="out" hidden>
+    <div class="stats" id="stats"></div>
+    <table><thead><tr><th style="width:34%">Old URL</th><th style="width:34%">Redirect to</th><th>Confidence</th><th>Flags</th></tr></thead><tbody id="rows"></tbody></table>
+    <p class="mut" id="more"></p>
+    <h3>Export</h3>
+    <div class="row mut">Origin for Cloudflare bulk / verify script: <input type="text" id="oh" value="https://old.example.com" style="width:210px"> <input type="text" id="nh" value="https://new.example.com" style="width:210px"></div>
+    <div class="tabs" id="tabs"></div>
+    <pre id="pre"></pre>
+    <div class="row"><button id="dl">Download this</button><button id="cp">Copy</button><button id="dqa">QA CSV</button><button id="dvs">verify.sh</button></div>
+  </div>
+</main>
+<script>
+'use strict';
+// detour core: parse URL lists, match old -> new, analyse redirect maps, export rules.
+// Zero dependencies; runs unchanged in Node and in the browser (inlined into index.html).
+
+const STOP = new Set(['index', 'html', 'htm', 'php', 'aspx', 'asp', 'jsp', 'www', 'en', 'es', 'de', 'fr', 'the', 'a', 'an', 'of', 'and', 'to', 'for', 'in', 'page', 'pages', 'default', 'home']);
+const ASSET_RE = /\.(css|js|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|map|pdf|zip|xml|txt)$/i;
+
+function safeDecode(s) { try { return decodeURIComponent(s); } catch (e) { return s; } }
+
+// ---- URL handling -------------------------------------------------------
+function parseUrl(raw) {
+  let s = String(raw == null ? '' : raw).trim().replace(/#.*$/, '');
+  let host = '', proto = '';
+  const m = /^(https?:)?\/\/([^\/?#]+)(.*)$/i.exec(s);
+  if (m) { proto = (m[1] || 'https:').toLowerCase(); host = m[2].toLowerCase(); s = m[3] || '/'; }
+  if (!s.startsWith('/') && !s.startsWith('?')) s = '/' + s;
+  if (s.startsWith('?')) s = '/' + s;
+  const qi = s.indexOf('?');
+  let path = qi < 0 ? s : s.slice(0, qi);
+  const query = qi < 0 ? '' : s.slice(qi + 1);
+  path = path.replace(/\/{2,}/g, '/');
+  return { host, proto, path, query };
+}
+
+function normKey(u, opts) {
+  const o = opts || {};
+  let p = safeDecode(u.path).toLowerCase();
+  p = p.replace(/\/index\.(html?|php|aspx?)$/, '/').replace(/\.(html?|php|aspx?|jsp)$/, '');
+  if (p.length > 1) p = p.replace(/\/+$/, '');
+  if (!p) p = '/';
+  let q = '';
+  if (u.query && !o.ignoreQuery) q = '?' + u.query.split('&').filter(Boolean).map(safeDecode).sort().join('&').toLowerCase();
+  return p + q;
+}
+
+function encPath(p) {
+  return p.split('/').map(seg => encodeURIComponent(safeDecode(seg)).replace(/%40/g, '@').replace(/%3A/gi, ':').replace(/%2C/gi, ',').replace(/%2B/gi, '+').replace(/%3D/gi, '=')).join('/');
+}
+
+function tokens(path) {
+  const out = [];
+  const segs = safeDecode(path).split('/').filter(Boolean);
+  for (const seg of segs) {
+    const parts = seg.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9\u00c0-\u024f]+/).filter(Boolean);
+    for (let t of parts) {
+      if (STOP.has(t)) continue;
+      if (t.length > 3 && t.endsWith('s') && !t.endsWith('ss')) t = t.slice(0, -1);
+      out.push(t);
+    }
+  }
+  const meaningful = out.filter(t => !/^\d{1,4}$/.test(t));
+  return meaningful.length ? meaningful : out;
+}
+
+function titleTokens(s) {
+  return String(s || '').toLowerCase().split(/[^a-z0-9\u00c0-\u024f]+/).filter(t => t.length > 2 && !STOP.has(t)).map(t => (t.length > 3 && t.endsWith('s') && !t.endsWith('ss') ? t.slice(0, -1) : t));
+}
+
+function lastSlug(path) {
+  const segs = safeDecode(path).split('/').filter(Boolean);
+  let s = (segs.pop() || '').toLowerCase().replace(/\.(html?|php|aspx?|jsp)$/, '');
+  if (s === 'index' && segs.length) s = segs.pop().toLowerCase();
+  return s;
+}
+
+function trigrams(s) {
+  const t = '  ' + s + ' ';
+  const set = new Set();
+  for (let i = 0; i < t.length - 2; i++) set.add(t.slice(i, i + 3));
+  return set;
+}
+function dice(a, b) {
+  if (!a.size || !b.size) return 0;
+  let n = 0;
+  for (const x of a) if (b.has(x)) n++;
+  return (2 * n) / (a.size + b.size);
+}
+
+// ---- list parsing -------------------------------------------------------
+function splitCsvLine(line, d) {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === d) { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out.map(x => x.trim());
+}
+function pickDelim(line) {
+  if (line.includes('\t')) return '\t';
+  if (line.includes(';') && !/https?:\/\/[^\s;]*;/.test(line) && line.split(';').length > 1 && !line.includes(',')) return ';';
+  if (line.includes(',')) return ',';
+  return null;
+}
+function looksUrl(s) { return /^(https?:)?\/\//i.test(s) || s.startsWith('/') || /^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(s) || s.includes('/'); }
+function findCol(header, names) {
+  const h = header.map(x => x.toLowerCase().replace(/[^a-z0-9]/g, ''));
+  for (const n of names) { const i = h.indexOf(n); if (i >= 0) return i; }
+  return -1;
+}
+
+// Returns {items:[{url,title}], notes:[...]}
+function parseList(text, kind) {
+  const notes = [];
+  const t = String(text || '').replace(/^\uFEFF/, '');
+  if (/<sitemapindex/i.test(t)) notes.push('This is a sitemap INDEX: paste the child sitemaps (detour never fetches anything).');
+  if (/<urlset|<loc>/i.test(t)) {
+    const items = [];
+    const re = /<loc>\s*(?:<!\[CDATA\[)?\s*([^<\]]+?)\s*(?:\]\]>)?\s*<\/loc>/gi; let m;
+    while ((m = re.exec(t))) items.push({ url: m[1].replace(/&amp;/g, '&'), title: '' });
+    return { items, notes };
+  }
+  const lines = t.split(/\r?\n/).filter(l => l.trim() && !l.trim().startsWith('#'));
+  if (!lines.length) return { items: [], notes };
+  const delim = pickDelim(lines[0]);
+  let urlCol = 0, titleCol = -1, statusCol = -1, start = 0;
+  if (delim) {
+    const first = splitCsvLine(lines[0], delim);
+    if (!looksUrl(first[0]) || first.some(c => /^(address|url|old url|loc)$/i.test(c))) {
+      start = 1;
+      const names = kind === 'old' ? ['oldurl', 'old', 'oldpath', 'url', 'address', 'loc', 'source', 'from', 'path', 'page'] : ['newurl', 'new', 'newpath', 'url', 'address', 'loc', 'destination', 'target', 'to', 'path', 'page'];
+      urlCol = findCol(first, names); if (urlCol < 0) urlCol = 0;
+      titleCol = findCol(first, ['title', 'title1', 'h1', 'h11', 'name', 'pagetitle']);
+      statusCol = findCol(first, ['statuscode', 'status']);
+    }
+  }
+  const items = []; let dropped = 0;
+  for (let i = start; i < lines.length; i++) {
+    const cells = delim ? splitCsvLine(lines[i], delim) : [lines[i].trim()];
+    const url = cells[urlCol];
+    if (!url || !looksUrl(url)) continue;
+    if (statusCol >= 0 && /^[45]\d\d$/.test(cells[statusCol] || '')) { dropped++; continue; }
+    items.push({ url, title: titleCol >= 0 ? cells[titleCol] || '' : '' });
+  }
+  if (dropped) notes.push(`Skipped ${dropped} row(s) with a 4xx/5xx status code.`);
+  return { items, notes };
+}
+
+function parseMapping(text) {
+  const t = String(text || '').replace(/^\uFEFF/, '');
+  const lines = t.split(/\r?\n/).filter(l => l.trim() && !l.trim().startsWith('#'));
+  const rows = [];
+  if (!lines.length) return rows;
+  let delim = pickDelim(lines[0]);
+  if (!delim && /\s{2,}|\s->\s|\s/.test(lines[0])) delim = ' ';
+  let a = 0, b = 1, start = 0;
+  const split = l => (delim === ' ' ? l.trim().split(/\s*(?:->|=>|\s)\s*/).filter(Boolean) : splitCsvLine(l, delim));
+  const first = split(lines[0]);
+  if (first.length >= 2 && (!looksUrl(first[0]) || !looksUrl(first[1]))) {
+    start = 1;
+    a = findCol(first, ['old', 'oldurl', 'source', 'from', 'src', 'url']); if (a < 0) a = 0;
+    b = findCol(first, ['new', 'newurl', 'target', 'to', 'destination', 'dst']); if (b < 0) b = 1;
+  }
+  for (let i = start; i < lines.length; i++) {
+    const c = split(lines[i]);
+    if (c[a] && c[b] !== undefined && c[b] !== '') rows.push({ src: c[a], dst: c[b] });
+  }
+  return rows;
+}
+
+// ---- matching -----------------------------------------------------------
+function prepare(items, opts) {
+  return items.map(it => {
+    const u = parseUrl(it.url);
+    return { raw: it.url, host: u.host, path: u.path, query: u.query, key: normKey(u, opts), pathKey: normKey(u, { ignoreQuery: true }),
+      tok: tokens(u.path), stok: new Set(tokens('/' + lastSlug(u.path))), slug: lastSlug(u.path), tt: titleTokens(it.title), title: it.title || '' };
+  });
+}
+
+function matchLists(oldItems, newItems, options) {
+  const o = Object.assign({ threshold: 0.55, ignoreQuery: true, fallback: '', margin: 0.04 }, options);
+  const olds = prepare(oldItems, { ignoreQuery: o.ignoreQuery });
+  const news = prepare(newItems, { ignoreQuery: o.ignoreQuery });
+  // de-duplicate the new site by key
+  const newByKey = new Map(), uniqNews = [];
+  for (const n of news) if (!newByKey.has(n.key)) { newByKey.set(n.key, uniqNews.length); uniqNews.push(n); }
+  // idf over both lists
+  const df = new Map();
+  for (const n of uniqNews.concat(olds)) for (const t of new Set(n.tok)) df.set(t, (df.get(t) || 0) + 1);
+  const total = uniqNews.length + olds.length;
+  const w = t => Math.log(1 + total / (df.get(t) || 1));
+  const inv = new Map();
+  uniqNews.forEach((n, i) => { n.tgram = trigrams(n.slug); n.tset = new Set(n.tok); n.ttset = new Set(n.tt); for (const t of new Set([...n.tset, ...n.ttset])) { if (!inv.has(t)) inv.set(t, []); inv.get(t).push(i); } });
+  const slugIdx = new Map();
+  uniqNews.forEach((n, i) => { if (n.slug) { if (!slugIdx.has(n.slug)) slugIdx.set(n.slug, []); slugIdx.get(n.slug).push(i); } });
+  const maxPost = Math.max(25, Math.floor(uniqNews.length * 0.25));
+
+  function score(a, b) {
+    const A = new Set(a.tok), B = b.tset;
+    let inter = 0, sa = 0, sb = 0;
+    for (const t of A) { const x = w(t) * (a.stok.has(t) ? 2 : 1); sa += x; if (B.has(t)) inter += Math.min(x, w(t) * (b.stok.has(t) ? 2 : 1)); }
+    for (const t of B) sb += w(t) * (b.stok.has(t) ? 2 : 1);
+    const union = sa + sb - inter;
+    const J = union ? inter / union : 0, Ca = sa ? inter / sa : 0, Cb = sb ? inter / sb : 0;
+    let p = 0.4 * J + 0.3 * Ca + 0.3 * Cb;
+    p = 0.78 * p + 0.22 * dice(trigrams(a.slug), b.tgram);
+    if (a.tt.length && b.tt.length) {
+      let ti = 0; const bs = b.ttset;
+      for (const t of new Set(a.tt)) if (bs.has(t)) ti++;
+      const tu = new Set(a.tt).size + bs.size - ti;
+      const T = tu ? ti / tu : 0;
+      p = Math.max(0.6 * p + 0.4 * T, T >= 0.8 ? T * 0.95 : 0);
+    }
+    return Math.min(p, 0.97);
+  }
+
+  const seenOld = new Map();
+  const rules = [];
+  for (const a of olds) {
+    const dup = seenOld.get(a.key);
+    if (dup !== undefined) { rules.push({ src: a.raw, srcPath: a.path, srcQuery: a.query, dst: null, score: 0, how: 'duplicate', candidates: [], flags: ['duplicate-input'] }); continue; }
+    seenOld.set(a.key, rules.length);
+    const rule = { src: a.raw, srcPath: a.path, srcQuery: a.query, dst: null, dstRaw: null, score: 0, how: 'none', candidates: [], flags: [], asset: ASSET_RE.test(a.path) };
+    rules.push(rule);
+    let cands = [];
+    const ex = newByKey.get(a.key);
+    if (ex !== undefined) cands.push({ i: ex, s: 1, how: 'exact' });
+    else {
+      const ex2 = newByKey.get(normKey({ path: a.path, query: '' }, { ignoreQuery: true }));
+      if (ex2 !== undefined && !a.query) cands.push({ i: ex2, s: 0.99, how: 'normalized' });
+    }
+    if (!cands.length) {
+      const pool = new Set();
+      for (const t of new Set([...a.tok, ...a.tt])) { const l = inv.get(t); if (l && l.length <= maxPost) for (const i of l) pool.add(i); }
+      const sl = slugIdx.get(a.slug); if (sl && a.slug.length > 2) for (const i of sl) pool.add(i);
+      const list = [];
+      for (const i of pool) {
+        let s = score(a, uniqNews[i]);
+        let how = 'fuzzy';
+        if (a.slug && a.slug === uniqNews[i].slug && a.slug.length > 2) { s = Math.max(s, 0.9 - (sl && sl.length > 1 ? 0.12 : 0)); how = 'slug'; }
+        list.push({ i, s, how });
+      }
+      list.sort((x, y) => y.s - x.s);
+      cands = list.filter(c => c.s >= 0.12).slice(0, 5);
+    }
+    rule.candidates = cands.map(c => ({ dst: uniqNews[c.i].raw, score: round(c.s), how: c.how, title: uniqNews[c.i].title }));
+    if (cands.length) {
+      const best = cands[0];
+      rule.score = round(best.s); rule.how = best.how;
+      rule.dstRaw = uniqNews[best.i].raw;
+      if (best.how === 'fuzzy' && best.s >= 0.3 && (!cands[1] || best.s - cands[1].s > 0.25)) { best.s = Math.min(0.97, best.s + 0.1); rule.score = round(best.s); rule.candidates[0].score = rule.score; }
+      if (best.s >= o.threshold) rule.dst = rule.dstRaw;
+      else rule.flags.push('low-confidence');
+      if (cands[1] && best.how !== 'exact' && best.how !== 'normalized' && best.s - cands[1].s < o.margin) rule.flags.push('ambiguous');
+    }
+    if (!rule.dst && o.fallback) { rule.dst = o.fallback; rule.how = 'fallback'; rule.flags.push('fallback'); }
+  }
+  const used = new Set(rules.filter(r => r.dst).map(r => normKey(parseUrl(r.dst), { ignoreQuery: true })));
+  const orphans = uniqNews.filter(n => !used.has(normKey({ path: n.path, query: '' }, { ignoreQuery: true }))).map(n => n.raw);
+  return { rules, orphans };
+}
+function round(x) { return Math.round(x * 1000) / 1000; }
+
+// ---- analysis -----------------------------------------------------------
+// Adds flags to every active rule (rules with a dst): self, loop, chain, conflict, collision.
+// Sets rule.final (flattened destination) and rule.hops.
+function analyze(rules) {
+  // Server-level identity: case-insensitive, trailing slash ignored, extension KEPT (/about.html and /about are different URLs).
+  const ck = (path, query, withQ) => {
+    let p = safeDecode(path).toLowerCase(); if (p.length > 1) p = p.replace(/\/+$/, ''); if (!p) p = '/';
+    return withQ && query ? p + '?' + query.split('&').filter(Boolean).map(safeDecode).sort().join('&').toLowerCase() : p;
+  };
+  const key = r => ck(r.srcPath, r.srcQuery, true);
+  const dkey = d => { const u = parseUrl(d); return ck(u.path, u.query, true); };
+  const dpath = d => { const u = parseUrl(d); return ck(u.path, '', false); };
+  const active = rules.filter(r => r.dst);
+  for (const r of rules) r.flags = (r.flags || []).filter(f => !['self', 'loop', 'chain', 'conflict', 'collision', 'external-chain'].includes(f));
+  const map = new Map(), raws = new Map();
+  for (const r of active) {
+    const k = key(r);
+    if (map.has(k) && map.get(k).dst !== r.dst) { r.flags.push('conflict'); map.get(k).flags.includes('conflict') || map.get(k).flags.push('conflict'); }
+    else if (!map.has(k)) map.set(k, r);
+    const rs = raws.get(k) || new Set(); rs.add(r.srcPath + '?' + r.srcQuery); raws.set(k, rs);
+  }
+  for (const r of active) if (raws.get(key(r)).size > 1 && !r.flags.includes('collision')) r.flags.push('collision');
+  for (const r of active) {
+    const start = key(r);
+    const sameQ = !r.srcQuery || dkey(r.dst) === start;
+    if (dpath(r.dst) === ck(r.srcPath, '', false) && sameQ) { r.flags.push('self'); r.final = r.dst; r.hops = 0; continue; }
+    const seen = new Set([start]);
+    let cur = r.dst, hops = 0, loop = false;
+    for (;;) {
+      const nxt = map.get(dkey(cur)) || map.get(dpath(cur));
+      if (!nxt || nxt === r || !nxt.dst) break;
+      seen.add(dpath(cur)); cur = nxt.dst; hops++;
+      if (seen.has(dpath(cur)) || dkey(cur) === start || hops > 50) { loop = true; break; }
+    }
+    r.hops = hops; r.final = cur;
+    if (loop) r.flags.push('loop'); else if (hops > 0) r.flags.push('chain');
+  }
+  return summarize(rules);
+}
+
+function summarize(rules) {
+  const s = { total: rules.length, active: 0, review: 0, unmatched: 0, chain: 0, loop: 0, self: 0, conflict: 0, collision: 0, fallback: 0, duplicate: 0, exact: 0 };
+  for (const r of rules) {
+    if (r.dst) s.active++;
+    if (!r.dst && r.how !== 'duplicate') s.unmatched++;
+    if (r.flags.includes('ambiguous') || r.flags.includes('low-confidence')) s.review++;
+    if (r.how === 'exact' || r.how === 'normalized') s.exact++;
+    for (const f of ['chain', 'loop', 'self', 'conflict', 'collision', 'fallback']) if (r.flags.includes(f)) s[f]++;
+    if (r.how === 'duplicate') s.duplicate++;
+  }
+  return s;
+}
+
+// Rules ready for export: active, not loops/self, optionally flattened, de-duplicated by source.
+function exportable(rules, opts) {
+  const o = Object.assign({ flatten: true, skipAssets: false }, opts);
+  const out = [], seen = new Set();
+  for (const r of rules) {
+    if (!r.dst || r.flags.includes('loop') || r.flags.includes('self')) continue;
+    if (o.skipAssets && r.asset) continue;
+    const k = r.srcPath + '?' + r.srcQuery;
+    if (seen.has(k)) continue; seen.add(k);
+    const d = parseUrl(o.flatten && r.final ? r.final : r.dst);
+    out.push({ path: safeDecode(u0(r.srcPath)), query: r.srcQuery, dstUrl: d, dst: d.host && !o.sameHost ? d.proto + '//' + d.host + d.path + (d.query ? '?' + d.query : '') : d.path + (d.query ? '?' + d.query : '') });
+  }
+  return out;
+}
+function u0(p) { return p.length > 1 && p.endsWith('/') ? p.replace(/\/+$/, '') : p; }
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function encDst(d) { const u = parseUrl(d); const base = d.match(/^(https?:)?\/\/[^\/?#]+/i); return (base ? (u.proto + '//' + u.host) : '') + encPath(u.path) + (u.query ? '?' + u.query : ''); }
+
+const FORMATS = ['netlify', 'apache', 'nginx', 'vercel', 'cloudflare-pages', 'cloudflare-bulk'];
+
+function toFormat(fmt, rules, opts) {
+  const o = Object.assign({ oldHost: 'https://old.example.com', newHost: 'https://new.example.com', slashVariants: true }, opts);
+  const ex = exportable(rules, opts);
+  const L = [];
+  switch (fmt) {
+    case 'netlify':
+    case 'cloudflare-pages': {
+      const cf = fmt === 'cloudflare-pages';
+      if (cf) L.push('# Cloudflare Pages _redirects: query-string rules are not supported there and are skipped.');
+      for (const r of ex) {
+        if (r.query) {
+          if (cf) { L.push('# skipped (query rule): ' + r.path + '?' + r.query + ' -> ' + r.dst); continue; }
+          L.push(`${encPath(r.path)} ${r.query.split('&').filter(Boolean).join(' ')} ${encDst(r.dst)} 301`);
+        } else L.push(`${encPath(r.path)} ${encDst(r.dst)} 301`);
+      }
+      return { filename: '_redirects', content: L.join('\n') + '\n', count: ex.length };
+    }
+    case 'apache': {
+      const rw = [];
+      L.push('# Generated by detour. Needs mod_alias (and mod_rewrite for query-string rules).');
+      for (const r of ex) {
+        if (r.query) {
+          const conds = r.query.split('&').filter(Boolean);
+          rw.push(`RewriteCond %{QUERY_STRING} ^${reEsc(conds.join('&'))}$`);
+          rw.push(`RewriteRule ^${reEsc(r.path)}/?$ ${encDst(r.dst)}? [R=301,L]`);
+        } else L.push(`RedirectMatch 301 "^${reEsc(encPath(r.path) === r.path ? r.path : safeDecode(r.path))}/?$" "${encDst(r.dst)}"`);
+      }
+      if (rw.length) { L.push('', '<IfModule mod_rewrite.c>', 'RewriteEngine On', ...rw, '</IfModule>'); }
+      return { filename: 'redirects.htaccess', content: L.join('\n') + '\n', count: ex.length };
+    }
+    case 'nginx': {
+      L.push('# Generated by detour. Put the map{} block in http{}, the if-block in server{}.');
+      L.push('map $request_uri $detour_target {', '    default "";');
+      for (const r of ex) {
+        const src = encPath(r.path) + (r.query ? '?' + r.query : '');
+        const q = s => '"' + s.replace(/(["\\$])/g, '\\$1') + '"';
+        L.push(`    ${q(src)} ${q(encDst(r.dst))};`);
+        if (o.slashVariants && !r.query && r.path !== '/') L.push(`    ${q(src + '/')} ${q(encDst(r.dst))};`);
+      }
+      L.push('}', '', '# inside server { ... }', 'if ($detour_target) { return 301 $detour_target; }');
+      return { filename: 'redirects.nginx.conf', content: L.join('\n') + '\n', count: ex.length };
+    }
+    case 'vercel': {
+      const esc = s => s.replace(/([:*()?+{}])/g, '\\$1');
+      const redirects = ex.map(r => {
+        const item = { source: esc(encPath(r.path)), destination: encDst(r.dst), permanent: true };
+        if (r.query) item.has = r.query.split('&').filter(Boolean).map(p => { const i = p.indexOf('='); return i < 0 ? { type: 'query', key: p } : { type: 'query', key: p.slice(0, i), value: p.slice(i + 1) }; });
+        return item;
+      });
+      return { filename: 'vercel.json', content: JSON.stringify({ redirects }, null, 2) + '\n', count: ex.length };
+    }
+    case 'cloudflare-bulk': {
+      const csv = s => (/[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s);
+      for (const r of ex) {
+        const src = o.oldHost.replace(/\/$/, '') + encPath(r.path) + (r.query ? '?' + r.query : '');
+        const dst = /^https?:/i.test(r.dst) ? encDst(r.dst) : o.newHost.replace(/\/$/, '') + encDst(r.dst);
+        L.push([src, dst, 301].map(x => csv(String(x))).join(','));
+      }
+      return { filename: 'cloudflare-bulk-redirects.csv', content: L.join('\n') + '\n', count: ex.length };
+    }
+    default: throw new Error('unknown format: ' + fmt);
+  }
+}
+
+function qaCsv(rules) {
+  const csv = s => { s = String(s == null ? '' : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const rows = [['old_url', 'new_url', 'final_url', 'confidence', 'method', 'status', 'flags', 'runner_up']];
+  for (const r of rules) {
+    const status = !r.dst ? (r.how === 'duplicate' ? 'duplicate' : 'UNMATCHED') : r.flags.some(f => ['loop', 'self', 'conflict'].includes(f)) ? 'PROBLEM' : r.flags.some(f => ['ambiguous', 'low-confidence', 'chain', 'collision'].includes(f)) ? 'review' : 'ok';
+    rows.push([r.src, r.dst || '', r.final && r.final !== r.dst ? r.final : '', r.score, r.how, status, r.flags.join(' '), r.candidates[1] ? r.candidates[1].dst : '']);
+  }
+  return rows.map(r => r.map(csv).join(',')).join('\n') + '\n';
+}
+
+function verifyScript(rules, opts) {
+  const o = Object.assign({ oldHost: 'https://old.example.com' }, opts);
+  const ex = exportable(rules, opts);
+  const sh = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
+  const L = ['#!/usr/bin/env bash', '# Generated by detour. Run AFTER the rules are live: checks each old URL answers 301 with the expected Location.', 'HOST=${1:-' + o.oldHost + '}', 'pass=0; fail=0', 'check() {',
+    '  out=$(curl -s -o /dev/null --max-time 15 -w "%{http_code} %{redirect_url}" "$HOST$1")',
+    '  code=${out%% *}; loc=${out#* }; loc=${loc#http*://*/}; loc="/${loc#/}"',
+    '  want="$2"; want=${want#http*://*/}; want="/${want#/}"',
+    '  if [ "$code" = "301" ] && [ "${loc%/}" = "${want%/}" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL $1 -> got $code $loc, want 301 $2"; fi',
+    '}'];
+  for (const r of ex) L.push(`check ${sh(encPath(r.path) + (r.query ? '?' + r.query : ''))} ${sh(encDst(r.dst))}`);
+  L.push('echo "$pass ok, $fail failed"', '[ "$fail" -eq 0 ]');
+  return L.join('\n') + '\n';
+}
+
+// Analyse an existing old->new map (no matching).
+function loadMapping(text, newText) {
+  const rows = parseMapping(text);
+  const rules = rows.map(r => { const u = parseUrl(r.src); return { src: r.src, srcPath: u.path, srcQuery: u.query, dst: r.dst, score: 1, how: 'given', candidates: [], flags: [] }; });
+  const notes = [];
+  if (newText) {
+    const known = new Set(parseList(newText, 'new').items.map(i => normKey(parseUrl(i.url), { ignoreQuery: true })));
+    for (const r of rules) { const k = normKey(parseUrl(r.dst), { ignoreQuery: true }); if (!known.has(k) && !/^https?:\/\//i.test(r.dst)) r.flags.push('target-missing'); }
+    if (known.size) notes.push(`Checked targets against ${known.size} URLs of the new site.`);
+  }
+  return { rules, notes };
+}
+
+const api = { parseUrl, normKey, tokens, parseList, parseMapping, matchLists, analyze, summarize, exportable, toFormat, qaCsv, verifyScript, loadMapping, FORMATS, encPath };
+if (typeof module !== 'undefined' && module.exports) module.exports = api;
+else if (typeof window !== 'undefined') window.Detour = api;
+
+</script>
+<script>
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)};
+var D=window.Detour, state={rules:[],orphans:[],filter:'all',fmt:'netlify',limit:300};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+['old','new'].forEach(function(id){var t=$(id);
+  t.addEventListener('input',function(){count(id)});
+  t.addEventListener('dragover',function(e){e.preventDefault();t.classList.add('drag')});
+  t.addEventListener('dragleave',function(){t.classList.remove('drag')});
+  t.addEventListener('drop',function(e){e.preventDefault();t.classList.remove('drag');var f=e.dataTransfer.files[0];if(!f)return;
+    var r=new FileReader();r.onload=function(){t.value=r.result;count(id)};r.readAsText(f)});});
+function count(id){var n=D.parseList($(id).value,id).items.length;$(id+'N').textContent=n?n+' URLs':''}
+$('demo').onclick=function(){
+  $('old').value='Address,Title 1\nhttps://shop.example.com/blog/2019/05/how-to-bake-bread.html,How to bake bread at home\nhttps://shop.example.com/blog/2020/11/sourdough-starter-guide.html,Sourdough starter guide\nhttps://shop.example.com/about-us.html,About us\nhttps://shop.example.com/contact,Contact\nhttps://shop.example.com/products?id=12,Rye flour 1kg\nhttps://shop.example.com/products/Whole-Wheat-Flour,Whole wheat flour\nhttps://shop.example.com/products/oat-flour/,Oat flour\nhttps://shop.example.com/faq.php,FAQ\nhttps://shop.example.com/old-promo-2017,Summer promo 2017\nhttps://shop.example.com/careers,Careers';
+  $('new').value='Address,Title 1\n/recipes/bake-bread-at-home,Bake bread at home\n/recipes/sourdough-starter,Sourdough starter guide\n/about,About us\n/contact-us,Contact us\n/flour/rye,Rye flour 1kg\n/flour/whole-wheat-flour,Whole wheat flour\n/flour/oat-flour,Oat flour\n/help/faq,FAQ\n/jobs,Careers\n/blog,Blog';
+  count('old');count('new');run()};
+$('go').onclick=run;
+function opts(){return{threshold:Math.min(1,Math.max(0,parseFloat($('thr').value)||0.55)),fallback:$('fb').value.trim(),ignoreQuery:!$('kq').checked,flatten:$('fl').checked,oldHost:$('oh').value.trim()||'https://old.example.com',newHost:$('nh').value.trim()||'https://new.example.com'}}
+function run(){
+  var o=D.parseList($('old').value,'old'),n=D.parseList($('new').value,'new');
+  $('notes').innerHTML=o.notes.concat(n.notes).map(function(x){return'<div>'+esc(x)+'</div>'}).join('');
+  if(!o.items.length||!n.items.length){$('out').hidden=true;$('notes').innerHTML+='<div>Paste both lists first (or press "Load demo").</div>';return}
+  var m=D.matchLists(o.items,n.items,opts());state.rules=m.rules;state.orphans=m.orphans;state.limit=300;refresh();$('out').hidden=false}
+function refresh(){D.analyze(state.rules);render();exportPane()}
+function status(r){if(!r.dst)return r.how==='duplicate'?'dup':'un';if(r.flags.some(function(f){return['loop','self','conflict'].indexOf(f)>=0}))return'prob';if(r.flags.some(function(f){return['ambiguous','low-confidence','chain','collision'].indexOf(f)>=0}))return'rev';return'ok'}
+function render(){
+  var s=D.summarize(state.rules),cnt={all:s.total,ok:0,rev:0,un:0,prob:0};
+  state.rules.forEach(function(r){var k=status(r);if(cnt[k]!==undefined)cnt[k]++});
+  var defs=[['all','All',''],['ok','Ready','ok'],['rev','Review','warn'],['un','Unmatched','warn'],['prob','Problems','bad']];
+  $('stats').innerHTML=defs.map(function(d){return'<div class="stat '+d[2]+(state.filter===d[0]?' on':'')+'" data-f="'+d[0]+'"><b>'+cnt[d[0]]+'</b>'+d[1]+'</div>'}).join('')+'<div class="stat"><b>'+state.orphans.length+'</b>New URLs w/o redirect</div>';
+  Array.prototype.forEach.call($('stats').querySelectorAll('[data-f]'),function(e){e.onclick=function(){state.filter=e.dataset.f;state.limit=300;render()}});
+  var list=state.rules.map(function(r,i){return[r,i]}).filter(function(p){return state.filter==='all'||status(p[0])===state.filter});
+  var shown=list.slice(0,state.limit);
+  $('rows').innerHTML=shown.length?shown.map(function(p){return rowHtml(p[0],p[1])}).join(''):'<tr><td colspan="4" class="empty">Nothing here.</td></tr>';
+  $('more').innerHTML=list.length>shown.length?'Showing '+shown.length+' of '+list.length+'. <button id="moreb">Show more</button>':'';
+  if($('moreb'))$('moreb').onclick=function(){state.limit+=500;render()};
+  Array.prototype.forEach.call($('rows').querySelectorAll('select'),function(sel){sel.onchange=function(){setDst(+sel.dataset.i,sel.value)}});
+}
+function rowHtml(r,i){
+  var opts='<option value="">— no redirect —</option>',seen={};
+  r.candidates.forEach(function(c){seen[c.dst]=1;opts+='<option value="'+esc(c.dst)+'"'+(c.dst===r.dst?' selected':'')+'>'+esc(c.dst)+'  ('+Math.round(c.score*100)+'%)</option>'});
+  if(r.dst&&!seen[r.dst])opts+='<option value="'+esc(r.dst)+'" selected>'+esc(r.dst)+' (custom)</option>';
+  opts+='<option value="__custom">Type a URL…</option>';
+  var pct=Math.round(r.score*100),col=pct>=80?'var(--ok)':pct>=55?'var(--warn)':'var(--bad)';
+  var fl=r.flags.map(function(f){var c=['loop','conflict','self'].indexOf(f)>=0?(f==='self'?'':'bad'):'warn';return'<span class="fl '+c+'" title="'+esc(f)+'">'+esc(f==='self'?'unchanged':f)+(f==='chain'&&r.hops?' +'+r.hops:'')+'</span>'}).join('');
+  return'<tr><td class="u d">'+esc(r.src)+'</td><td>'+(r.how==='duplicate'?'<span class="mut">duplicate of an earlier row</span>':'<select data-i="'+i+'">'+opts+'</select>')+(r.final&&r.final!==r.dst?'<div class="mut u">→ '+esc(r.final)+'</div>':'')+'</td><td>'+(r.how==='duplicate'?'':'<span class="bar"><i style="width:'+pct+'%;background:'+col+'"></i></span>'+pct+'% <span class="mut">'+esc(r.how)+'</span>')+'</td><td>'+fl+'</td></tr>'}
+function setDst(i,v){
+  var r=state.rules[i];
+  if(v==='__custom'){v=prompt('Redirect '+r.src+' to:',r.dst||'/');if(v===null){render();return}v=v.trim()}
+  r.dst=v||null;r.how=v?'manual':'none';r.score=v?1:0;r.flags=r.flags.filter(function(f){return f==='duplicate-input'});
+  if(!v)r.flags.push('manual-none');r.final=null;refresh()}
+var FM=D.FORMATS;
+$('tabs').innerHTML=FM.map(function(f){return'<button data-f="'+f+'">'+f+'</button>'}).join('');
+Array.prototype.forEach.call($('tabs').children,function(b){b.onclick=function(){state.fmt=b.dataset.f;exportPane()}});
+$('oh').oninput=$('nh').oninput=function(){exportPane()};
+var cur=null;
+function exportPane(){
+  if(!state.rules.length)return;
+  Array.prototype.forEach.call($('tabs').children,function(b){b.className=b.dataset.f===state.fmt?'on':''});
+  cur=D.toFormat(state.fmt,state.rules,opts());
+  $('pre').textContent=cur.content.split('\n').slice(0,200).join('\n')+(cur.content.split('\n').length>200?'\n… ('+cur.count+' rules in the download)':'')||'(no rules to export yet)'}
+function save(name,text,type){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
+$('dl').onclick=function(){if(cur)save(cur.filename,cur.content)};
+$('cp').onclick=function(){if(cur&&navigator.clipboard)navigator.clipboard.writeText(cur.content).then(function(){$('cp').textContent='Copied';setTimeout(function(){$('cp').textContent='Copy'},1200)})};
+$('dqa').onclick=function(){save('detour-qa.csv',D.qaCsv(state.rules),'text/csv')};
+$('dvs').onclick=function(){save('verify.sh',D.verifyScript(state.rules,opts()))};
+})();
+</script>
+</body>
+</html>

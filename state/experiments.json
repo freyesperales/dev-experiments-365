@@ -1,5 +1,5 @@
 {
-  "last_number": 84,
+  "last_number": 85,
   "entries": [
     {
       "n": 1,
@@ -682,6 +682,14 @@
       "date": "2026-10-28",
       "title": "Churnmap — git history as a self-contained treemap of churn, recency, ownership, hotspots and bus-factor-1 files; zero-dep Node CLI writing one HTML file",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-084",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 85,
+      "date": "2026-10-29",
+      "title": "Detour — match old URLs to new ones for site migrations, catch redirect chains/loops/conflicts, export Netlify/Vercel/Apache/nginx/Cloudflare rules plus a QA CSV and verify script; single offline HTML file + zero-dep CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-085",
       "mode": "monorepo",
       "status": "completed"
     }
