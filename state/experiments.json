@@ -1,10 +1,10 @@
 {
-  "last_number": 85,
+  "last_number": 86,
   "entries": [
     {
       "n": 1,
       "date": "2026-07-09",
-      "title": "mcp-preflight — static migration-readiness checker for the MCP 2026-07-28 spec",
+      "title": "mcp-preflight \u2014 static migration-readiness checker for the MCP 2026-07-28 spec",
       "repo_url": "https://github.com/freyesperales/dev-experiment-001",
       "mode": "per-repo",
       "status": "completed"
@@ -12,7 +12,7 @@
     {
       "n": 2,
       "date": "2026-07-09",
-      "title": "mcp-chaos — fault-injecting MCP proxy and agent resilience scorer",
+      "title": "mcp-chaos \u2014 fault-injecting MCP proxy and agent resilience scorer",
       "repo_url": "https://github.com/freyesperales/dev-experiment-002",
       "mode": "per-repo",
       "status": "completed"
@@ -20,7 +20,7 @@
     {
       "n": 3,
       "date": "2026-07-12",
-      "title": "skill-collider — LLM-free static routing-collision analyzer for Agent Skills (SKILL.md)",
+      "title": "skill-collider \u2014 LLM-free static routing-collision analyzer for Agent Skills (SKILL.md)",
       "repo_url": "https://github.com/freyesperales/dev-experiment-003",
       "mode": "per-repo",
       "status": "completed"
@@ -140,7 +140,7 @@
     {
       "n": 18,
       "date": "2026-07-28",
-      "title": "prompter - offline, LLM-free safety & conformance auditor for the MCP prompts channel (prompts/list, prompts/get) and its companion completion channel (completion/complete): the series' first entry on the prompts capability - the one channel MCP frames as 'user-controlled', yet whose template body, argument-interpolated output, name/title/description and embedded resources are entirely server-authored and injected into the conversation under the user's (or assistant's) name as a trusted slash command. Passively replays a captured JSON-RPC session and grades whether the server weaponized the channel via a 42-rule catalog in 6 families - CAP (capability & declaration legality: prompts/completions declared before use, listChanged coherence, duplicate/empty/non-string names), ARG (argument-schema legality: duplicate args, non-boolean required, undeclared-argument acceptance, required-argument enforcement / owed -32602), INJ (interpolation & injection safety: server-authored injection markers attributed to the template via argument-residue subtraction rather than the user's typed arg, injection in name/title/description = prompt-channel tool-poisoning, a user argument echoed into an assistant-role message = words in the model's mouth, unsubstituted {{placeholder}} leaks), PERC (perception & concealment: zero-width/bidi/control/Unicode TAG-block payloads, and homoglyph prompt-name shadowing of a trusted slash command /dеploy->/deploy or of another prompt), RES (embedded-content & exfiltration: argument-steered outbound resource URIs = exfil/SSRF, off-origin & javascript:/data: schemes, malformed embedded resources, oversized blob/text token bombs, invalid roles/content-types) and CMP (completion channel & result conformance: secret/credential leakage in completion values, injection-in-suggestion, the spec's 100-value cap, total/hasMore incoherence, unknown-prompt/undeclared-argument references) - severity-weighted score + grade + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a trojaned 'acmedeploy' capture with 32 findings across 29 rules and all six families incl. 4 CRITICALs (assistant-mouth injection, /deploy command-shadow, argument-steered exfil URL, AWS-key leak in a completion), 52 tests",
+      "title": "prompter - offline, LLM-free safety & conformance auditor for the MCP prompts channel (prompts/list, prompts/get) and its companion completion channel (completion/complete): the series' first entry on the prompts capability - the one channel MCP frames as 'user-controlled', yet whose template body, argument-interpolated output, name/title/description and embedded resources are entirely server-authored and injected into the conversation under the user's (or assistant's) name as a trusted slash command. Passively replays a captured JSON-RPC session and grades whether the server weaponized the channel via a 42-rule catalog in 6 families - CAP (capability & declaration legality: prompts/completions declared before use, listChanged coherence, duplicate/empty/non-string names), ARG (argument-schema legality: duplicate args, non-boolean required, undeclared-argument acceptance, required-argument enforcement / owed -32602), INJ (interpolation & injection safety: server-authored injection markers attributed to the template via argument-residue subtraction rather than the user's typed arg, injection in name/title/description = prompt-channel tool-poisoning, a user argument echoed into an assistant-role message = words in the model's mouth, unsubstituted {{placeholder}} leaks), PERC (perception & concealment: zero-width/bidi/control/Unicode TAG-block payloads, and homoglyph prompt-name shadowing of a trusted slash command /d\u0435ploy->/deploy or of another prompt), RES (embedded-content & exfiltration: argument-steered outbound resource URIs = exfil/SSRF, off-origin & javascript:/data: schemes, malformed embedded resources, oversized blob/text token bombs, invalid roles/content-types) and CMP (completion channel & result conformance: secret/credential leakage in completion values, injection-in-suggestion, the spec's 100-value cap, total/hasMore incoherence, unknown-prompt/undeclared-argument references) - severity-weighted score + grade + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a trojaned 'acmedeploy' capture with 32 findings across 29 rules and all six families incl. 4 CRITICALs (assistant-mouth injection, /deploy command-shadow, argument-steered exfil URL, AWS-key leak in a completion), 52 tests",
       "repo_url": "https://github.com/freyesperales/dev-experiment-018",
       "mode": "per-repo",
       "status": "completed"
@@ -164,7 +164,7 @@
     {
       "n": 21,
       "date": "2026-07-31",
-      "title": "augur - offline, LLM-free safety & conformance auditor for the MCP completion channel (completion/complete): the series' first entry on the completion (autocomplete) capability — the only MCP channel whose user-interaction model is per-keystroke, so every partial argument value the user types (including secrets they never submit) is streamed to the server, and every returned suggestion is inserted into the user's input; un-deprecated by the 2026-07-28 RC (unlike Roots/Sampling/Logging). Passively replays a captured JSON-RPC session, reconstructs per-(ref,argument) keystroke timelines, and grades weaponization via a 33-rule catalog in 6 families — CAP (capability & declaration legality: completion-without-declared-capability, undeclared prompt/argument reference, invalid ref type, 2026-07-28 resultType, fabricated completions for unknown refs), LEAK (value & keystroke exfiltration, unique to this channel: LEAK01 credential captured mid-keystroke = CRITICAL, PII/private-path capture, cross-argument context leakage, full-value keystroke reconstruction, server reflecting a sensitive typed value, completion solicited on a credential-shaped argument), INJ (suggestion content injection & perception: INJ01 prompt-injection in a returned suggestion = completion poisoning CRITICAL, invisible/bidi/TAG Unicode, homoglyph/confusable characters, embedded credential, control chars), STEER (adversarial ranking & dangerous defaults: STEER01 dangerous value ranked #1 = CRITICAL, confusable typosquat ranked above the genuine value, suggestions that ignore the typed prefix), URI (resource-ref URI exfiltration & SSRF: URI01 suggested URI targets cloud-metadata/SSRF host = CRITICAL, dangerous scheme, exfil-sink query param, off-origin, client-variable-in-authority template, sensitive local path) and RES (result conformance & abuse: 100-value spec-cap overflow, non-string/duplicate/blank values, total/hasMore incoherence, oversized token-bomb payload) — severity-weighted score + grade + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a trojan capture that triggers all 33 rules (38 findings across all six families incl. 5 CRITICALs: LEAK01 AWS-key keystroke capture, INJ01 suggestion injection, STEER01 dangerous default, URI01 x2 metadata SSRF), 57 tests",
+      "title": "augur - offline, LLM-free safety & conformance auditor for the MCP completion channel (completion/complete): the series' first entry on the completion (autocomplete) capability \u2014 the only MCP channel whose user-interaction model is per-keystroke, so every partial argument value the user types (including secrets they never submit) is streamed to the server, and every returned suggestion is inserted into the user's input; un-deprecated by the 2026-07-28 RC (unlike Roots/Sampling/Logging). Passively replays a captured JSON-RPC session, reconstructs per-(ref,argument) keystroke timelines, and grades weaponization via a 33-rule catalog in 6 families \u2014 CAP (capability & declaration legality: completion-without-declared-capability, undeclared prompt/argument reference, invalid ref type, 2026-07-28 resultType, fabricated completions for unknown refs), LEAK (value & keystroke exfiltration, unique to this channel: LEAK01 credential captured mid-keystroke = CRITICAL, PII/private-path capture, cross-argument context leakage, full-value keystroke reconstruction, server reflecting a sensitive typed value, completion solicited on a credential-shaped argument), INJ (suggestion content injection & perception: INJ01 prompt-injection in a returned suggestion = completion poisoning CRITICAL, invisible/bidi/TAG Unicode, homoglyph/confusable characters, embedded credential, control chars), STEER (adversarial ranking & dangerous defaults: STEER01 dangerous value ranked #1 = CRITICAL, confusable typosquat ranked above the genuine value, suggestions that ignore the typed prefix), URI (resource-ref URI exfiltration & SSRF: URI01 suggested URI targets cloud-metadata/SSRF host = CRITICAL, dangerous scheme, exfil-sink query param, off-origin, client-variable-in-authority template, sensitive local path) and RES (result conformance & abuse: 100-value spec-cap overflow, non-string/duplicate/blank values, total/hasMore incoherence, oversized token-bomb payload) \u2014 severity-weighted score + grade + CI exit-code gate, pure stdlib; ships a conformant reference capture (100/A) and a trojan capture that triggers all 33 rules (38 findings across all six families incl. 5 CRITICALs: LEAK01 AWS-key keystroke capture, INJ01 suggestion injection, STEER01 dangerous default, URI01 x2 metadata SSRF), 57 tests",
       "repo_url": "https://github.com/freyesperales/dev-experiment-021",
       "mode": "per-repo",
       "status": "completed"
@@ -172,7 +172,7 @@
     {
       "n": 22,
       "date": "2026-08-01",
-      "title": "throughline - offline, LLM-free cross-channel taint-flow / provenance auditor for a captured MCP session: the series' first entry that audits the SEAMS BETWEEN channels rather than one channel in isolation (all prior entries 011-021 audit a single channel; #009 trifecta is static over the tool manifest and asks only whether a capability set *permits* a lethal trifecta). Builds an information-flow graph over a full multi-channel capture and detects end-to-end exfiltration/injection CHAINS no single-channel view can see — an untrusted value read on one channel (resource content, tool result, prompt body, autocomplete suggestion, borrowed-LLM sampling output) reaching a dangerous sink on ANOTHER (tool-call argument, outbound URL, sampling prompt fed back to the model, elicitation message shown to the user, resource-read URI). Deterministic, time-ordered taint propagation with significance-gated value matching (exact / whole-value containment / significant-token) plus transform-aware laundering detection (base64/percent/hex) so encoded exfil raises suspicion instead of hiding; every finding names the two seq numbers it spans. 9-rule catalog in 5 families — CHAIN (CHAIN01 realized untrusted->exfil chain, CHAIN02 laundered exfil), SSRF (SSRF01 metadata/private-host, SSRF02 dangerous scheme), INJ (INJ01 into the borrowed LLM's sampling prompt, INJ02 into a user-facing elicitation message, INJ03 concealed zero-width/bidi/TAG Unicode crossing a channel), PROV (PROV02 borrowed-LLM sampling output auto-acted into a tool-call arg with no user turn), AMP (AMP01 one untrusted value fanning out to >=3 sinks) — severity-weighted score + grade + CI exit-code gate, pure stdlib. Ships a benign multi-channel reference capture that exercises an outbound URL sink yet scores 100/A (requires a real flow, not a risky-looking sink) and a trojan capture with 9 findings across all five families incl. 5 CRITICALs (AWS-key resource->URL exfil, tool-result->sampling injection, base64-laundered token exfil, autocomplete->169.254.169.254 metadata-SSRF resource read = CHAIN01+SSRF01), 45 tests. Honest prior-art note: adjacent trace-taint/IFC work exists (canary credential propagation, offline trace provenance, CaMeL/FIDES); the wedge is MCP-channel-typed + passive-over-a-captured-session + LLM-free/dependency-free.",
+      "title": "throughline - offline, LLM-free cross-channel taint-flow / provenance auditor for a captured MCP session: the series' first entry that audits the SEAMS BETWEEN channels rather than one channel in isolation (all prior entries 011-021 audit a single channel; #009 trifecta is static over the tool manifest and asks only whether a capability set *permits* a lethal trifecta). Builds an information-flow graph over a full multi-channel capture and detects end-to-end exfiltration/injection CHAINS no single-channel view can see \u2014 an untrusted value read on one channel (resource content, tool result, prompt body, autocomplete suggestion, borrowed-LLM sampling output) reaching a dangerous sink on ANOTHER (tool-call argument, outbound URL, sampling prompt fed back to the model, elicitation message shown to the user, resource-read URI). Deterministic, time-ordered taint propagation with significance-gated value matching (exact / whole-value containment / significant-token) plus transform-aware laundering detection (base64/percent/hex) so encoded exfil raises suspicion instead of hiding; every finding names the two seq numbers it spans. 9-rule catalog in 5 families \u2014 CHAIN (CHAIN01 realized untrusted->exfil chain, CHAIN02 laundered exfil), SSRF (SSRF01 metadata/private-host, SSRF02 dangerous scheme), INJ (INJ01 into the borrowed LLM's sampling prompt, INJ02 into a user-facing elicitation message, INJ03 concealed zero-width/bidi/TAG Unicode crossing a channel), PROV (PROV02 borrowed-LLM sampling output auto-acted into a tool-call arg with no user turn), AMP (AMP01 one untrusted value fanning out to >=3 sinks) \u2014 severity-weighted score + grade + CI exit-code gate, pure stdlib. Ships a benign multi-channel reference capture that exercises an outbound URL sink yet scores 100/A (requires a real flow, not a risky-looking sink) and a trojan capture with 9 findings across all five families incl. 5 CRITICALs (AWS-key resource->URL exfil, tool-result->sampling injection, base64-laundered token exfil, autocomplete->169.254.169.254 metadata-SSRF resource read = CHAIN01+SSRF01), 45 tests. Honest prior-art note: adjacent trace-taint/IFC work exists (canary credential propagation, offline trace provenance, CaMeL/FIDES); the wedge is MCP-channel-typed + passive-over-a-captured-session + LLM-free/dependency-free.",
       "repo_url": "https://github.com/freyesperales/dev-experiment-022",
       "mode": "per-repo",
       "status": "completed"
@@ -476,7 +476,7 @@
     {
       "n": 60,
       "date": "2026-10-06",
-      "title": "TrueRedact — in-browser PDF redaction that actually deletes the text (rasterize + rebuild), with a verify panel; nothing uploaded. First batch-of-5 swarm build.",
+      "title": "TrueRedact \u2014 in-browser PDF redaction that actually deletes the text (rasterize + rebuild), with a verify panel; nothing uploaded. First batch-of-5 swarm build.",
       "repo_url": "https://github.com/freyesperales/trueredact",
       "mode": "per-repo",
       "status": "completed"
@@ -484,7 +484,7 @@
     {
       "n": 61,
       "date": "2026-10-06",
-      "title": "sweep — cross-ecosystem dev-disk reclaimer: find & trash node_modules/.venv/target/build caches across all projects, size+age sorted, reversible (to Trash).",
+      "title": "sweep \u2014 cross-ecosystem dev-disk reclaimer: find & trash node_modules/.venv/target/build caches across all projects, size+age sorted, reversible (to Trash).",
       "repo_url": "https://github.com/freyesperales/sweep",
       "mode": "per-repo",
       "status": "completed"
@@ -492,7 +492,7 @@
     {
       "n": 62,
       "date": "2026-10-06",
-      "title": "LocalStatement — PDF bank/card statements → clean CSV/Excel, 100% in-browser, nothing uploaded, no page limits; editable preview + balance sanity-check.",
+      "title": "LocalStatement \u2014 PDF bank/card statements \u2192 clean CSV/Excel, 100% in-browser, nothing uploaded, no page limits; editable preview + balance sanity-check.",
       "repo_url": "https://github.com/freyesperales/localstatement",
       "mode": "per-repo",
       "status": "completed"
@@ -500,7 +500,7 @@
     {
       "n": 63,
       "date": "2026-10-06",
-      "title": "contrast-fix — finds every WCAG-failing text/background pair and rewrites each to the nearest passing color (OKLCH minimal shift); web tool + CI CLI, zero deps.",
+      "title": "contrast-fix \u2014 finds every WCAG-failing text/background pair and rewrites each to the nearest passing color (OKLCH minimal shift); web tool + CI CLI, zero deps.",
       "repo_url": "https://github.com/freyesperales/contrast-fix",
       "mode": "per-repo",
       "status": "completed"
@@ -508,7 +508,7 @@
     {
       "n": 64,
       "date": "2026-10-06",
-      "title": "SheetDiff — git diff for spreadsheets in the browser: compare two Excel/CSV matched by KEY column (reordered rows don't show as changes), free, nothing uploaded.",
+      "title": "SheetDiff \u2014 git diff for spreadsheets in the browser: compare two Excel/CSV matched by KEY column (reordered rows don't show as changes), free, nothing uploaded.",
       "repo_url": "https://github.com/freyesperales/sheetdiff",
       "mode": "per-repo",
       "status": "completed"
@@ -516,7 +516,7 @@
     {
       "n": 65,
       "date": "2026-10-21",
-      "title": "ChatLedger — WhatsApp chat export to customer sales ledger (charges vs payments, who owes what), single HTML file + CLI, nothing uploaded.",
+      "title": "ChatLedger \u2014 WhatsApp chat export to customer sales ledger (charges vs payments, who owes what), single HTML file + CLI, nothing uploaded.",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-065",
       "mode": "monorepo",
       "status": "completed"
@@ -524,7 +524,7 @@
     {
       "n": 66,
       "date": "2026-10-22",
-      "title": "EasyReadify — plain text to a printable Easy Read page (one idea per block, big type, picture slots), single offline HTML file, no AI, nothing uploaded.",
+      "title": "EasyReadify \u2014 plain text to a printable Easy Read page (one idea per block, big type, picture slots), single offline HTML file, no AI, nothing uploaded.",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-066",
       "mode": "monorepo",
       "status": "completed"
@@ -532,7 +532,7 @@
     {
       "n": 67,
       "date": "2026-10-08",
-      "title": "chatorder — paste a WhatsApp order chat, get a clean order sheet, pick/production list and print-ready invoices; offline single HTML file + zero-dep CLI, rule-based multilingual parser, nothing uploaded.",
+      "title": "chatorder \u2014 paste a WhatsApp order chat, get a clean order sheet, pick/production list and print-ready invoices; offline single HTML file + zero-dep CLI, rule-based multilingual parser, nothing uploaded.",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-067",
       "mode": "monorepo",
       "status": "completed",
@@ -541,7 +541,7 @@
     {
       "n": 68,
       "date": "2026-10-09",
-      "title": "Spoolslip — offline print receipts from .3mf/.gcode (time, filament grams, cost per job); browser + CLI, zero deps",
+      "title": "Spoolslip \u2014 offline print receipts from .3mf/.gcode (time, filament grams, cost per job); browser + CLI, zero deps",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-068",
       "mode": "monorepo",
       "status": "completed",
@@ -550,7 +550,7 @@
     {
       "n": 69,
       "date": "2026-10-10",
-      "title": "Logfold — collapses a million log lines into a dozen templates and diffs a good run against a bad one (offline, single-file web tool + zero-dep CLI)",
+      "title": "Logfold \u2014 collapses a million log lines into a dozen templates and diffs a good run against a bad one (offline, single-file web tool + zero-dep CLI)",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-069",
       "mode": "monorepo",
       "status": "completed",
@@ -559,7 +559,7 @@
     {
       "n": 70,
       "date": "2026-10-11",
-      "title": "Hashboard — full-screen signs, scoreboards, queue numbers, countdowns, timers and schedules where the URL is the app (state in the #fragment, deflate+base64url); from-scratch QR generator, kiosk mode, no server or account.",
+      "title": "Hashboard \u2014 full-screen signs, scoreboards, queue numbers, countdowns, timers and schedules where the URL is the app (state in the #fragment, deflate+base64url); from-scratch QR generator, kiosk mode, no server or account.",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-070",
       "mode": "monorepo",
       "status": "completed",
@@ -568,7 +568,7 @@
     {
       "n": 71,
       "date": "2026-10-12",
-      "title": "gguf-xray — drop a .gguf, learn if it fits your GPU at what context (exact per-tensor sizes, KV cache, -ngl offload plan) and whether its chat template is broken; single HTML file + CLI, header-only, nothing uploaded",
+      "title": "gguf-xray \u2014 drop a .gguf, learn if it fits your GPU at what context (exact per-tensor sizes, KV cache, -ngl offload plan) and whether its chat template is broken; single HTML file + CLI, header-only, nothing uploaded",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-071",
       "mode": "monorepo",
       "status": "completed",
@@ -577,7 +577,7 @@
     {
       "n": 72,
       "date": "2026-10-13",
-      "title": "FeedFrock — turns XSLT-styled RSS/Atom/sitemap XML into static JS-free HTML before Chrome removes XSLT (in-browser tool + zero-dep CLI + server snippets)",
+      "title": "FeedFrock \u2014 turns XSLT-styled RSS/Atom/sitemap XML into static JS-free HTML before Chrome removes XSLT (in-browser tool + zero-dep CLI + server snippets)",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-072",
       "mode": "monorepo",
       "status": "completed",
@@ -586,7 +586,7 @@
     {
       "n": 73,
       "date": "2026-10-14",
-      "title": "Plainly — offline plain-language workbench for English/Español/Deutsch: per-sentence flags (length, passive, noun-heavy), plainer-wording swaps with undo, LIX/Flesch/Fernández-Huerta/Amstad/WSTF scores, Markdown rewrite checklist; web + CLI, zero deps",
+      "title": "Plainly \u2014 offline plain-language workbench for English/Espa\u00f1ol/Deutsch: per-sentence flags (length, passive, noun-heavy), plainer-wording swaps with undo, LIX/Flesch/Fern\u00e1ndez-Huerta/Amstad/WSTF scores, Markdown rewrite checklist; web + CLI, zero deps",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-073",
       "mode": "monorepo",
       "status": "completed",
@@ -595,7 +595,7 @@
     {
       "n": 74,
       "date": "2026-10-15",
-      "title": "HexLens — fuzzy binary explorer: search any file by value (int/float/timestamp ranges, all widths & endiannesses) instead of exact bytes; single offline HTML + zero-dep CLI",
+      "title": "HexLens \u2014 fuzzy binary explorer: search any file by value (int/float/timestamp ranges, all widths & endiannesses) instead of exact bytes; single offline HTML + zero-dep CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-074",
       "mode": "monorepo",
       "status": "completed",
@@ -604,7 +604,7 @@
     {
       "n": 75,
       "date": "2026-10-16",
-      "title": "CacheBreak — finds the exact turn where your Claude Code prompt cache broke, why (model switch, TTL, compaction, tool change), where the prefix diverged and what it cost; single-file offline web tool + zero-dep CLI",
+      "title": "CacheBreak \u2014 finds the exact turn where your Claude Code prompt cache broke, why (model switch, TTL, compaction, tool change), where the prefix diverged and what it cost; single-file offline web tool + zero-dep CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-075",
       "mode": "monorepo",
       "status": "completed",
@@ -613,7 +613,7 @@
     {
       "n": 76,
       "date": "2026-10-17",
-      "title": "stacklens — read-only stacked-PR branch visualizer: infers the stack from git ancestry + reflog fork-points, flags drift, emits a restack script",
+      "title": "stacklens \u2014 read-only stacked-PR branch visualizer: infers the stack from git ancestry + reflog fork-points, flags drift, emits a restack script",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-076",
       "mode": "monorepo",
       "status": "completed",
@@ -622,7 +622,7 @@
     {
       "n": 77,
       "date": "2026-10-18",
-      "title": "OrderPaste — WhatsApp order chat export → order sheet, pick list & CSV; offline single HTML file + zero-dep CLI (SMB lane)",
+      "title": "OrderPaste \u2014 WhatsApp order chat export \u2192 order sheet, pick list & CSV; offline single HTML file + zero-dep CLI (SMB lane)",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-077",
       "mode": "monorepo",
       "status": "completed",
@@ -631,7 +631,7 @@
     {
       "n": 78,
       "date": "2026-10-19",
-      "title": "cronwise — DST-aware cron simulator: shows which scheduled runs a time-zone change skips, doubles or shifts (Vixie/k8s/Quartz/EventBridge); single-file web tool + CLI",
+      "title": "cronwise \u2014 DST-aware cron simulator: shows which scheduled runs a time-zone change skips, doubles or shifts (Vixie/k8s/Quartz/EventBridge); single-file web tool + CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-078",
       "mode": "monorepo",
       "status": "completed",
@@ -640,7 +640,7 @@
     {
       "n": 79,
       "date": "2026-10-23",
-      "title": "Cuepoint — piecewise multi-anchor subtitle re-timing (drift, mid-file jumps, encoding/mojibake repair, cleanup); single offline HTML + zero-dep CLI",
+      "title": "Cuepoint \u2014 piecewise multi-anchor subtitle re-timing (drift, mid-file jumps, encoding/mojibake repair, cleanup); single offline HTML + zero-dep CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-079",
       "mode": "monorepo",
       "status": "completed"
@@ -648,7 +648,7 @@
     {
       "n": 80,
       "date": "2026-10-24",
-      "title": "HARbor — private offline HAR viewer: waterfall, filter language, copy-as-curl, verified secret redaction, and before/after capture diff with CI gate (single HTML file + zero-dep CLI)",
+      "title": "HARbor \u2014 private offline HAR viewer: waterfall, filter language, copy-as-curl, verified secret redaction, and before/after capture diff with CI gate (single HTML file + zero-dep CLI)",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-080",
       "mode": "monorepo",
       "status": "completed"
@@ -656,7 +656,7 @@
     {
       "n": 81,
       "date": "2026-10-25",
-      "title": "Caddify — nginx.conf to Caddyfile translator that reports exactly what could not be translated (and why); single offline HTML file + zero-dep CLI (devtools lane)",
+      "title": "Caddify \u2014 nginx.conf to Caddyfile translator that reports exactly what could not be translated (and why); single offline HTML file + zero-dep CLI (devtools lane)",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-081",
       "mode": "monorepo",
       "status": "completed"
@@ -664,7 +664,7 @@
     {
       "n": 82,
       "date": "2026-10-26",
-      "title": "SafeCSV — shows what Excel would silently destroy in a CSV (leading zeros, 16+ digit IDs, SEPT1→1-Sep, formula injection), diagnoses already-damaged files, and writes a verified Excel-safe .xlsx; single offline HTML file + zero-dep CLI",
+      "title": "SafeCSV \u2014 shows what Excel would silently destroy in a CSV (leading zeros, 16+ digit IDs, SEPT1\u21921-Sep, formula injection), diagnoses already-damaged files, and writes a verified Excel-safe .xlsx; single offline HTML file + zero-dep CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-082",
       "mode": "monorepo",
       "status": "completed"
@@ -672,7 +672,7 @@
     {
       "n": 83,
       "date": "2026-10-27",
-      "title": "Unbilled — finds the hours you worked but never billed: Toggl/Clockify/Harvest export vs retainer caps, out-of-scope work and invoiced hours, with ready-to-send invoice notes (single offline HTML file + zero-dep CLI; freelancer/agency lane)",
+      "title": "Unbilled \u2014 finds the hours you worked but never billed: Toggl/Clockify/Harvest export vs retainer caps, out-of-scope work and invoiced hours, with ready-to-send invoice notes (single offline HTML file + zero-dep CLI; freelancer/agency lane)",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-083",
       "mode": "monorepo",
       "status": "completed"
@@ -680,7 +680,7 @@
     {
       "n": 84,
       "date": "2026-10-28",
-      "title": "Churnmap — git history as a self-contained treemap of churn, recency, ownership, hotspots and bus-factor-1 files; zero-dep Node CLI writing one HTML file",
+      "title": "Churnmap \u2014 git history as a self-contained treemap of churn, recency, ownership, hotspots and bus-factor-1 files; zero-dep Node CLI writing one HTML file",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-084",
       "mode": "monorepo",
       "status": "completed"
@@ -688,8 +688,16 @@
     {
       "n": 85,
       "date": "2026-10-29",
-      "title": "Detour — match old URLs to new ones for site migrations, catch redirect chains/loops/conflicts, export Netlify/Vercel/Apache/nginx/Cloudflare rules plus a QA CSV and verify script; single offline HTML file + zero-dep CLI",
+      "title": "Detour \u2014 match old URLs to new ones for site migrations, catch redirect chains/loops/conflicts, export Netlify/Vercel/Apache/nginx/Cloudflare rules plus a QA CSV and verify script; single offline HTML file + zero-dep CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-085",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 86,
+      "date": "2026-10-30",
+      "title": "TOOLTRAP \u2014 deliberately vulnerable toy MCP-style tool server lab: 4 agent-security challenges (path traversal, command injection, tool rug-pull, localhost Origin/DNS-rebinding) with hints, fixed solutions and tests; zero-dep Node, local only",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-086",
       "mode": "monorepo",
       "status": "completed"
     }

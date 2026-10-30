@@ -2,7 +2,7 @@
   {
     "n": 65,
     "slug": "chatledger",
-    "hook": "Drop a WhatsApp chat export, see who owes you what — one HTML file, nothing uploaded."
+    "hook": "Drop a WhatsApp chat export, see who owes you what \u2014 one HTML file, nothing uploaded."
   },
   {
     "n": 66,
@@ -12,7 +12,7 @@
   {
     "n": 67,
     "slug": "chatorder",
-    "hook": "Paste a WhatsApp order chat, get a clean order sheet, a baking/pick list and print-ready invoices — offline, one HTML file, nothing uploaded."
+    "hook": "Paste a WhatsApp order chat, get a clean order sheet, a baking/pick list and print-ready invoices \u2014 offline, one HTML file, nothing uploaded."
   },
   {
     "n": 68,
@@ -22,12 +22,12 @@
   {
     "n": 69,
     "slug": "logfold",
-    "hook": "Collapse a million log lines into a dozen templates — and diff a good run against a bad one. Offline, zero dependencies."
+    "hook": "Collapse a million log lines into a dozen templates \u2014 and diff a good run against a bad one. Offline, zero dependencies."
   },
   {
     "n": 70,
     "slug": "hashboard",
-    "hook": "Full-screen signs, scoreboards, queue numbers, countdowns and timers where the URL is the app — send the link, send the sign."
+    "hook": "Full-screen signs, scoreboards, queue numbers, countdowns and timers where the URL is the app \u2014 send the link, send the sign."
   },
   {
     "n": 71,
@@ -37,17 +37,17 @@
   {
     "n": 72,
     "slug": "feedfrock",
-    "hook": "Chrome is dropping XSLT — turn your styled RSS, Atom and sitemap XML into a static, JavaScript-free page browsers can still show."
+    "hook": "Chrome is dropping XSLT \u2014 turn your styled RSS, Atom and sitemap XML into a static, JavaScript-free page browsers can still show."
   },
   {
     "n": 73,
     "slug": "plainly",
-    "hook": "Paste a letter, see exactly what makes it hard to read, and fix it — EN/ES/DE, offline, no AI."
+    "hook": "Paste a letter, see exactly what makes it hard to read, and fix it \u2014 EN/ES/DE, offline, no AI."
   },
   {
     "n": 74,
     "slug": "hexlens",
-    "hook": "Search any binary file by value — int/float ranges and timestamps in any encoding — not just exact bytes."
+    "hook": "Search any binary file by value \u2014 int/float ranges and timestamps in any encoding \u2014 not just exact bytes."
   },
   {
     "n": 75,
@@ -57,32 +57,32 @@
   {
     "n": 76,
     "slug": "stacklens",
-    "hook": "See your stacked-PR branch chain, spot drift, get the rebase commands — zero deps, read-only."
+    "hook": "See your stacked-PR branch chain, spot drift, get the rebase commands \u2014 zero deps, read-only."
   },
   {
     "n": 77,
     "slug": "orderpaste",
-    "hook": "Turn a WhatsApp order chat into an order sheet, pick list and CSV — one HTML file, offline, no API."
+    "hook": "Turn a WhatsApp order chat into an order sheet, pick list and CSV \u2014 one HTML file, offline, no API."
   },
   {
     "n": 78,
     "slug": "cronwise",
-    "hook": "Type a cron schedule and a time zone — see what it actually fires, including the runs DST silently skips or doubles."
+    "hook": "Type a cron schedule and a time zone \u2014 see what it actually fires, including the runs DST silently skips or doubles."
   },
   {
     "n": 79,
     "slug": "cuepoint",
-    "hook": "Subtitles drift or jump? Pin two cues to where they belong and re-time the whole file — offline, one HTML file."
+    "hook": "Subtitles drift or jump? Pin two cues to where they belong and re-time the whole file \u2014 offline, one HTML file."
   },
   {
     "n": 80,
     "slug": "harbor",
-    "hook": "Open a HAR file privately: waterfall, filter, copy-as-curl, strip the secrets, and diff two captures — one HTML file, nothing uploaded."
+    "hook": "Open a HAR file privately: waterfall, filter, copy-as-curl, strip the secrets, and diff two captures \u2014 one HTML file, nothing uploaded."
   },
   {
     "n": 81,
     "slug": "caddify",
-    "hook": "Paste an nginx config, get a Caddyfile — plus an honest list of what couldn't be translated and why. One HTML file, nothing uploaded."
+    "hook": "Paste an nginx config, get a Caddyfile \u2014 plus an honest list of what couldn't be translated and why. One HTML file, nothing uploaded."
   },
   {
     "n": 82,
@@ -92,16 +92,21 @@
   {
     "n": 83,
     "slug": "unbilled",
-    "hook": "Drop a Toggl, Clockify or Harvest export and see the hours you worked but never billed — plus the invoice note to send. One HTML file, nothing uploaded."
+    "hook": "Drop a Toggl, Clockify or Harvest export and see the hours you worked but never billed \u2014 plus the invoice note to send. One HTML file, nothing uploaded."
   },
   {
     "n": 84,
     "slug": "churnmap",
-    "hook": "See where your repo's churn, ownership and risk live — one git log, one self-contained HTML treemap."
+    "hook": "See where your repo's churn, ownership and risk live \u2014 one git log, one self-contained HTML treemap."
   },
   {
     "n": 85,
     "slug": "detour",
-    "hook": "Drop your old and new site URLs, get a reviewed redirect map plus Netlify, Vercel, Apache, nginx and Cloudflare rules — chains and loops caught, nothing uploaded."
+    "hook": "Drop your old and new site URLs, get a reviewed redirect map plus Netlify, Vercel, Apache, nginx and Cloudflare rules \u2014 chains and loops caught, nothing uploaded."
+  },
+  {
+    "n": 86,
+    "slug": "tooltrap",
+    "hook": "A deliberately vulnerable toy MCP-style tool server to break and fix: path traversal, command injection, tool rug-pulls and localhost Origin bugs, with hints and tested solutions. Local only."
   }
 ]
