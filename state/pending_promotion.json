@@ -108,5 +108,10 @@
     "n": 86,
     "slug": "tooltrap",
     "hook": "A deliberately vulnerable toy MCP-style tool server to break and fix: path traversal, command injection, tool rug-pulls and localhost Origin bugs, with hints and tested solutions. Local only."
+  },
+  {
+    "n": 87,
+    "slug": "gatehouse",
+    "hook": "Audit GitHub Actions workflows for pwn requests, script injection and unpinned actions \u2014 one dependency-free file, SARIF output, nothing leaves your machine."
   }
 ]

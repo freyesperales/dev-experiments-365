@@ -1,5 +1,5 @@
 {
-  "last_number": 86,
+  "last_number": 87,
   "entries": [
     {
       "n": 1,
@@ -698,6 +698,14 @@
       "date": "2026-10-30",
       "title": "TOOLTRAP \u2014 deliberately vulnerable toy MCP-style tool server lab: 4 agent-security challenges (path traversal, command injection, tool rug-pull, localhost Origin/DNS-rebinding) with hints, fixed solutions and tests; zero-dep Node, local only",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-086",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 87,
+      "date": "2026-10-31",
+      "title": "Gatehouse \u2014 zero-dependency GitHub Actions workflow security auditor: pwn requests, script injection, unpinned actions, broad permissions, secret exposure; text/JSON/SARIF, CI exit codes, vulnerable-vs-fixed fixtures; single-file Node CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-087",
       "mode": "monorepo",
       "status": "completed"
     }

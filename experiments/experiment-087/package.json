@@ -1,0 +1,1 @@
+{ "name": "gatehouse", "version": "1.0.0", "description": "Zero-dependency GitHub Actions workflow security auditor", "bin": { "gatehouse": "gatehouse.js" }, "scripts": { "test": "node --test test/*.test.js", "scan": "node gatehouse.js ." }, "license": "MIT" }
