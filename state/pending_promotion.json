@@ -113,5 +113,10 @@
     "n": 87,
     "slug": "gatehouse",
     "hook": "Audit GitHub Actions workflows for pwn requests, script injection and unpinned actions \u2014 one dependency-free file, SARIF output, nothing leaves your machine."
+  },
+  {
+    "n": 88,
+    "slug": "gatehouse",
+    "hook": "Gatehouse 1.1: now also catches cache poisoning, artifact poisoning and secrets/inputs expanded into scripts \u2014 still one dependency-free file."
   }
 ]
