@@ -118,5 +118,10 @@
     "n": 88,
     "slug": "gatehouse",
     "hook": "Gatehouse 1.1: now also catches cache poisoning, artifact poisoning and secrets/inputs expanded into scripts \u2014 still one dependency-free file."
+  },
+  {
+    "n": 89,
+    "slug": "lockjaw",
+    "hook": "Audit your package-lock.json for supply-chain red flags and review lockfile diffs in PRs \u2014 one offline, dependency-free file."
   }
 ]

@@ -1,5 +1,5 @@
 {
-  "last_number": 88,
+  "last_number": 89,
   "entries": [
     {
       "n": 1,
@@ -714,6 +714,14 @@
       "date": "2026-11-01",
       "title": "Gatehouse 1.1 — maintenance release: 5 new GitHub Actions audit rules (cache poisoning, artifact poisoning, unsafe commands, secrets/inputs in scripts) with tests and fixtures; single-file Node CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-088",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 89,
+      "date": "2026-11-02",
+      "title": "Lockjaw — zero-dependency offline npm lockfile supply-chain auditor and PR diff reviewer (unexpected registries, missing integrity, tarball substitution, install scripts, typosquats, drift, same-version integrity changes); single-file Node CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-089",
       "mode": "monorepo",
       "status": "completed"
     }

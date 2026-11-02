@@ -1,0 +1,15 @@
+{
+  "name": "demo", "version": "1.0.0", "lockfileVersion": 3,
+  "packages": {
+    "": { "name": "demo", "version": "1.0.0", "dependencies": { "lodash": "4.17.21", "expresss": "^1.0.0", "left-pad": "^1.3.0", "missing-dep": "^2.0.0" } },
+    "node_modules/lodash": { "version": "4.17.21", "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz", "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==" },
+    "node_modules/expresss": { "version": "1.0.0", "resolved": "https://registry.npmjs.org/expresss/-/expresss-1.0.0.tgz", "integrity": "sha512-AAAA", "hasInstallScript": true },
+    "node_modules/left-pad": { "version": "1.3.0", "resolved": "https://registry.npmjs.org/left-pad/-/left-pad-1.3.0.tgz" },
+    "node_modules/internal-utils": { "version": "2.1.0", "resolved": "https://packages.evil-mirror.example/internal-utils/-/internal-utils-2.1.0.tgz", "integrity": "sha512-BBBB" },
+    "node_modules/oldlib": { "version": "0.1.0", "resolved": "http://registry.npmjs.org/oldlib/-/oldlib-0.1.0.tgz", "integrity": "sha1-abcdefabcdefabcdefabcdefabcd" },
+    "node_modules/gitdep": { "version": "1.0.0", "resolved": "git+ssh://git@github.com/someone/gitdep.git#main" },
+    "node_modules/pinned-git": { "version": "1.0.0", "resolved": "git+ssh://git@github.com/someone/pinned.git#0123456789abcdef0123456789abcdef01234567" },
+    "node_modules/swapped": { "version": "1.0.0", "resolved": "https://registry.npmjs.org/something-else/-/something-else-1.0.0.tgz", "integrity": "sha512-CCCC" },
+    "node_modules/local-thing": { "resolved": "../local-thing", "link": true }
+  }
+}
