@@ -69,7 +69,10 @@ REPO:
 4. Also append to `state/pending_promotion.json` (create if missing: a JSON list)
    an entry `{n, slug, hook}` so a future connector-enabled run can graduate it
    into its own public repo with a memorable name.
-5. Commit everything as `exp NNN: <name>` and push to `origin main`. If pushing
+5. **Git identity first (required, so the commit counts on Francisco's GitHub profile):** before committing, run
+   `git config user.name "Francisco Reyes"` and `git config user.email "21211939+freyesperales@users.noreply.github.com"`.
+   Never commit as `Claude <noreply@anthropic.com>`. Add the trailer `Co-Authored-By: Claude <noreply@anthropic.com>` at the end of the commit message.
+   Then commit everything as `exp NNN: <name>` and push to `origin main`. If pushing
    to `main` is rejected, push a branch `exp-NNN` and open a pull request
    instead — and say so in your final report.
 
