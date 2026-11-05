@@ -100,3 +100,4 @@ numbering — never edit it by hand unless repairing a failed run.
 | 087 | 2026-10-31 | Gatehouse — zero-dependency GitHub Actions workflow security auditor (pwn requests, script injection, unpinned actions, permissions); text/JSON/SARIF; single-file Node CLI | [gatehouse](experiments/experiment-087/) | monorepo |
 | 088 | 2026-11-01 | Gatehouse 1.1 — maintenance release: cache/artifact poisoning, unsafe commands, secrets & inputs in scripts (5 new rules, 21 tests); single-file Node CLI | [gatehouse-1.1](experiments/experiment-088/) | monorepo |
 | 089 | 2026-11-02 | Lockjaw — offline npm lockfile supply-chain auditor and PR diff reviewer; single-file zero-dep Node CLI, SARIF output | [lockjaw](experiments/experiment-089/) | monorepo |
+| 090 | 2026-11-05 | Blindspot — offline checker for Next.js image-optimizer RCE GHSA-2xp9-vwfh-vxw4 (not in global advisory DB); zero-dep Node CLI | [blindspot](experiments/experiment-090/) | monorepo |

@@ -123,5 +123,10 @@
     "n": 89,
     "slug": "lockjaw",
     "hook": "Audit your package-lock.json for supply-chain red flags and review lockfile diffs in PRs \u2014 one offline, dependency-free file."
+  },
+  {
+    "n": 90,
+    "slug": "blindspot",
+    "hook": "Check your repos for the Next.js image-optimizer RCE that npm audit may not tell you about \u2014 offline, zero dependencies."
   }
 ]

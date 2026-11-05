@@ -1,0 +1,1 @@
+{"name":"blindspot","version":"1.0.0","description":"Offline checker for Next.js GHSA-2xp9-vwfh-vxw4","bin":{"blindspot":"blindspot.js"},"scripts":{"test":"node test/test.js"},"license":"MIT"}
