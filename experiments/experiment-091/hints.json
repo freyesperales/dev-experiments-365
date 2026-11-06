@@ -1,0 +1,10 @@
+[
+ {"n":1,"title":"The token that checks itself","goal":"Become admin and read GET /api/admin/flag (the admin user has id 3; you do not know its password).",
+  "hints":["Decode the middle part of your login token. What does the server trust it to say?","The first part of a JWT is a header the CLIENT controls. Which values of `alg` are legal?","Send a token whose header says alg \"none\", payload {\"sub\":3}, and an empty signature."]},
+ {"n":2,"title":"Somebody else's invoice","goal":"Read invoice 201, which belongs to bob, while logged in as alice.",
+  "hints":["GET /api/invoices lists only yours. Is the single-invoice route as careful?","Invoice ids are small sequential numbers.","The route loads by id but never compares inv.ownerId with the caller."]},
+ {"n":3,"title":"The server fetches whatever I ask","goal":"Make /api/preview return the internal metadata service at http://127.0.0.1:7092/.",
+  "hints":["What does a link-preview feature have to do on the server? Whose network is it on?","The internal service listens only on loopback, but the preview fetcher runs on the same machine.","Ask for url=http://127.0.0.1:7092/. The fix must check the address the socket actually connects to, not just the text of the URL."]},
+ {"n":4,"title":"Upgrade yourself","goal":"Reach GET /api/enterprise/report as a free-plan user.",
+  "hints":["PATCH /api/profile returns your whole user object. What fields do you see?","The handler copies the request body onto your user record.","PATCH {\"plan\":\"enterprise\"}. The fix: copy only fields you explicitly allow."]}
+]

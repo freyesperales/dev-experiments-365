@@ -101,3 +101,4 @@ numbering — never edit it by hand unless repairing a failed run.
 | 088 | 2026-11-01 | Gatehouse 1.1 — maintenance release: cache/artifact poisoning, unsafe commands, secrets & inputs in scripts (5 new rules, 21 tests); single-file Node CLI | [gatehouse-1.1](experiments/experiment-088/) | monorepo |
 | 089 | 2026-11-02 | Lockjaw — offline npm lockfile supply-chain auditor and PR diff reviewer; single-file zero-dep Node CLI, SARIF output | [lockjaw](experiments/experiment-089/) | monorepo |
 | 090 | 2026-11-05 | Blindspot — offline checker for Next.js image-optimizer RCE GHSA-2xp9-vwfh-vxw4 (not in global advisory DB); zero-dep Node CLI | [blindspot](experiments/experiment-090/) | monorepo |
+| 091 | 2026-11-06 | LEDGERLEAK — deliberately vulnerable toy invoicing API lab (JWT alg:none, BOLA, SSRF, mass assignment) with hints, fixes and tests; zero-dep Node, local only | [ledgerleak](experiments/experiment-091/) | monorepo |

@@ -128,5 +128,10 @@
     "n": 90,
     "slug": "blindspot",
     "hook": "Check your repos for the Next.js image-optimizer RCE that npm audit may not tell you about \u2014 offline, zero dependencies."
+  },
+  {
+    "n": 91,
+    "slug": "ledgerleak",
+    "hook": "A 200-line vulnerable API lab for JWT alg:none, BOLA, SSRF and mass assignment \u2014 with switchable fixes and tests. Zero dependencies."
   }
 ]
