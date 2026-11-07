@@ -1,0 +1,1 @@
+{ "name": "lockjaw", "version": "1.1.0", "description": "Zero-dependency npm + Yarn Classic lockfile supply-chain auditor and PR diff reviewer", "bin": { "lockjaw": "lockjaw.js" }, "scripts": { "test": "node --test test/*.test.js", "scan": "node lockjaw.js fixtures/suspicious-lock.json", "scan:yarn": "node lockjaw.js fixtures/yarn-suspicious.lock" }, "license": "MIT" }

@@ -133,5 +133,10 @@
     "n": 91,
     "slug": "ledgerleak",
     "hook": "A 200-line vulnerable API lab for JWT alg:none, BOLA, SSRF and mass assignment \u2014 with switchable fixes and tests. Zero dependencies."
+  },
+  {
+    "n": 92,
+    "slug": "lockjaw",
+    "hook": "Audit npm and Yarn lockfiles for supply-chain red flags and review lockfile PR diffs \u2014 offline, zero dependencies."
   }
 ]

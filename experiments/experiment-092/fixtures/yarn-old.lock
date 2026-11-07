@@ -1,0 +1,7 @@
+# yarn lockfile v1
+
+
+a@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/a/-/a-1.0.0.tgz#0123456789abcdef0123456789abcdef01234567"
+  integrity sha512-AAAA==

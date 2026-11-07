@@ -1,5 +1,5 @@
 {
-  "last_number": 91,
+  "last_number": 92,
   "entries": [
     {
       "n": 1,
@@ -738,6 +738,14 @@
       "date": "2026-11-06",
       "title": "LEDGERLEAK — deliberately vulnerable toy invoicing API lab: JWT alg:none, BOLA/IDOR, SSRF, mass assignment, with hints, switchable fixes and tests; zero-dep Node, local only",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-091",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 92,
+      "date": "2026-11-07",
+      "title": "Lockjaw 1.1 — maintenance release: Yarn Classic yarn.lock support (audit + PR diff + spec-based drift), --no-dup flag, Yarn Berry clear error, 11 new tests; zero-dep Node CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-092",
       "mode": "monorepo",
       "status": "completed"
     }

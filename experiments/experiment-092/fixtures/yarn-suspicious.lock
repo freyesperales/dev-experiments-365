@@ -1,0 +1,34 @@
+# yarn lockfile v1
+
+
+evil-mirror-dep@^2.0.0:
+  version "2.1.0"
+  resolved "https://packages.evil-mirror.example/evil-mirror-dep/-/evil-mirror-dep-2.1.0.tgz#0123456789abcdef0123456789abcdef01234567"
+  integrity sha512-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC==
+
+oldyarn@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/oldyarn/-/oldyarn-1.0.0.tgz#0123456789abcdef0123456789abcdef01234567"
+
+plain-http@^1.0.0:
+  version "1.0.0"
+  resolved "http://registry.yarnpkg.com/plain-http/-/plain-http-1.0.0.tgz#89abcdef0123456789abcdef0123456789abcdef"
+  integrity sha512-DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD==
+
+swapped@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/something-else/-/something-else-1.0.0.tgz#0123456789abcdef0123456789abcdef01234567"
+  integrity sha512-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE==
+
+"gitdep@git+https://github.com/example/gitdep.git#main":
+  version "0.0.1"
+  resolved "git+https://github.com/example/gitdep.git#main"
+
+pinned-git@example/pinned-git:
+  version "0.0.2"
+  resolved "git+https://github.com/example/pinned-git.git#0123456789abcdef0123456789abcdef01234567"
+
+expresss@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/expresss/-/expresss-1.0.0.tgz#0123456789abcdef0123456789abcdef01234567"
+  integrity sha512-FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF==
