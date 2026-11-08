@@ -138,5 +138,10 @@
     "n": 92,
     "slug": "lockjaw",
     "hook": "Audit npm and Yarn lockfiles for supply-chain red flags and review lockfile PR diffs \u2014 offline, zero dependencies."
+  },
+  {
+    "n": 93,
+    "slug": "leashcheck",
+    "hook": "Audit the MCP, Claude Code and rules-file config in your repo for hidden Unicode, inline secrets and risky permissions \u2014 offline, zero dependencies."
   }
 ]

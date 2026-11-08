@@ -1,5 +1,5 @@
 {
-  "last_number": 92,
+  "last_number": 93,
   "entries": [
     {
       "n": 1,
@@ -746,6 +746,14 @@
       "date": "2026-11-07",
       "title": "Lockjaw 1.1 — maintenance release: Yarn Classic yarn.lock support (audit + PR diff + spec-based drift), --no-dup flag, Yarn Berry clear error, 11 new tests; zero-dep Node CLI",
       "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-092",
+      "mode": "monorepo",
+      "status": "completed"
+    },
+    {
+      "n": 93,
+      "date": "2026-11-08",
+      "title": "Leashcheck — offline auditor for AI coding-agent config in a repo (MCP servers, Claude Code settings, rules files): hidden Unicode, inline secrets, unpinned servers, curl|sh, over-broad permissions; text/JSON/SARIF; zero-dep Node CLI",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-093",
       "mode": "monorepo",
       "status": "completed"
     }
