@@ -143,5 +143,10 @@
     "n": 93,
     "slug": "leashcheck",
     "hook": "Audit the MCP, Claude Code and rules-file config in your repo for hidden Unicode, inline secrets and risky permissions \u2014 offline, zero dependencies."
+  },
+  {
+    "n": 94,
+    "slug": "leashcheck-1-1",
+    "hook": "Leashcheck 1.1: paste your AI-agent config (MCP, Claude Code, rules files) in the browser and see risky settings. Nothing is uploaded."
   }
 ]

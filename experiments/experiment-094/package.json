@@ -1,0 +1,1 @@
+{ "name": "leashcheck", "version": "1.1.0", "description": "Zero-dependency offline auditor for AI coding-agent config in a repo (MCP servers, Claude Code settings, rules files)", "bin": { "leashcheck": "leashcheck.js" }, "scripts": { "test": "node --test test/*.test.js", "scan": "node leashcheck.js fixtures/vulnerable" }, "license": "MIT" }

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leashcheck — audit AI-agent config offline</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#666;--bd:#d0d0d0;--hi:#b3261e;--me:#8a5a00;--lo:#555;--card:#f6f6f6}
+@media(prefers-color-scheme:dark){:root{--bg:#141414;--fg:#eee;--mut:#aaa;--bd:#3a3a3a;--hi:#ff8a80;--me:#ffcc66;--lo:#bbb;--card:#1e1e1e}}
+body{font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg);max-width:900px;margin:0 auto;padding:16px}
+textarea,input{width:100%;box-sizing:border-box;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:8px;font:13px ui-monospace,monospace}
+textarea{min-height:140px}button{padding:8px 14px;border-radius:6px;border:1px solid var(--bd);background:var(--card);color:var(--fg);cursor:pointer}
+.f{border:1px solid var(--bd);border-left-width:5px;border-radius:6px;padding:8px 12px;margin:8px 0;background:var(--card)}
+.high{border-left-color:var(--hi)}.medium{border-left-color:var(--me)}.low{border-left-color:var(--lo)}
+.sev{font-weight:700;font-size:12px}.mut{color:var(--mut);font-size:13px}code{font-family:ui-monospace,monospace}
+</style></head><body>
+<h1>Leashcheck</h1>
+<p>Paste the AI-agent config files from a repo (MCP servers, Claude Code settings, rules files) and see risky settings. Runs entirely in your browser; nothing is uploaded. <span class="mut">En español: pega los archivos de configuración de agentes de IA de tu repo y revisa riesgos; todo ocurre en tu navegador, nada se sube.</span></p>
+<div id="files"></div>
+<p><button id="add">+ Add file</button> <button id="run">Audit</button> <button id="sample">Load sample</button> <span class="mut" id="ver"></span></p>
+<div id="out" aria-live="polite"></div>
+<p class="mut">Static, heuristic checks. A clean result does not mean a repo is safe to run an agent in. Filename decides how a file is checked (e.g. <code>.mcp.json</code>, <code>.claude/settings.json</code>, <code>AGENTS.md</code>).</p>
+<script src="leashcheck.js"></script>
+<script>
+(function(){
+  var L=window.Leashcheck, files=document.getElementById('files'), out=document.getElementById('out');
+  document.getElementById('ver').textContent='leashcheck '+L.VERSION;
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function add(name,text){
+    var d=document.createElement('div');d.className='row';
+    d.innerHTML='<p><input class="n" placeholder="path, e.g. .mcp.json" aria-label="File path" value="'+esc(name||'')+'"></p><textarea class="t" aria-label="File contents" placeholder="paste file contents"></textarea>';
+    d.querySelector('.t').value=text||'';files.appendChild(d);
+  }
+  function run(){
+    var map={};
+    Array.prototype.forEach.call(files.querySelectorAll('.row'),function(r){
+      var n=r.querySelector('.n').value.trim().replace(/^\.?\//,function(m){return m==='./'?'':m}), t=r.querySelector('.t').value;
+      if(n&&t) map[n]=t;
+    });
+    var r=L.scanFiles(map), h='';
+    if(!r.scanned.length) h='<p>No recognised agent config file names. Use names like <code>.mcp.json</code>, <code>.claude/settings.json</code>, <code>AGENTS.md</code>.</p>';
+    else h='<p><b>'+r.findings.length+' finding(s)</b> in '+r.scanned.length+' file(s)</p>';
+    r.findings.forEach(function(f){h+='<div class="f '+f.severity+'"><span class="sev">'+f.severity.toUpperCase()+'</span> <code>'+f.rule+'</code> '+esc(f.file)+':'+f.line+'<br>'+esc(f.message)+'<br><span class="mut">Fix: '+esc(f.fix)+'</span></div>'});
+    out.innerHTML=h;
+  }
+  document.getElementById('add').onclick=function(){add('','')};
+  document.getElementById('run').onclick=run;
+  document.getElementById('sample').onclick=function(){
+    files.innerHTML='';
+    add('.mcp.json','{\n "mcpServers": {\n  "docs": {"command":"npx","args":["-y","some-docs-mcp"]},\n  "gh": {"command":"npx","args":["-y","gh-mcp@1.0.0"],"env":{"GITHUB_TOKEN":"ghp_'+'a'.repeat(36)+'"}}\n }\n}');
+    add('.claude/settings.json','{\n "enableAllProjectMcpServers": true,\n "permissions": {"allow": ["Bash(*)"]}\n}');
+    run();
+  };
+  add('.mcp.json','');
+})();
+</script></body></html>
