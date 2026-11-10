@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gatehouse — audit GitHub Actions workflows in your browser</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#666;--bd:#d0d0d0;--cr:#8e0000;--hi:#b3261e;--me:#8a5a00;--lo:#555;--card:#f6f6f6}
+@media(prefers-color-scheme:dark){:root{--bg:#141414;--fg:#eee;--mut:#aaa;--bd:#3a3a3a;--cr:#ff6b6b;--hi:#ff8a80;--me:#ffcc66;--lo:#bbb;--card:#1e1e1e}}
+body{font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg);max-width:900px;margin:0 auto;padding:16px}
+textarea,input{width:100%;box-sizing:border-box;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:8px;font:13px ui-monospace,monospace}
+textarea{min-height:180px}button{padding:8px 14px;border-radius:6px;border:1px solid var(--bd);background:var(--card);color:var(--fg);cursor:pointer}
+.f{border:1px solid var(--bd);border-left-width:5px;border-radius:6px;padding:8px 12px;margin:8px 0;background:var(--card)}
+.critical{border-left-color:var(--cr)}.high{border-left-color:var(--hi)}.medium{border-left-color:var(--me)}.low{border-left-color:var(--lo)}
+.sev{font-weight:700;font-size:12px}.mut{color:var(--mut);font-size:13px}code,pre{font-family:ui-monospace,monospace;font-size:13px}pre{white-space:pre-wrap;margin:4px 0}
+</style></head><body>
+<h1>Gatehouse</h1>
+<p>Paste a GitHub Actions workflow (<code>.github/workflows/*.yml</code>) and see risky patterns: pwn requests, script injection, unpinned actions, broad permissions. Runs entirely in your browser; nothing is uploaded.</p>
+<p>En español: pega un workflow de GitHub Actions y revisa patrones riesgosos. Todo ocurre en tu navegador; no se sube nada.</p>
+<div id="files"></div>
+<p><button id="add">+ Add file</button> <button id="run">Audit</button> <button id="sample">Load sample</button> <span class="mut" id="ver"></span></p>
+<div id="out" aria-live="polite"></div>
+<p class="mut">Line-oriented heuristic scanner, not a full YAML parser. A clean result does not prove a workflow is safe.</p>
+<script src="gatehouse.js"></script>
+<script>
+(function(){
+  var G=window.Gatehouse, files=document.getElementById('files'), out=document.getElementById('out');
+  document.getElementById('ver').textContent='gatehouse '+G.VERSION;
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  var SAMPLE='name: preview\non: pull_request_target\npermissions: write-all\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n      - run: echo "${{ github.event.pull_request.title }}"\n      - run: npm ci && npm test\n';
+  function add(name,text){
+    var d=document.createElement('div');d.className='row';
+    d.innerHTML='<p><input class="n" placeholder="path, e.g. .github/workflows/ci.yml" aria-label="File path" value="'+esc(name||'')+'"></p><textarea class="t" aria-label="Workflow YAML" placeholder="Paste workflow YAML here"></textarea>';
+    d.querySelector('.t').value=text||'';files.appendChild(d);
+  }
+  function run(){
+    var map={},i=0;
+    Array.prototype.forEach.call(files.querySelectorAll('.row'),function(r){
+      i++;var n=r.querySelector('.n').value.trim()||('workflow-'+i+'.yml'),t=r.querySelector('.t').value;
+      if(t.trim()) map[n]=t;
+    });
+    var names=Object.keys(map),h;
+    if(!names.length){out.innerHTML='<p>Paste at least one workflow.</p>';return}
+    var r=G.auditFiles(map);
+    h='<p><b>'+r.length+' finding(s)</b> in '+names.length+' file(s)</p>';
+    r.forEach(function(f){h+='<div class="f '+f.severity+'"><span class="sev">'+f.severity.toUpperCase()+'</span> <code>'+f.rule+'</code> '+esc(f.file)+':'+f.line+'<br><b>'+esc(f.title)+'</b><br>'+esc(f.detail)+'<pre>'+esc(f.snippet)+'</pre><span class="mut">Fix: '+esc(G.RULES[f.rule].fix)+'</span></div>'});
+    out.innerHTML=h;
+  }
+  document.getElementById('add').onclick=function(){add('','')};
+  document.getElementById('run').onclick=run;
+  document.getElementById('sample').onclick=function(){files.innerHTML='';add('.github/workflows/preview.yml',SAMPLE);run()};
+  add('','');
+})();
+</script></body></html>

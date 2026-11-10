@@ -1,0 +1,15 @@
+name: Manual release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release
+        required: true
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Releasing ${{ inputs.version }}"
+      - run: git tag "${{ github.event.inputs.version }}"

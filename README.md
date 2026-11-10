@@ -1,13 +1,34 @@
-# dev-experiments-365
+<!-- security-lab-readme v2 -->
+# Daily Security Lab
 
-Durable state and index for the autonomous daily R&D agent. One development
-experiment per day: research the frontier, invent one novel buildable idea,
-ship a runnable prototype with tests, publish it.
+Free, defensive security tools for small businesses, one per weekday, researched and tested.
 
-`state/experiments.json` is the single source of truth for experiment
-numbering — never edit it by hand unless repairing a failed run.
+En español: herramientas gratuitas de seguridad defensiva para pymes y para quienes administran su sitio web, tienda o correo. Una por día hábil, probadas y sin enviar tus datos a ningún lado.
 
-## Index
+**Week:** Mon email authentication · Tue CMS / e-commerce (WordPress odd weeks, Shopify even weeks) · Wed web hygiene · Thu AI agents · Fri secrets and supply chain + weekly report · Sat open-source contribution · Sun maintenance.
+
+**Use a tool:** open its live demo link and paste your input, or run `node <tool>.js` from its folder (Node 18+, no install).
+
+**Safety promise:** defensive only. Nothing is tested against third-party systems; tests use local fixtures.
+
+Latest weekly report: none yet (first one is written on a Friday). Open-source contributions: none recorded yet.
+
+## Security tools (experiment 086 onward)
+
+| N | Date | Title | Link | Mode |
+|---|------|-------|------|------|
+| 086 | 2026-10-30 | TOOLTRAP — deliberately vulnerable toy MCP-style tool server lab with 4 agent-security challenges, hints, fixed solutions and tests; local only | [tooltrap](experiments/experiment-086/) | monorepo |
+| 087 | 2026-10-31 | Gatehouse — zero-dependency GitHub Actions workflow security auditor (pwn requests, script injection, unpinned actions, permissions); text/JSON/SARIF; single-file Node CLI | [gatehouse](experiments/experiment-087/) | monorepo |
+| 088 | 2026-11-01 | Gatehouse 1.1 — maintenance release: cache/artifact poisoning, unsafe commands, secrets & inputs in scripts (5 new rules, 21 tests); single-file Node CLI | [gatehouse-1.1](experiments/experiment-088/) | monorepo |
+| 089 | 2026-11-02 | Lockjaw — offline npm lockfile supply-chain auditor and PR diff reviewer; single-file zero-dep Node CLI, SARIF output | [lockjaw](experiments/experiment-089/) | monorepo |
+| 090 | 2026-11-05 | Blindspot — offline checker for Next.js image-optimizer RCE GHSA-2xp9-vwfh-vxw4 (not in global advisory DB); zero-dep Node CLI | [blindspot](experiments/experiment-090/) | monorepo |
+| 091 | 2026-11-06 | LEDGERLEAK — deliberately vulnerable toy invoicing API lab (JWT alg:none, BOLA, SSRF, mass assignment) with hints, fixes and tests; zero-dep Node, local only | [ledgerleak](experiments/experiment-091/) | monorepo |
+| 092 | 2026-11-07 | Lockjaw 1.1 — maintenance release: Yarn Classic yarn.lock support (audit, PR diff, drift), --no-dup, 27 tests; zero-dep Node CLI | [lockjaw-1.1](experiments/experiment-092/) | monorepo |
+| 093 | 2026-11-08 | Leashcheck — offline auditor for AI coding-agent config (MCP servers, Claude Code settings, rules files): hidden Unicode, inline secrets, unpinned servers, over-broad permissions; zero-dep Node CLI, SARIF | [leashcheck](experiments/experiment-093/) | monorepo |
+| 094 | 2026-11-09 | Leashcheck 1.1 — maintenance: browser demo (paste agent config, nothing uploaded), Windows `cmd /c npx` fix, 23 tests; zero-dep Node CLI | [leashcheck-1.1](experiments/experiment-094/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-094/)) | monorepo |
+| 095 | 2026-11-10 | Gatehouse 1.2 — maintenance (research blocked): browser demo for the GitHub Actions auditor, `auditFiles()` API, 24 tests; zero-dep Node CLI | [gatehouse-1.2](experiments/experiment-095/) | monorepo |
+
+## Archive (2026-07 → 2026-10, general R&D)
 
 | N | Date | Title | Link | Mode |
 |---|------|-------|------|------|
@@ -96,12 +117,5 @@ numbering — never edit it by hand unless repairing a failed run.
 | 083 | 2026-10-27 | Unbilled — finds the hours you worked but never billed (Toggl/Clockify/Harvest export vs retainer, scope and invoices) with ready-to-send invoice notes; single offline HTML file + zero-dep CLI | [unbilled](experiments/experiment-083) | monorepo |
 | 084 | 2026-10-28 | Churnmap — git history as a self-contained treemap of churn, recency, ownership, hotspots and bus-factor-1 files; zero-dep Node CLI + single HTML output | [churnmap](experiments/experiment-084/) | monorepo |
 | 085 | 2026-10-29 | Detour — match old URLs to new ones for site migrations, catch chains/loops/conflicts, export Netlify/Vercel/Apache/nginx/Cloudflare rules + QA CSV; single offline HTML file + zero-dep CLI | [detour](experiments/experiment-085/) | monorepo |
-| 086 | 2026-10-30 | TOOLTRAP — deliberately vulnerable toy MCP-style tool server lab with 4 agent-security challenges, hints, fixed solutions and tests; local only | [tooltrap](experiments/experiment-086/) | monorepo |
-| 087 | 2026-10-31 | Gatehouse — zero-dependency GitHub Actions workflow security auditor (pwn requests, script injection, unpinned actions, permissions); text/JSON/SARIF; single-file Node CLI | [gatehouse](experiments/experiment-087/) | monorepo |
-| 088 | 2026-11-01 | Gatehouse 1.1 — maintenance release: cache/artifact poisoning, unsafe commands, secrets & inputs in scripts (5 new rules, 21 tests); single-file Node CLI | [gatehouse-1.1](experiments/experiment-088/) | monorepo |
-| 089 | 2026-11-02 | Lockjaw — offline npm lockfile supply-chain auditor and PR diff reviewer; single-file zero-dep Node CLI, SARIF output | [lockjaw](experiments/experiment-089/) | monorepo |
-| 090 | 2026-11-05 | Blindspot — offline checker for Next.js image-optimizer RCE GHSA-2xp9-vwfh-vxw4 (not in global advisory DB); zero-dep Node CLI | [blindspot](experiments/experiment-090/) | monorepo |
-| 091 | 2026-11-06 | LEDGERLEAK — deliberately vulnerable toy invoicing API lab (JWT alg:none, BOLA, SSRF, mass assignment) with hints, fixes and tests; zero-dep Node, local only | [ledgerleak](experiments/experiment-091/) | monorepo |
-| 092 | 2026-11-07 | Lockjaw 1.1 — maintenance release: Yarn Classic yarn.lock support (audit, PR diff, drift), --no-dup, 27 tests; zero-dep Node CLI | [lockjaw-1.1](experiments/experiment-092/) | monorepo |
-| 093 | 2026-11-08 | Leashcheck — offline auditor for AI coding-agent config (MCP servers, Claude Code settings, rules files): hidden Unicode, inline secrets, unpinned servers, over-broad permissions; zero-dep Node CLI, SARIF | [leashcheck](experiments/experiment-093/) | monorepo |
-| 094 | 2026-11-09 | Leashcheck 1.1 — maintenance: browser demo (paste agent config, nothing uploaded), Windows `cmd /c npx` fix, 23 tests; zero-dep Node CLI | [leashcheck-1.1](experiments/experiment-094/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-094/)) | monorepo |
+
+State lives in `state/experiments.json` (source of truth for numbering).

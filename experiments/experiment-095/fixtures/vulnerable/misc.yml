@@ -1,0 +1,13 @@
+name: CI
+on: [push, pull_request]
+permissions: write-all
+jobs:
+  build:
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with: { name: ws, path: . }
+  call:
+    uses: my-org/shared/.github/workflows/release.yml@main
+    secrets: inherit

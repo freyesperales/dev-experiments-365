@@ -1,0 +1,19 @@
+name: PR Preview
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: some-org/deploy-preview@main
+      - name: Announce
+        run: |
+          echo "Building PR: ${{ github.event.pull_request.title }}"
+          curl -sSL https://example.com/install.sh | bash
+      - name: Remember branch
+        run: echo "BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV

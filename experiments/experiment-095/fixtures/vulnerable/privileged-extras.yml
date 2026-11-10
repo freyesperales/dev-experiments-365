@@ -1,0 +1,22 @@
+name: Post-CI report
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+permissions:
+  contents: read
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('**/package-lock.json') }}
+      - uses: actions/download-artifact@fa0a91b85d7a8f6a62b6e2f6a5d6f6a5d6f6a5d6
+        with:
+          name: results
+      - name: Deploy
+        run: ./deploy.sh --token ${{ secrets.DEPLOY_TOKEN }}
