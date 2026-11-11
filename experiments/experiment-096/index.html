@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Headerfix — paste your site's headers, get the fix</title>
+<style>
+:root{--bg:#fff;--fg:#17202a;--mut:#5b6773;--card:#f4f6f8;--bd:#d5dbe1;--hi:#b3261e;--me:#9a5b00;--lo:#2b5fa5;--in:#5b6773;--ac:#0b6b4f}
+@media(prefers-color-scheme:dark){:root{--bg:#10151a;--fg:#e7ecf0;--mut:#9aa7b3;--card:#1a2129;--bd:#2f3a45;--hi:#ff8a80;--me:#ffc266;--lo:#8ab4f8;--in:#9aa7b3;--ac:#5fd3a5}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:860px;margin:0 auto;padding:16px}h1{margin:.2em 0}p.s{color:var(--mut);margin-top:0}
+textarea{width:100%;min-height:170px;font:13px/1.4 ui-monospace,monospace;padding:8px;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:6px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;align-items:center}button,select{font:inherit;padding:6px 12px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.grade{font-size:44px;font-weight:700;margin-right:12px}.f{padding:8px 10px;margin:6px 0;border-left:4px solid var(--bd);background:var(--card);border-radius:4px}
+.f.high{border-color:var(--hi)}.f.medium{border-color:var(--me)}.f.low{border-color:var(--lo)}.tag{font-size:12px;font-weight:700;text-transform:uppercase;margin-right:6px}
+pre{background:var(--card);border:1px solid var(--bd);padding:10px;overflow:auto;border-radius:6px;font-size:13px}.note{color:var(--mut);font-size:14px}
+</style></head><body><main>
+<h1>Headerfix</h1>
+<p class="s" id="sub">Paste your website's response headers, get a grade and copy-paste fixes. Runs in your browser; nothing is uploaded.</p>
+<label for="in"><b id="lbl">Response headers</b> <span class="note" id="how">— run <code>curl -I https://your-site</code> in a terminal, or copy "Response Headers" from your browser's DevTools (Network tab).</span></label>
+<textarea id="in" spellcheck="false" placeholder="HTTP/2 200&#10;server: nginx/1.18.0&#10;..."></textarea>
+<div class="row">
+<button class="p" id="go">Analyze</button><button id="sample">Load sample</button>
+<label>Server <select id="srv"></select></label>
+<label>Language <select id="lang"><option value="en">English</option><option value="es">Español</option></select></label>
+<label><input type="checkbox" id="http"> <span id="httpl">Site is plain HTTP</span></label>
+</div>
+<div id="out"></div>
+<p class="note" id="foot">Limits: a heuristic review of the headers you paste, not a scan of your site; a good grade is not a guarantee. Test any CSP in Report-Only mode first.</p>
+<p class="note">Daily Security Lab · Experiment 096 — built by an AI agent directed by Francisco Reyes (farp.dev)</p>
+</main>
+<script src="headerfix.js"></script>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var SAMPLE="HTTP/2 200\nserver: nginx/1.18.0\nx-powered-by: PHP/7.4.33\ncontent-type: text/html; charset=UTF-8\ncontent-security-policy: default-src * 'unsafe-inline' 'unsafe-eval'\naccess-control-allow-origin: *\naccess-control-allow-credentials: true\nset-cookie: PHPSESSID=abc123; path=/\nset-cookie: pref=1; Secure; SameSite=None\n";
+var T={en:{sub:"Paste your website's response headers, get a grade and copy-paste fixes. Runs in your browser; nothing is uploaded.",go:"Analyze",sample:"Load sample",http:"Site is plain HTTP",fix:"Copy-paste fix",none:"No findings. Nice.",copy:"Copy",copied:"Copied"},
+es:{sub:"Pega los encabezados de respuesta de tu sitio y obtén una nota y correcciones listas para copiar. Todo corre en tu navegador; nada se sube.",go:"Analizar",sample:"Cargar ejemplo",http:"El sitio es HTTP simple",fix:"Corrección lista para copiar",none:"Sin hallazgos. Muy bien.",copy:"Copiar",copied:"Copiado"}};
+Headerfix.SERVERS.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;$('srv').appendChild(o)});
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function run(){
+ var lang=$('lang').value,t=T[lang];
+ var r=Headerfix.analyze($('in').value,{lang:lang,https:!$('http').checked});
+ var h='<div class="row"><span class="grade">'+esc(r.grade)+'</span><span>'+r.score+'/100'+(r.status?' · HTTP '+r.status:'')+'</span></div>';
+ if(!r.findings.length)h+='<p>'+t.none+'</p>';
+ r.findings.forEach(function(f){h+='<div class="f '+f.severity+'"><span class="tag">'+f.severity+'</span>'+esc(f.message)+'</div>'});
+ if(r.fixes.length){h+='<h2>'+t.fix+'</h2><pre id="fix">'+esc(Headerfix.renderFixes(r.fixes,$('srv').value))+'</pre><button id="cp">'+t.copy+'</button>'}
+ $('out').innerHTML=h;
+ var cp=$('cp');if(cp)cp.onclick=function(){var x=$('fix').textContent;if(navigator.clipboard)navigator.clipboard.writeText(x).then(function(){cp.textContent=t.copied});else{var s=window.getSelection(),g=document.createRange();g.selectNodeContents($('fix'));s.removeAllRanges();s.addRange(g)}};
+}
+function lang(){var t=T[$('lang').value];$('sub').textContent=t.sub;$('go').textContent=t.go;$('sample').textContent=t.sample;$('httpl').textContent=t.http;document.documentElement.lang=$('lang').value}
+$('go').onclick=run;$('srv').onchange=function(){if($('in').value)run()};$('http').onchange=function(){if($('in').value)run()};
+$('lang').onchange=function(){lang();if($('in').value)run()};
+$('sample').onclick=function(){$('in').value=SAMPLE;run()};
+if((navigator.language||'').slice(0,2)==='es'){$('lang').value='es';lang()}
+})();
+</script></body></html>

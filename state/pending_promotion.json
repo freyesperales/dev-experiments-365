@@ -153,5 +153,10 @@
     "n": 95,
     "slug": "gatehouse-1-2",
     "hook": "Gatehouse 1.2: paste a GitHub Actions workflow in your browser and see risky patterns (pwn requests, script injection, unpinned actions). Nothing is uploaded."
+  },
+  {
+    "n": 96,
+    "slug": "headerfix",
+    "hook": "Paste your site's response headers, get a grade and copy-paste fixes for nginx, Apache, Netlify and Cloudflare — offline, in English or Spanish."
   }
 ]

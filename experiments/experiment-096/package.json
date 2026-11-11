@@ -1,0 +1,1 @@
+{"name":"headerfix","version":"1.0.0","description":"Paste HTTP response headers, get a grade and copy-paste fixes for nginx, Apache, Netlify, Cloudflare, Caddy and PHP. Offline, zero dependencies.","bin":{"headerfix":"headerfix.js"},"scripts":{"test":"node --test test/*.test.js"},"license":"MIT","engines":{"node":">=18"}}

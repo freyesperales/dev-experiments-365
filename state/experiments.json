@@ -1,5 +1,5 @@
 {
-  "last_number": 95,
+  "last_number": 96,
   "entries": [
     {
       "n": 1,
@@ -784,6 +784,20 @@
       "research_links": 0,
       "minutes": null,
       "gate": "FAIL research (0 pages fetched, network blocked); fallback (a)"
+    },
+    {
+      "n": 96,
+      "date": "2026-11-11",
+      "title": "Headerfix — paste HTTP response headers (curl -I or DevTools), get a grade plus copy-paste fixes for nginx/Apache/Netlify/Cloudflare/Caddy/PHP; CSP, cookie, leak and CORS checks; English/Spanish; browser demo + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "web hygiene (HTTP security headers, CSP, cookies)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-096",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-096/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 11,
+      "minutes": null,
+      "depth_gate": "elapsed ~20 min (below 40-75 target); 11 links fetched (6 primary) via raw.githubusercontent.com only; most web hosts blocked; 2 research loops; tests 19/19 green; demo checked headless: PASS with degradations"
     }
   ]
 }

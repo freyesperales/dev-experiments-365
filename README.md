@@ -27,6 +27,7 @@ Latest weekly report: none yet (first one is written on a Friday). Open-source c
 | 093 | 2026-11-08 | Leashcheck — offline auditor for AI coding-agent config (MCP servers, Claude Code settings, rules files): hidden Unicode, inline secrets, unpinned servers, over-broad permissions; zero-dep Node CLI, SARIF | [leashcheck](experiments/experiment-093/) | monorepo |
 | 094 | 2026-11-09 | Leashcheck 1.1 — maintenance: browser demo (paste agent config, nothing uploaded), Windows `cmd /c npx` fix, 23 tests; zero-dep Node CLI | [leashcheck-1.1](experiments/experiment-094/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-094/)) | monorepo |
 | 095 | 2026-11-10 | Gatehouse 1.2 — maintenance (research blocked): browser demo for the GitHub Actions auditor, `auditFiles()` API, 24 tests; zero-dep Node CLI | [gatehouse-1.2](experiments/experiment-095/) | monorepo |
+| 096 | 2026-11-11 | Headerfix — paste HTTP response headers, get a grade and copy-paste fixes for nginx/Apache/Netlify/Cloudflare/Caddy/PHP (CSP, cookies, leaks, CORS; English/Spanish); browser demo + zero-dep Node CLI | [headerfix](experiments/experiment-096/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-096/)) | monorepo |
 
 ## Archive (2026-07 → 2026-10, general R&D)
 

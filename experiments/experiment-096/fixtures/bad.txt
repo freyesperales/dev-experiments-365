@@ -1,0 +1,9 @@
+HTTP/2 200
+server: nginx/1.18.0
+x-powered-by: PHP/7.4.33
+content-type: text/html; charset=UTF-8
+content-security-policy: default-src * 'unsafe-inline' 'unsafe-eval'
+access-control-allow-origin: *
+access-control-allow-credentials: true
+set-cookie: PHPSESSID=abc123; path=/
+set-cookie: pref=1; Secure; SameSite=None
