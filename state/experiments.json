@@ -796,8 +796,8 @@
       "mode": "monorepo",
       "status": "completed",
       "research_links": 11,
-      "minutes": null,
-      "depth_gate": "elapsed ~20 min (below 40-75 target); 11 links fetched (6 primary) via raw.githubusercontent.com only; most web hosts blocked; 2 research loops; tests 19/19 green; demo checked headless: PASS with degradations"
+      "minutes": 4,
+      "depth_gate": "FAIL on elapsed time: 4 min by the lab clock (target 40-75, minimum 10); 11 links fetched (6 primary) via raw.githubusercontent.com only because other web hosts were blocked; 2 research loops; tests 19/19 green; demo checked headless with Playwright, no console errors. Shipped with degradations."
     }
   ]
 }
