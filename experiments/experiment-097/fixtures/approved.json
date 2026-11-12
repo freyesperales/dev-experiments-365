@@ -1,0 +1,38 @@
+{
+  "toolprint": 1,
+  "created": "2026-11-12T10:48:53.895Z",
+  "tools": {
+    "get_weather": {
+      "sha256": "1a340c2854135410f03fdd9175e9cbc7935f91c0787d74bcf2556b85e76a96c0",
+      "fields": {
+        "name": "ac057b567ef7277caf78795de21e84d03ef019cb2c5e49204e0ef3e4b88be79f",
+        "title": "d5bdc5d06712a930c3f728600e4b6a73574418b3a3a7762b2df0e5d6a604e97b",
+        "description": "8c11ae83e27902b62c1361b233d723cd05c83296703370381052fe4857d9a226",
+        "inputSchema": "bb0f3b999655c430f40813bc84dab46169eb97c357d9920a7d350bcdfa5ba539",
+        "annotations": "8803fb4b4971327e527bfc007f694c25d5553baffc4acd00784c86ae97dfd056"
+      },
+      "description": "Get current weather information for a location. Data from https://api.weather.example/v1."
+    },
+    "search_orders": {
+      "sha256": "5e3b82a74dad51dd8e112bd5757c1ac0a2e1d32db2c14715a80d350adbd950a2",
+      "fields": {
+        "name": "01f1f3700065f424f5205887893d1bc9a4a42d21e6a2c990aedaa7a14413ef4a",
+        "title": "62a548ca90e2f0e25b465509ce5fad4a128c315f9ca3648dd854f525fb1ae685",
+        "description": "8836283cbb8b98b7f8d6b58f5aedcc2e4234c9fbb63dc3834cfeadcd5e965e0d",
+        "inputSchema": "d0c6050828bdc9301b642ca92639620fa55f50b7fdcae79a988ea057ada8e559",
+        "annotations": "8803fb4b4971327e527bfc007f694c25d5553baffc4acd00784c86ae97dfd056"
+      },
+      "description": "Search the shop's orders by customer email or order number. Returns at most 20 results. 👨‍💻"
+    },
+    "send_invoice": {
+      "sha256": "b1dc9fc02d470c4cb7dbdcf7ff21f4dc5a42aed7b4b81ecaaa624e23cd8a20d9",
+      "fields": {
+        "name": "05c1e634c6c066c560a21d5d9cce03d6ab1d36bd934cc4cbdf33465532c1e743",
+        "description": "6384c4d8305b1d9f43bb17a77f4197760c467ffdc75ad21381a8414fec95ddb5",
+        "inputSchema": "cdb4b7cc6484f2cdf5964e2598e4c64aba6043e38e358c8e59a5207f5a592d8b",
+        "annotations": "963db71338b52b0d231085705659a299fa0283f434df69cb18193960a4dfd4d4"
+      },
+      "description": "Email an invoice PDF to the customer on file for an order."
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"name":"toolprint","version":"1.0.0","description":"Paste an MCP server's tools/list, see hidden instructions aimed at your AI model, and fingerprint every tool to catch silent changes. Offline, zero dependencies.","bin":{"toolprint":"toolprint.js"},"scripts":{"test":"node --test test/*.test.js"},"license":"MIT","engines":{"node":">=18"}}

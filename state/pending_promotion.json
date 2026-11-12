@@ -158,5 +158,10 @@
     "n": 96,
     "slug": "headerfix",
     "hook": "Paste your site's response headers, get a grade and copy-paste fixes for nginx, Apache, Netlify and Cloudflare — offline, in English or Spanish."
+  },
+  {
+    "n": 97,
+    "slug": "toolprint",
+    "hook": "Paste what an MCP server tells your AI and see hidden instructions, invisible text and data-leak tricks; save a fingerprint so you notice when a tool changes after you approved it. Offline, English or Spanish."
   }
 ]

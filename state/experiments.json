@@ -1,5 +1,5 @@
 {
-  "last_number": 96,
+  "last_number": 97,
   "entries": [
     {
       "n": 1,
@@ -798,6 +798,20 @@
       "research_links": 11,
       "minutes": 4,
       "depth_gate": "FAIL on elapsed time: 4 min by the lab clock (target 40-75, minimum 10); 11 links fetched (6 primary) via raw.githubusercontent.com only because other web hosts were blocked; 2 research loops; tests 19/19 green; demo checked headless with Playwright, no console errors. Shipped with degradations."
+    },
+    {
+      "n": 97,
+      "date": "2026-11-12",
+      "title": "Toolprint — paste an MCP server's tools/list: flags hidden instructions (Unicode Tags, <IMPORTANT> blocks, secrecy and override phrases), data-leak routes (sensitive paths, side-channel parameters, markdown-image exfiltration), lookalike names and x-mcp-header secrets; SHA-256 fingerprint per tool to catch changes after approval; English/Spanish; browser demo + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "AI agents (MCP tool poisoning and rug pulls)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-097",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-097/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 20,
+      "minutes": 10,
+      "depth_gate": "PASS at the minimum: 10 min by the lab clock (target 40-75); first gate check at 9 min failed, so a second research loop read MCP spec 2025-11-25 and draft and added 5 rules plus icons/execution to the fingerprint; 20 sources opened in this run (11 primary re-opened by the main agent); tests 19/19 green; demo checked headless with Playwright at 390px, no console errors."
     }
   ]
 }
