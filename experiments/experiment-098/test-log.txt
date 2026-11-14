@@ -1,0 +1,23 @@
+Reproduction run on 2026-11-14 (Windows 11, Git Bash, Python 3.13, clean venvs).
+
+== BEFORE: commands from doc/source/advanced/install.rst (dev @ 24ba84c) ==
+$ curl -fsSL https://raw.githubusercontent.com/ranaroussi/yfinance/main/requirements.txt | grep -vi '^curl_cffi' | pip install -r /dev/stdin
+curl: (22) The requested URL returned error: 404
+ERROR: Could not open requirements file: [Errno 2] No such file or directory: '/proc/self/fd/0'
+   (the /dev/stdin error is Windows-specific; on Linux/macOS pip gets an empty file and installs nothing)
+pipeline exit: 1
+$ pip install --no-deps yfinance
+pip exit: 0
+$ python -c "import yfinance"
+ModuleNotFoundError: No module named 'numpy'
+
+== AFTER: proposed commands ==
+$ pip install yfinance            -> exit 0 (yfinance 1.8.0, curl_cffi 0.17.0)
+$ pip uninstall -y curl_cffi      -> exit 0
+$ python -c "import yfinance._http as h; print(h.HAS_CURL_CFFI, h.requests.__name__)"
+curl_cffi not available; falling back to requests without browser TLS impersonation. Yahoo Finance may rate-limit or block this client. Install curl_cffi (>=0.15) for the supported configuration.
+curl_cffi installed: False
+HAS_CURL_CFFI = False | backend = requests
+Ticker OK: MSFT
+$ pip check
+yfinance 1.8.0 requires curl-cffi, which is not installed.   (expected: it is still a declared dependency)

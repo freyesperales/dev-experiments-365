@@ -163,5 +163,10 @@
     "n": 97,
     "slug": "toolprint",
     "hook": "Paste what an MCP server tells your AI and see hidden instructions, invisible text and data-leak tricks; save a fingerprint so you notice when a tool changes after you approved it. Offline, English or Spanish."
+  },
+  {
+    "n": 98,
+    "slug": "yfinance-install-docs",
+    "hook": "The yfinance docs told you to download a file that no longer exists and left your install broken. A two-line fix, tested in a clean environment and sent upstream."
   }
 ]

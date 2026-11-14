@@ -11,7 +11,7 @@ En español: herramientas gratuitas de seguridad defensiva para pymes y para qui
 
 **Safety promise:** defensive only. Nothing is tested against third-party systems; tests use local fixtures.
 
-Latest weekly report: none yet (first one is written on a Friday). Open-source contributions: none recorded yet.
+Latest weekly report: none yet (first one is written on a Friday). Open-source contributions: [yfinance#3045](https://github.com/ranaroussi/yfinance/pull/3045) (2026-11-14, docs install fix, [notes](experiments/experiment-098/)).
 
 ## Security tools (experiment 086 onward)
 
@@ -29,6 +29,7 @@ Latest weekly report: none yet (first one is written on a Friday). Open-source c
 | 095 | 2026-11-10 | Gatehouse 1.2 — maintenance (research blocked): browser demo for the GitHub Actions auditor, `auditFiles()` API, 24 tests; zero-dep Node CLI | [gatehouse-1.2](experiments/experiment-095/) | monorepo |
 | 096 | 2026-11-11 | Headerfix — paste HTTP response headers, get a grade and copy-paste fixes for nginx/Apache/Netlify/Cloudflare/Caddy/PHP (CSP, cookies, leaks, CORS; English/Spanish); browser demo + zero-dep Node CLI | [headerfix](experiments/experiment-096/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-096/)) | monorepo |
 | 097 | 2026-11-12 | Toolprint — paste an MCP server's tools list: hidden instructions, invisible text, data-leak routes and lookalike names; SHA-256 fingerprint per tool catches changes after you approved it (English/Spanish); browser demo + zero-dep Node CLI | [toolprint](experiments/experiment-097/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-097/)) | monorepo |
+| 098 | 2026-11-14 | Saturday OSS — fixed yfinance's "install without curl_cffi" docs: they downloaded a removed file (404) and left a broken install; reproduced before/after, PR [ranaroussi/yfinance#3045](https://github.com/ranaroussi/yfinance/pull/3045) | [notes](experiments/experiment-098/) | monorepo |
 
 ## Archive (2026-07 → 2026-10, general R&D)
 

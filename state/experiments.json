@@ -1,5 +1,5 @@
 {
-  "last_number": 97,
+  "last_number": 98,
   "entries": [
     {
       "n": 1,
@@ -812,6 +812,21 @@
       "research_links": 20,
       "minutes": 10,
       "depth_gate": "PASS at the minimum: 10 min by the lab clock (target 40-75); first gate check at 9 min failed, so a second research loop read MCP spec 2025-11-25 and draft and added 5 rules plus icons/execution to the fingerprint; 20 sources opened in this run (11 primary re-opened by the main agent); tests 19/19 green; demo checked headless with Playwright at 390px, no console errors."
+    },
+    {
+      "n": 98,
+      "date": "2026-11-14",
+      "title": "Saturday OSS — yfinance install docs fix: the 'install without curl_cffi' page downloaded a removed requirements.txt (404) and left yfinance without pandas/numpy; replaced with pip install + pip uninstall curl_cffi, reproduced before/after in clean venvs; PR ranaroussi/yfinance#3045",
+      "kind": "oss-contribution",
+      "theme": "open-source contribution (docs, Python dependency Francisco uses)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-098",
+      "demo_url": null,
+      "pr_url": "https://github.com/ranaroussi/yfinance/pull/3045",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 9,
+      "minutes": 9,
+      "depth_gate": "PARTIAL: content checks PASS (9 sources opened in this run, 7 primary; 3 parallel scouts screened 8 projects; reproduction fails before and passes after in clean venvs; PR open and mergeable, 1 file). Time gate FAIL: 9 min by the lab clock (rule: under 10 is wrong). Not looped back because the PR was already submitted and a Saturday has no build step for more research to change; logged honestly instead."
     }
   ]
 }

@@ -1,0 +1,31 @@
+From ff32cfbaf72d06cf492b4a5f3049aaaebf56c06c Mon Sep 17 00:00:00 2001
+From: Francisco Reyes <21211939+freyesperales@users.noreply.github.com>
+Date: Sat, 14 Nov 2026 11:49:49 +0100
+Subject: [PATCH] docs: fix install-without-curl_cffi instructions
+
+requirements.txt was removed when dependencies moved to pyproject.toml,
+so the documented curl command now gets a 404 and the following
+`pip install --no-deps yfinance` leaves pandas, numpy and requests
+uninstalled. Install normally and then remove curl_cffi; yfinance
+already falls back to requests when curl_cffi is missing.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ doc/source/advanced/install.rst | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/doc/source/advanced/install.rst b/doc/source/advanced/install.rst
+index 320ddc9..59712c8 100644
+--- a/doc/source/advanced/install.rst
++++ b/doc/source/advanced/install.rst
+@@ -5,5 +5,5 @@ To install without ``curl_cffi`` for requests fallback:
+ 
+ .. code-block:: bash
+ 
+-    curl -fsSL https://raw.githubusercontent.com/ranaroussi/yfinance/main/requirements.txt | grep -vi '^curl_cffi' | pip install -r /dev/stdin
+-    pip install --no-deps yfinance
++    pip install yfinance
++    pip uninstall -y curl_cffi
+-- 
+2.56.1.windows.1
+
