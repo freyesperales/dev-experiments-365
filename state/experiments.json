@@ -1,5 +1,5 @@
 {
-  "last_number": 98,
+  "last_number": 99,
   "entries": [
     {
       "n": 1,
@@ -827,6 +827,20 @@
       "research_links": 9,
       "minutes": 9,
       "depth_gate": "PARTIAL: content checks PASS (9 sources opened in this run, 7 primary; 3 parallel scouts screened 8 projects; reproduction fails before and passes after in clean venvs; PR open and mergeable, 1 file). Time gate FAIL: 9 min by the lab clock (rule: under 10 is wrong). Not looped back because the PR was already submitted and a Saturday has no build step for more research to change; logged honestly instead."
+    },
+    {
+      "n": 99,
+      "date": "2026-11-15",
+      "title": "Headerfix 1.1 — maintenance: fixed --server php (printed plain text) and Netlify output (undocumented '! Name' removal); nginx add_header inheritance warning (add_header_inherit, 1.29.3+); new rules for obsolete headers (X-XSS-Protection, Expect-CT, HPKP, Feature-Policy), __Host-/__Secure-/__Http-/__Host-Http- cookie prefixes, duplicate HSTS/CSP semantics, HSTS preload; 30 tests; browser demo + zero-dep Node CLI",
+      "kind": "maintenance",
+      "theme": "web hygiene (HTTP security headers), Sunday maintenance of experiment 096",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-099",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-099/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 21,
+      "minutes": 7,
+      "gate": "PASS after 2nd loop: first pass ended at 6 min (<10, gate failed), so key claims were re-verified directly (Netlify, nginx, RFC 6797, Cloudflare, MDN), which added __Http-/__Host-Http- prefix rules; 21 links opened in this run (17 primary); 30/30 tests green; demo checked headless; elapsed 7 min"
     }
   ]
 }

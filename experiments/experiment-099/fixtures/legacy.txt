@@ -1,0 +1,13 @@
+HTTP/1.1 200 OK
+Server: Apache
+Content-Type: text/html; charset=UTF-8
+Strict-Transport-Security: max-age=31536000; preload
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+X-XSS-Protection: 1; mode=block
+Expect-CT: max-age=86400, enforce
+Feature-Policy: camera 'none'; microphone 'none'
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'
+Set-Cookie: __Host-session=abc; Secure; HttpOnly; Path=/; Domain=example.test; SameSite=Lax

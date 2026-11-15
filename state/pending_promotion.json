@@ -168,5 +168,10 @@
     "n": 98,
     "slug": "yfinance-install-docs",
     "hook": "The yfinance docs told you to download a file that no longer exists and left your install broken. A two-line fix, tested in a clean environment and sent upstream."
+  },
+  {
+    "n": 99,
+    "slug": "headerfix-1.1",
+    "hook": "Your security headers may be there and still not work: browsers use only the first HSTS, enforce every CSP copy, and silently drop a __Host- cookie with a Domain. Headerfix 1.1 tells you which, and gives the fix for your server."
   }
 ]
