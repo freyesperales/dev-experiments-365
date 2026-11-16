@@ -173,5 +173,10 @@
     "n": 99,
     "slug": "headerfix-1.1",
     "hook": "Your security headers may be there and still not work: browsers use only the first HSTS, enforce every CSP copy, and silently drop a __Host- cookie with a Domain. Headerfix 1.1 tells you which, and gives the fix for your server."
+  },
+  {
+    "n": 100,
+    "slug": "remitente",
+    "hook": "Since May 2026 DMARC has a new standard (RFC 9989) and pct= no longer exists. Type your domain: Remitente counts your real SPF lookups, checks DMARC, DKIM and MTA-STS the way Gmail and Outlook do, and gives you the exact line to fix. In your browser, no account."
   }
 ]

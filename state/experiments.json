@@ -1,5 +1,5 @@
 {
-  "last_number": 99,
+  "last_number": 100,
   "entries": [
     {
       "n": 1,
@@ -841,6 +841,20 @@
       "research_links": 21,
       "minutes": 7,
       "gate": "PASS after 2nd loop: first pass ended at 6 min (<10, gate failed), so key claims were re-verified directly (Netlify, nginx, RFC 6797, Cloudflare, MDN), which added __Http-/__Host-Http- prefix rules; 21 links opened in this run (17 primary); 30/30 tests green; demo checked headless; elapsed 7 min"
+    },
+    {
+      "n": 100,
+      "date": "2026-11-16",
+      "title": "Remitente — type a domain, see whether Gmail/Outlook/Yahoo will trust its email: recursive SPF lookup count (10 and void limits) with include tree and merged-record fix, DMARC per RFC 9989 (pct/rf/ri removed, pct=0 -> t=y, np/psd/t, external rua authorisation), DKIM key size from the real public key (common selectors or a pasted DKIM-Signature), MTA-STS mx coverage and TLS-RPT; English/Spanish; browser demo over DNS-over-HTTPS + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "email authentication (SPF, DMARC RFC 9989, DKIM, MTA-STS, TLS-RPT)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-100",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-100/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 24,
+      "minutes": 13,
+      "depth_check": "pass (13 min, 24 links, 11 primary, 16/16 tests, demo checked headless)"
     }
   ]
 }

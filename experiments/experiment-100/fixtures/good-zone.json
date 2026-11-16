@@ -1,0 +1,41 @@
+{
+ "example.org": {
+  "MX": [
+   "10 mx1.example.org."
+  ],
+  "TXT": [
+   "google-site-verification=abc",
+   "v=spf1 ip4:192.0.2.10 include:_spf.mail.example.net -all"
+  ]
+ },
+ "mx1.example.org": {
+  "A": [
+   "192.0.2.25"
+  ]
+ },
+ "_spf.mail.example.net": {
+  "TXT": [
+   "v=spf1 ip4:198.51.100.0/24 ip6:2001:db8::/32 -all"
+  ]
+ },
+ "_dmarc.example.org": {
+  "TXT": [
+   "v=DMARC1; p=reject; rua=mailto:dmarc@example.org"
+  ]
+ },
+ "s1._domainkey.example.org": {
+  "TXT": [
+   "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv70b4P4OxEy1nJ19IozjsOeW5B2KrKj3S0QeDBGT2DV8W14fyQaDW7fYBJspRnsW2R72Z7CC8aWq7GhfxGccBVL2VpUcqmkeLxgloBiSzULfVJBvbeXh3rkHcSbQdmuV1GoBICzXwuup0NXo7jauqjkG+3RO1ObjuAepjBnxrxEVGo0bMmFkiQFYDtgYDAwscj89R1Mhrocz7Wl0TFuZAo6IqqKmhVHWrLiAI4u6BAusvSS4pPtJHcqVy1GVEBSX5PsBLsbkSVqGND4IdFK6OCVTjkrFGlkwtsT7nr/LY4qbUcniw5AGF9P+IMTQZdDAXtPl9boRYLKkEZodgbqmfQIDAQAB"
+  ]
+ },
+ "_mta-sts.example.org": {
+  "TXT": [
+   "v=STSv1; id=2026111601"
+  ]
+ },
+ "_smtp._tls.example.org": {
+  "TXT": [
+   "v=TLSRPTv1; rua=mailto:tls-reports@example.org"
+  ]
+ }
+}
