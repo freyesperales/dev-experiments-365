@@ -1,0 +1,16 @@
++--------------------+----------+-----------+---------+----------------+-------------+
+| name               | status   | update    | version | update_version | auto_update |
++--------------------+----------+-----------+---------+----------------+-------------+
+| akismet            | active   | none      | 5.7.2   |                | on          |
+| contact-form-7     | active   | available | 5.3.1   | 6.1.4          | off         |
+| wp-file-manager    | active   | available | 6.0     | 8.0.5          | off         |
+| display-widgets    | inactive | none      | 2.6.2   |                | off         |
+| acme-booking-pro   | active   | none      | 2.3.0   |                | off         |
+| advanced-cache.php | dropin   | none      |         |                | off         |
++--------------------+----------+-----------+---------+----------------+-------------+
+themes:
++----------------+----------+--------+---------+----------------+-------------+
+| name           | status   | update | version | update_version | auto_update |
++----------------+----------+--------+---------+----------------+-------------+
+| twentyfifteen  | active   | none   | 1.1     |                | off         |
++----------------+----------+--------+---------+----------------+-------------+

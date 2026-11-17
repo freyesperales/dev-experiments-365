@@ -1,5 +1,5 @@
 {
-  "last_number": 100,
+  "last_number": 101,
   "entries": [
     {
       "n": 1,
@@ -855,6 +855,20 @@
       "research_links": 24,
       "minutes": 13,
       "depth_check": "pass (13 min, 24 links, 11 primary, 16/16 tests, demo checked headless)"
+    },
+    {
+      "n": 101,
+      "date": "2026-11-17",
+      "title": "Vigía — paste your WordPress plugin list (Site Health 'Copy site info' or wp plugin list): known vulnerabilities matched locally against WPVulnerability, CISA KEV (actively exploited, incl. core CVE-2026-119977), plugins closed on wordpress.org with reason, abandoned plugins, insecure/outdated core with the patched branch release; only slugs leave the computer; English/Spanish; browser demo + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "CMS and e-commerce: WordPress (ISO week 47, odd) — plugins, themes and core versions",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-101",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-101/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 23,
+      "minutes": 13,
+      "depth_check": "pass (13 min, 23 links, 15 primary, 11/11 tests, demo checked headless with Playwright)"
     }
   ]
 }

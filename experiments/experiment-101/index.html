@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vigía — WordPress plugin check</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%227%22 fill=%22%232f5bd3%22/%3E%3C/svg%3E">
+<meta name="description" content="Paste your WordPress plugin list and see which plugins, themes and core version are vulnerable, closed on wordpress.org, actively exploited (CISA KEV) or abandoned. Free, no account.">
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--fg:#1b1d22;--muted:#5d6370;--line:#dfe1e6;--accent:#2f5bd3;--crit:#a3122a;--high:#c2410c;--med:#9a6700;--low:#3b6ea5;--ok:#1f7a45;--code:#f0f1f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121418;--card:#1b1e24;--fg:#e8eaee;--muted:#9aa1ad;--line:#2d313a;--accent:#7d9cff;--crit:#ff6b81;--high:#ff9a5c;--med:#e5b84a;--low:#8bb4e8;--ok:#5fd08f;--code:#23262e}}
+:root[data-theme="dark"]{--bg:#121418;--card:#1b1e24;--fg:#e8eaee;--muted:#9aa1ad;--line:#2d313a;--accent:#7d9cff;--crit:#ff6b81;--high:#ff9a5c;--med:#e5b84a;--low:#8bb4e8;--ok:#5fd08f;--code:#23262e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:880px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:1.9rem;margin:0 0 4px}
+.hook{color:var(--muted);margin:0 0 16px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+textarea{width:100%;min-height:200px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);font:13px/1.45 ui-monospace,Consolas,monospace;resize:vertical}
+button{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:8px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button:disabled{opacity:.6;cursor:wait}
+details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:10px 0}
+summary{cursor:pointer;font-weight:600}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.92em}
+.small{font-size:.88rem;color:var(--muted)}
+#summary{display:flex;gap:16px;align-items:center;margin:20px 0 8px;flex-wrap:wrap}
+.grade{font-size:2.2rem;font-weight:800;width:72px;height:72px;border-radius:12px;display:grid;place-items:center;border:2px solid currentColor}
+.counts span{margin-right:12px;white-space:nowrap}
+.item{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0}
+.item h3{margin:0;font-size:1rem;display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.item .meta{color:var(--muted);font-size:.86rem}
+.f{margin:8px 0 0;padding:8px 0 0;border-top:1px dashed var(--line)}
+.f p{margin:2px 0}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:999px;color:#fff;vertical-align:1px}
+.critical{--c:var(--crit)}.high{--c:var(--high)}.medium{--c:var(--med)}.low{--c:var(--low)}.info{--c:var(--muted)}.okc{--c:var(--ok)}
+.item.critical,.item.high,.item.medium,.item.low,.item.okc{border-left-color:var(--c)}
+.tag{background:var(--c)}
+.fix{color:var(--muted)}
+a{color:var(--accent)}
+#err{color:var(--crit);font-weight:600}
+footer{margin-top:40px;font-size:.85rem;color:var(--muted)}
+.okline{color:var(--ok)}
+</style>
+</head>
+<body>
+<main>
+  <div class="bar" style="justify-content:space-between;margin-top:0">
+    <span class="small" id="lead">Daily Security Lab · Experiment 101</span>
+    <span><button id="langBtn" type="button" aria-label="Cambiar idioma">Español</button></span>
+  </div>
+  <h1>Vigía</h1>
+  <p class="hook" id="hook">Paste your WordPress plugin list. See which plugins, themes and core version are vulnerable, closed on wordpress.org, actively exploited or abandoned, and what to do about each one.</p>
+
+  <details open>
+    <summary id="howT">How to get the list (1 minute)</summary>
+    <ol id="howL">
+      <li>In WordPress: <b>Tools → Site Health → Info → “Copy site info to clipboard”</b>, then paste it below.</li>
+      <li>Or, if you use WP-CLI: <code>wp core version; wp plugin list; echo themes:; wp theme list</code></li>
+      <li>Or type lines like <code>wordpress 6.8.2</code>, <code>contact-form-7 5.9.3</code>, <code>theme astra 4.6.1</code>.</li>
+    </ol>
+  </details>
+
+  <label for="input" class="small" id="inputL">Your list</label>
+  <textarea id="input" spellcheck="false" placeholder="### wp-core ###&#10;&#10;version: 6.8.2&#10;..."></textarea>
+  <div class="bar">
+    <button class="primary" id="go" type="button">Check</button>
+    <button id="sample" type="button">Load an example</button>
+    <span class="small" id="status" role="status"></span>
+  </div>
+  <p class="small" id="privacy">Private by design: your browser only sends plugin and theme <i>names</i> (slugs) and the core version to api.wordpress.org and wpvulnerability.net. Your domain, your plugin versions and the rest of the Site Health text never leave this page.</p>
+
+  <div id="err"></div>
+  <div id="summary" hidden></div>
+  <div id="results"></div>
+
+  <footer>
+    <p id="srcs">Data: <a href="https://api.wordpress.org/core/stable-check/1.0/">wordpress.org</a> (latest version, closed plugins, insecure core releases), <a href="https://www.wpvulnerability.com/">WPVulnerability</a> (known vulnerabilities, free open API) and the <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">CISA KEV catalog</a> (snapshot <span id="kevv"></span>). A clean result means “nothing known”, not “safe”.</p>
+    <p>Daily Security Lab · Experiment 101 of <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-101">dev-experiments-365</a> — built by an AI agent directed by Francisco Reyes (farp.dev). MIT.</p>
+  </footer>
+</main>
+<script src="kev-snapshot.js"></script>
+<script src="vigia.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var lang = /^es\b/i.test(navigator.language || '') ? 'es' : 'en';
+  try { var saved = localStorage.getItem('vigia-lang'); if (saved === 'es' || saved === 'en') lang = saved; } catch (e) {}
+  var last = null;
+
+  var UI = {
+    en: {
+      lead: 'Daily Security Lab · Experiment 101', btn: 'Español', go: 'Check', sample: 'Load an example',
+      hook: 'Paste your WordPress plugin list. See which plugins, themes and core version are vulnerable, closed on wordpress.org, actively exploited or abandoned, and what to do about each one.',
+      howT: 'How to get the list (1 minute)',
+      howL: '<li>In WordPress: <b>Tools → Site Health → Info → “Copy site info to clipboard”</b>, then paste it below.</li><li>Or, if you use WP-CLI: <code>wp core version; wp plugin list; echo themes:; wp theme list</code></li><li>Or type lines like <code>wordpress 6.8.2</code>, <code>contact-form-7 5.9.3</code>, <code>theme astra 4.6.1</code>.</li>',
+      inputL: 'Your list',
+      privacy: 'Private by design: your browser only sends plugin and theme <i>names</i> (slugs) and the core version to api.wordpress.org and wpvulnerability.net. Your domain, your plugin versions and the rest of the Site Health text never leave this page.',
+      checking: 'Checking…', done: function (n) { return n + ' items checked.'; }, fail: 'Could not reach the data sources. Check your connection and try again.',
+      grade: 'Grade', fix: 'What to do', latest: 'latest', ok: 'No known problems.', inactive: 'inactive', core: 'WordPress core', plugin: 'Plugin', theme: 'Theme',
+      sev: { critical: 'CRITICAL', high: 'HIGH', medium: 'MEDIUM', low: 'LOW', info: 'NOTE' }, empty: 'Paste your list first.',
+      srcs: 'Data: <a href="https://api.wordpress.org/core/stable-check/1.0/">wordpress.org</a> (latest version, closed plugins, insecure core releases), <a href="https://www.wpvulnerability.com/">WPVulnerability</a> (known vulnerabilities, free open API) and the <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">CISA KEV catalog</a> (snapshot <span id="kevv"></span>). A clean result means “nothing known”, not “safe”.'
+    },
+    es: {
+      lead: 'Laboratorio diario de seguridad · Experimento 101', btn: 'English', go: 'Revisar', sample: 'Cargar un ejemplo',
+      hook: 'Pega la lista de plugins de tu WordPress. Verás qué plugins, temas y versión del núcleo tienen vulnerabilidades, están cerrados en wordpress.org, se están explotando o están abandonados, y qué hacer con cada uno.',
+      howT: 'Cómo sacar la lista (1 minuto)',
+      howL: '<li>En WordPress: <b>Herramientas → Salud del sitio → Información</b>, botón para copiar la información del sitio al portapapeles («Copy site info to clipboard» en inglés), y pégala abajo.</li><li>O, si usas WP-CLI: <code>wp core version; wp plugin list; echo themes:; wp theme list</code></li><li>O escribe líneas como <code>wordpress 6.8.2</code>, <code>contact-form-7 5.9.3</code>, <code>theme astra 4.6.1</code>.</li>',
+      inputL: 'Tu lista',
+      privacy: 'Privado desde el diseño: tu navegador solo envía los <i>nombres</i> (identificadores) de plugins y temas y la versión del núcleo a api.wordpress.org y wpvulnerability.net. Tu dominio, las versiones de tus plugins y el resto del texto de Salud del sitio no salen de esta página.',
+      checking: 'Revisando…', done: function (n) { return n + ' elementos revisados.'; }, fail: 'No se pudo contactar con las fuentes de datos. Revisa tu conexión e inténtalo de nuevo.',
+      grade: 'Nota', fix: 'Qué hacer', latest: 'última', ok: 'Sin problemas conocidos.', inactive: 'inactivo', core: 'Núcleo de WordPress', plugin: 'Plugin', theme: 'Tema',
+      sev: { critical: 'CRÍTICO', high: 'ALTO', medium: 'MEDIO', low: 'BAJO', info: 'NOTA' }, empty: 'Primero pega tu lista.',
+      srcs: 'Datos: <a href="https://api.wordpress.org/core/stable-check/1.0/">wordpress.org</a> (última versión, plugins cerrados, versiones inseguras del núcleo), <a href="https://www.wpvulnerability.com/">WPVulnerability</a> (vulnerabilidades conocidas, API abierta y gratuita) y el <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">catálogo KEV de CISA</a> (copia <span id="kevv"></span>). Un resultado limpio significa «nada conocido», no «seguro».'
+    }
+  };
+
+  var SAMPLE = [
+    '### wp-core ###', '', 'version: 6.4.1', '',
+    '### wp-active-theme ###', '', 'name: Twenty Fifteen (twentyfifteen)', 'version: 1.1', '',
+    '### wp-plugins-active (4) ###', '',
+    'Akismet Anti-spam: Spam Protection: version: 5.7.2, author: Automattic - Anti-spam Team, Auto-updates enabled',
+    'Contact Form 7: version: 5.3.1, author: Takayuki Miyoshi, Auto-updates disabled',
+    'WP File Manager: version: 6.0, author: mndpsingh287, Auto-updates disabled',
+    'Acme Booking Pro: version: 2.3.0, author: Acme Studio, Auto-updates disabled', '',
+    '### wp-plugins-inactive (1) ###', '',
+    'Display Widgets: version: 2.6.2, author: Strategy11, Auto-updates disabled'
+  ].join('\n');
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function md(s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>'); }
+
+  function applyLang() {
+    var u = UI[lang];
+    document.documentElement.lang = lang;
+    ['lead', 'go', 'sample', 'hook', 'inputL', 'howT'].forEach(function (k) { $(k).textContent = u[k]; });
+    $('langBtn').textContent = u.btn;
+    $('howL').innerHTML = u.howL;
+    $('privacy').innerHTML = u.privacy;
+    $('srcs').innerHTML = u.srcs;
+    $('kevv').textContent = (window.VIGIA_KEV && window.VIGIA_KEV.version) || '?';
+  }
+
+  function render(rep) {
+    var u = UI[lang];
+    $('err').textContent = '';
+    if (rep.error) { $('summary').hidden = true; $('results').innerHTML = ''; $('err').textContent = rep.error; return; }
+    var gcls = rep.grade === 'F' ? 'critical' : rep.grade === 'D' ? 'high' : rep.grade === 'C' ? 'medium' : rep.grade === 'B' ? 'low' : 'okc';
+    var c = rep.counts;
+    $('summary').hidden = false;
+    $('summary').innerHTML = '<div class="grade ' + gcls + '" style="color:var(--c)" aria-label="' + u.grade + ' ' + rep.grade + '">' + rep.grade + '</div>' +
+      '<div><div><b>' + u.grade + ' ' + rep.grade + '</b> · ' + rep.score + '/100</div><div class="counts small">' +
+      ['critical', 'high', 'medium', 'low'].map(function (k) { return '<span class="' + k + '"><span class="tag">' + u.sev[k] + '</span> ' + c[k] + '</span>'; }).join('') + '</div></div>';
+    $('results').innerHTML = rep.results.map(function (r) {
+      var label = r.type === 'core' ? u.core : r.type === 'theme' ? u.theme : u.plugin;
+      var shown = r.findings;
+      var cls = r.worst === 'info' ? 'okc' : r.worst;
+      var meta = [];
+      if (r.version) meta.push('v' + esc(r.version));
+      if (r.latest && r.latest !== r.version) meta.push(u.latest + ' ' + esc(r.latest));
+      if (r.status === 'inactive') meta.push(u.inactive);
+      var title = r.type === 'core' ? 'WordPress' : (r.slug ? '<a href="https://wordpress.org/' + (r.type === 'theme' ? 'themes' : 'plugins') + '/' + encodeURIComponent(r.slug) + '/" rel="noopener">' + esc(r.name || r.slug) + '</a>' : esc(r.name));
+      var body = shown.length ? shown.map(function (f) {
+        var links = (f.cves || []).slice(0, 4).map(function (id) { return '<a href="https://www.cve.org/CVERecord?id=' + encodeURIComponent(id) + '" rel="noopener">' + esc(id) + '</a>'; }).join(' · ');
+        return '<div class="f ' + f.severity + '"><p><span class="tag">' + u.sev[f.severity] + '</span> ' + md(f.message) + '</p><p class="fix"><b>' + u.fix + ':</b> ' + md(f.fix) + '</p>' + (links ? '<p class="small">' + links + '</p>' : '') + '</div>';
+      }).join('') : '';
+      if (!shown.some(function (f) { return f.severity !== 'info'; })) body = '<p class="okline small">✓ ' + u.ok + '</p>' + body;
+      return '<section class="item ' + cls + '"><h3><span class="small">' + label + '</span> ' + title + ' <span class="meta">' + meta.join(' · ') + '</span></h3>' + body + '</section>';
+    }).join('');
+  }
+
+  function go() {
+    var text = $('input').value;
+    if (!text.trim()) { $('err').textContent = UI[lang].empty; return; }
+    $('go').disabled = true; $('status').textContent = UI[lang].checking; $('err').textContent = '';
+    window.Vigia.check(text, { lang: lang }).then(function (rep) {
+      last = text; render(rep);
+      $('status').textContent = rep.error ? '' : UI[lang].done(rep.results.length);
+    }).catch(function () { $('err').textContent = UI[lang].fail; $('status').textContent = ''; })
+      .then(function () { $('go').disabled = false; });
+  }
+
+  $('go').addEventListener('click', go);
+  $('sample').addEventListener('click', function () { $('input').value = SAMPLE; go(); });
+  $('langBtn').addEventListener('click', function () {
+    lang = lang === 'es' ? 'en' : 'es';
+    try { localStorage.setItem('vigia-lang', lang); } catch (e) {}
+    applyLang();
+    if (last) go();
+  });
+  applyLang();
+})();
+</script>
+</body>
+</html>

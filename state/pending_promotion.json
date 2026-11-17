@@ -178,5 +178,10 @@
     "n": 100,
     "slug": "remitente",
     "hook": "Since May 2026 DMARC has a new standard (RFC 9989) and pct= no longer exists. Type your domain: Remitente counts your real SPF lookups, checks DMARC, DKIM and MTA-STS the way Gmail and Outlook do, and gives you the exact line to fix. In your browser, no account."
+  },
+  {
+    "n": 101,
+    "slug": "vigia",
+    "hook": "wordpress.org closes plugins for security issues and WordPress never tells you. Paste your Site Health info: Vigía shows which plugins are vulnerable, actively exploited (CISA KEV), closed or abandoned, and what to do. In your browser, no account, your versions never leave your computer."
   }
 ]

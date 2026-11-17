@@ -1,0 +1,42 @@
+### wp-core ###
+
+version: 6.4.1
+site_language: es_CL
+user_language: es_CL
+timezone: America/Santiago
+permalink: /%postname%/
+https_status: true
+
+### wp-dropins (1) ###
+
+advanced-cache.php: true
+
+### wp-active-theme ###
+
+name: Twenty Fifteen (twentyfifteen)
+version: 1.1
+author: the WordPress team
+author_website: https://wordpress.org/
+parent_theme: none
+theme_features: core-block-patterns, menus
+theme_path: /home/example/public_html/wp-content/themes/twentyfifteen
+
+### wp-themes-inactive (1) ###
+
+Twenty Twenty-Four: version: 1.0, author: the WordPress team, Auto-updates disabled
+
+### wp-plugins-active (4) ###
+
+Akismet Anti-spam: Spam Protection: version: 5.7.2, author: Automattic - Anti-spam Team, Auto-updates enabled
+Contact Form 7: version: 5.3.1, author: Takayuki Miyoshi, Auto-updates disabled (latest version: 6.1.4)
+WP File Manager: version: 6.0, author: mndpsingh287, Auto-updates disabled
+Acme Booking Pro: version: 2.3.0, author: Acme Studio, Auto-updates disabled
+
+### wp-plugins-inactive (1) ###
+
+Display Widgets: version: 2.6.2, author: Strategy11, Auto-updates disabled
+
+### wp-server ###
+
+server_architecture: Linux 5.15 x86_64
+php_version: 8.2.20 64bit
