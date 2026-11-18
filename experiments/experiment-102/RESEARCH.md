@@ -62,6 +62,9 @@ domain, `cd=true`) was measured with curl. Every link below was opened during th
 A real-domain run also found that crt.sh lists BIMI "Verified Mark" certificates next to TLS certificates (a DigiCert
 VMC on cloudflare.com, 368 days); without filtering them the tool reported a false "manual renewal" warning. They
 are now excluded and there is a test for it.
+A second live run (on the published demo, example.com) showed two more kinds of noise in crt.sh: rows whose issuer is
+"Issuer Not Found" (not a publicly trusted CA) and a test intermediate whose name contains the domain after a space.
+crt.sh separates names with newlines, so names are now split only on newlines, and "Issuer Not Found" rows are skipped.
 
 ## Candidates and judge
 

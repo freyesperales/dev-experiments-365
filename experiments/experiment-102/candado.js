@@ -429,8 +429,8 @@
     const names = new Set([domain, 'www.' + domain.replace(/^www\./, ''), '*.' + domain, domain.replace(/^www\./, '')]);
     const bySerial = new Map();
     for (const e of entries || []) {
-      if (NON_TLS_ISSUER.test(e.issuer_name || '')) continue;
-      const ns = String(e.name_value || e.common_name || '').toLowerCase().split(/\s+/).filter(Boolean);
+      if (NON_TLS_ISSUER.test(e.issuer_name || '') || /^Issuer Not Found$/i.test(String(e.issuer_name || '').trim())) continue; // not a publicly trusted website certificate
+      const ns = String(e.name_value || e.common_name || '').toLowerCase().split(/\r?\n/).map(x => x.trim()).filter(Boolean); // crt.sh separates names with newlines
       if (!ns.some(n => names.has(n))) continue;
       const key = (e.serial_number || e.id) + '|' + e.issuer_ca_id;
       if (bySerial.has(key)) continue;

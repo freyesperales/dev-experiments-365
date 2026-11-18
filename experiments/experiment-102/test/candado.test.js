@@ -137,6 +137,11 @@ test('BIMI mark certificates (VMC) in CT are ignored; quoted O= values still map
   const vmc = { issuer_ca_id: 1, issuer_name: 'C=US, O="DigiCert, Inc.", CN=DigiCert Verified Mark RSA4096 SHA256 2021 CA1', name_value: 'example.org', id: 9, not_before: '2026-06-11T00:00:00', not_after: '2027-06-13T23:59:59', serial_number: 'vm1' };
   const certs = C.summarizeCt(json('good-ct.json').concat([vmc]), 'example.org', new Date(NOW));
   assert.ok(certs.every(c => c.id !== 9));
+  const junk = [
+    { issuer_ca_id: 2, issuer_name: 'Issuer Not Found', name_value: 'example.org\nuser@example.org', id: 10, not_before: '2023-01-27T01:21:18', not_after: '2033-01-24T01:21:18', serial_number: 'x1' },
+    { issuer_ca_id: 3, issuer_name: 'C=GB, O=Test Lab, CN=Test Intermediate', name_value: 'Test Intermediate - example.org', id: 11, not_before: '2021-08-31T15:55:23', not_after: '2031-08-29T15:55:23', serial_number: 'x2' }
+  ];
+  assert.deepStrictEqual(C.summarizeCt(junk, 'example.org', new Date(NOW)), [], 'untrusted issuers and names with spaces are not website certificates');
   assert.strictEqual(C.caForIssuer('C=US, O="DigiCert, Inc.", CN=DigiCert Global G2 TLS RSA SHA256 2020 CA1').ids[0], 'digicert.com');
 });
 

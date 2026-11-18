@@ -57,6 +57,11 @@ DNSSEC  signed and validating   DS: 2371 13 2 3299...
 Cert    Google Trust Services, issued 2026-10-12, expires 2027-01-10 (53 days left, 90-day lifetime)
 No findings.
 
+$ node candado.js example.com --no-fetch
+Cert    SSL Corporation, issued 2026-09-26, expires 2026-12-25 (37 days left, 90-day lifetime)
+[MEDIUM] Certificate: A certificate from Sectigo Limited lasts 366 days, usually a sign it is bought and installed by hand. ...
+[LOW   ] CAA: No CAA records: any of the ~70 public CAs may issue a certificate for your domain. ...
+
 $ node candado.js dnssec-failed.org --no-fetch          # a test domain kept broken on purpose
 [HIGH  ] DNSSEC: DNSSEC is broken: validating resolvers (Google, Cloudflare, most mobile carriers) answer
               SERVFAIL ... Resolver says: EDE(9): DNSKEY Missing no SEP matching the DS found for dnssec-failed.org.
