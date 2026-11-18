@@ -1,0 +1,5 @@
+[
+  {"issuer_ca_id":183283,"issuer_name":"C=US, O=Google Trust Services, CN=WE1","common_name":"shop.example.com","name_value":"shop.example.com","id":3001,"not_before":"2026-09-05T10:00:00","not_after":"2026-12-04T10:00:00","serial_number":"77cc01"},
+  {"issuer_ca_id":183283,"issuer_name":"C=US, O=Google Trust Services, CN=WE1","common_name":"*.shop.example.com","name_value":"*.shop.example.com","id":3002,"not_before":"2026-09-05T10:00:00","not_after":"2026-12-04T10:00:00","serial_number":"77cc02"},
+  {"issuer_ca_id":9999,"issuer_name":"C=GB, O=Sectigo Limited, CN=Sectigo RSA Domain Validation Secure Server CA","common_name":"shop.example.com","name_value":"shop.example.com\nwww.shop.example.com","id":3003,"not_before":"2026-01-10T00:00:00","not_after":"2027-02-10T23:59:59","serial_number":"99dd01"}
+]

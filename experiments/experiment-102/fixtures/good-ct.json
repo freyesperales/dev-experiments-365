@@ -1,0 +1,5 @@
+[
+  {"issuer_ca_id":295814,"issuer_name":"C=US, O=Let's Encrypt, CN=R12","common_name":"example.org","name_value":"example.org\nwww.example.org","id":2001,"not_before":"2026-10-29T08:00:00","not_after":"2027-01-27T08:00:00","serial_number":"05aa01"},
+  {"issuer_ca_id":295814,"issuer_name":"C=US, O=Let's Encrypt, CN=R12","common_name":"example.org","name_value":"example.org\nwww.example.org","id":2000,"not_before":"2026-10-29T08:00:00","not_after":"2027-01-27T08:00:00","serial_number":"05aa01"},
+  {"issuer_ca_id":295814,"issuer_name":"C=US, O=Let's Encrypt, CN=R13","common_name":"example.org","name_value":"example.org\nwww.example.org","id":1500,"not_before":"2026-08-30T08:00:00","not_after":"2026-11-28T08:00:00","serial_number":"04bb02"}
+]

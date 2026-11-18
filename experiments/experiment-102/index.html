@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candado — certificate, CAA, DNSSEC and security.txt check</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect x=%272%27 y=%277%27 width=%2712%27 height=%278%27 rx=%272%27 fill=%27%232457d6%27/%3E%3Cpath d=%27M5 7V5a3 3 0 0 1 6 0v2%27 stroke=%27%232457d6%27 fill=%27none%27 stroke-width=%271.8%27/%3E%3C/svg%3E">
+<meta name="description" content="Will your website certificate keep renewing? Check CAA, DNSSEC, certificate expiry (Certificate Transparency) and security.txt from your browser, with fixes in English and Spanish. Free, no account.">
+<style>
+:root{--bg:#f7f7f4;--card:#fff;--ink:#1b1d21;--mute:#5d6470;--line:#dfe1e5;--accent:#2457d6;--high:#c62828;--medium:#b26a00;--low:#4a6fa5;--info:#6b7280;--ok:#1d7a46;--code:#f0f1f3}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--card:#1b1e23;--ink:#e8eaee;--mute:#a1a8b3;--line:#2c3038;--accent:#7aa2ff;--high:#ff6b6b;--medium:#f0a73a;--low:#8fb0e6;--info:#9aa3af;--ok:#4cc38a;--code:#23272e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:900px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0 0 4px;font-size:1.9rem;letter-spacing:-.01em}
+.lead{margin:0 0 16px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
+label{font-weight:600;display:block;margin:0 0 6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input[type=text]{flex:1 1 260px;min-width:0;padding:10px 12px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+textarea{width:100%;min-height:90px;padding:10px;font:13px/1.4 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+button{padding:10px 18px;font:inherit;font-weight:600;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line);padding:6px 10px;font-weight:500}
+button:disabled{opacity:.6;cursor:wait}
+details summary{cursor:pointer;color:var(--mute);margin-top:10px}
+.note{font-size:.9rem;color:var(--mute)}
+.grade{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.badge{font-size:2.4rem;font-weight:800;width:84px;height:84px;border-radius:12px;display:grid;place-items:center;color:#fff}
+.g-Aplus,.g-A{background:var(--ok)}.g-B{background:#5b8c2a}.g-C{background:var(--medium)}.g-D,.g-F{background:var(--high)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{width:110px;color:var(--mute);font-weight:600}
+code,pre{font-family:ui-monospace,Consolas,monospace;font-size:.85rem;background:var(--code);border-radius:6px}
+code{padding:1px 5px;word-break:break-all}
+pre{padding:10px;white-space:pre-wrap;word-break:break-all;margin:6px 0 0}
+.f{border-left:4px solid var(--info);padding:8px 12px;margin:10px 0;background:var(--bg);border-radius:0 8px 8px 0}
+.f.high{border-color:var(--high)}.f.medium{border-color:var(--medium)}.f.low{border-color:var(--low)}
+.sev{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-right:6px}
+.high .sev{color:var(--high)}.medium .sev{color:var(--medium)}.low .sev{color:var(--low)}.info .sev{color:var(--info)}
+.fix{margin-top:4px;font-size:.92rem}
+.req span{display:inline-block;margin:2px 8px 2px 0}
+.yes{color:var(--ok);font-weight:700}.no{color:var(--high);font-weight:700}.unk{color:var(--mute);font-weight:700}
+.tree{white-space:pre;overflow-x:auto}
+.err{color:var(--high);font-weight:600}
+footer{margin-top:32px;font-size:.85rem;color:var(--mute)}
+a{color:var(--accent)}
+.lang{float:right}
+.st{display:inline-block;font-weight:700;margin-left:6px}
+.st.ok{color:var(--ok)}.st.warn{color:var(--medium)}.st.bad{color:var(--high)}.st.unk{color:var(--mute)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+  <button class="ghost lang" id="lang" type="button">Español</button>
+  <h1>Candado</h1>
+  <p class="lead" data-en="Will your website's padlock keep working? One check for the four things that silently break it: CAA records that block your certificate authority, broken DNSSEC, a certificate nobody renewed, and a missing or expired security.txt." data-es="¿El candado de tu sitio va a seguir funcionando? Una sola revisión de las cuatro cosas que lo rompen sin avisar: registros CAA que bloquean a tu autoridad certificadora, DNSSEC roto, un certificado que nadie renovó y un security.txt ausente o vencido."></p>
+
+  <form class="card" id="form">
+    <label for="domain" data-en="Your website's domain" data-es="El dominio de tu sitio web"></label>
+    <div class="row">
+      <input id="domain" type="text" placeholder="yourbusiness.com" autocomplete="off" spellcheck="false" required>
+      <button id="go" type="submit" data-en="Check" data-es="Revisar"></button>
+    </div>
+    <details>
+      <summary data-en="Optional: paste your security.txt" data-es="Opcional: pega tu security.txt"></summary>
+      <p class="note" data-en="Browsers cannot read another site's files (CORS). Open https://yourdomain/.well-known/security.txt in a new tab and paste it here. Leave empty to skip." data-es="Los navegadores no pueden leer archivos de otro sitio (CORS). Abre https://tudominio/.well-known/security.txt en otra pestaña y pégalo aquí. Déjalo vacío para omitirlo."></p>
+      <textarea id="sectxt" spellcheck="false" placeholder="Contact: mailto:security@yourbusiness.com&#10;Expires: 2027-10-01T00:00:00.000Z"></textarea>
+    </details>
+    <p class="note" data-en="Privacy: your browser asks public DNS (Cloudflare DNS-over-HTTPS, Google as fallback) and the public Certificate Transparency search crt.sh about this domain. Nothing else is sent, there is no server and no account. crt.sh is often slow: the certificate part can take up to a minute." data-es="Privacidad: tu navegador consulta sobre este dominio al DNS público (DNS sobre HTTPS de Cloudflare, Google como respaldo) y al buscador público de Certificate Transparency crt.sh. No se envía nada más: no hay servidor ni cuenta. crt.sh suele ir lento: la parte del certificado puede tardar hasta un minuto."></p>
+  </form>
+
+  <div id="out" aria-live="polite"></div>
+
+  <footer>
+    <p data-en="Checks: CAA (RFC 8659, issuer names from the CCADB list; RFC 8657 parameters) and whether it allows the CA that issued your current certificate; DNSSEC validation, DS and DNSKEY; certificates logged in Certificate Transparency (expiry, renewal, lifetime against the CA/Browser Forum schedule: 200 days now, 100 from 2027-03-15, 47 from 2029-03-15); security.txt (RFC 9116)." data-es="Revisa: CAA (RFC 8659, nombres de emisor según la lista CCADB; parámetros del RFC 8657) y si permite a la CA que emitió tu certificado actual; validación DNSSEC, DS y DNSKEY; certificados registrados en Certificate Transparency (vencimiento, renovación y vigencia según el calendario del CA/Browser Forum: 200 días hoy, 100 desde el 2027-03-15, 47 desde el 2029-03-15); security.txt (RFC 9116)."></p>
+    <p><a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-102">Source, CLI and tests</a> · Daily Security Lab · Experiment 102 of dev-experiments-365 — built by an AI agent directed by Francisco Reyes (farp.dev). MIT.</p>
+  </footer>
+</main>
+<script src="candado.js"></script>
+<script>
+(function () {
+  'use strict';
+  let lang = /^es\b/i.test(navigator.language || '') ? 'es' : 'en';
+  let last = null;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const T = (en, es) => (lang === 'es' ? es : en);
+  try { const saved = localStorage.getItem('candado-lang'); if (saved === 'es' || saved === 'en') lang = saved; } catch (e) { /* storage blocked */ }
+  try { const q = new URLSearchParams(location.search).get('d'); if (q) $('domain').value = q; } catch (e) { /* ignore */ }
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-en]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
+    $('lang').textContent = lang === 'es' ? 'English' : 'Español';
+    if (last) render(last);
+  }
+  $('lang').addEventListener('click', () => { lang = lang === 'es' ? 'en' : 'es'; try { localStorage.setItem('candado-lang', lang); } catch (e) { /* ignore */ } applyLang(); });
+
+  const worst = (r, areas) => { const f = r.findings.filter(x => areas.indexOf(x.area) >= 0).map(x => x.sev); return f.includes('high') ? 'bad' : f.includes('medium') ? 'warn' : 'ok'; };
+  const mark = s => `<span class="st ${s}">${s === 'ok' ? '✓' : s === 'warn' ? '!' : s === 'bad' ? '✗' : '?'}</span>`;
+
+  function render(r) {
+    const gcls = 'g-' + r.grade.replace('+', 'plus');
+    const dsTxt = { signed: T('signed and validating', 'firmado y validando'), unsigned: T('off (optional)', 'apagado (opcional)'), unlinked: T('signed, but the DS is missing at the registrar', 'firmado, pero falta el DS en el registrador'), bogus: T('BROKEN: validating resolvers answer SERVFAIL', 'ROTO: los resolutores que validan responden SERVFAIL'), 'insecure-ds': T('DS present, not validating', 'DS presente, sin validar'), servfail: 'SERVFAIL', nxdomain: T('domain does not exist', 'el dominio no existe') };
+    const c = r.certificate && r.certificate.latest;
+    const caaRows = r.caa.records.length ? r.caa.records.map(x => `<code>${esc(x)}</code>`).join('<br>') + (r.caa.foundAt && r.caa.foundAt !== r.domain ? `<br><span class="note">${T('inherited from', 'heredado de')} ${esc(r.caa.foundAt)}</span>` : '') : T('none: any public CA may issue', 'ninguno: cualquier CA pública puede emitir');
+    const rows = [
+      [T('Certificate', 'Certificado') + mark(r.ctAvailable ? worst(r, ['Certificate']) : 'unk'), c ? `${esc(c.issuer)} · ${T('issued', 'emitido')} ${esc(c.notBefore.slice(0, 10))} · ${T('expires', 'vence')} <b>${esc(c.notAfter.slice(0, 10))}</b> (${T(`${r.certificate.daysLeft} days left, ${c.lifetimeDays}-day lifetime`, `quedan ${r.certificate.daysLeft} días, vigencia de ${c.lifetimeDays} días`)})<br><span class="note">${T('CAs seen in Certificate Transparency', 'CA vistas en Certificate Transparency')}: ${esc(r.certificate.issuers.map(i => i.org).join(', '))}</span>` : (r.ctAvailable ? T('no valid certificate found', 'no se encontró un certificado vigente') : T('not checked (crt.sh did not answer)', 'no revisado (crt.sh no respondió)'))],
+      ['CAA' + mark(worst(r, ['CAA'])), caaRows + (r.caa.wwwRecords ? `<br>www: ${r.caa.wwwRecords.map(x => `<code>${esc(x)}</code>`).join(' ')}` : '')],
+      ['DNSSEC' + mark(worst(r, ['DNSSEC', 'DNS'])), esc(dsTxt[r.dnssec.state] || r.dnssec.state) + (r.dnssec.ds.length ? `<br><span class="note">DS: <code>${esc(r.dnssec.ds[0])}</code></span>` : '')],
+      ['security.txt' + mark(r.securityTxt.present ? worst(r, ['security.txt']) : 'unk'), r.securityTxt.present ? `${esc(r.securityTxt.contact.join(', ') || '—')}${r.securityTxt.expires ? ` · Expires ${esc(r.securityTxt.expires.slice(0, 10))}` : ''}` : `${T('not checked: open', 'sin revisar: abre')} <a href="https://${esc(r.domain)}/.well-known/security.txt" target="_blank" rel="noopener noreferrer">https://${esc(r.domain)}/.well-known/security.txt</a> ${T('and paste it above', 'y pégalo arriba')}`]
+    ];
+    let h = `<section class="card"><div class="grade"><div class="badge ${gcls}">${esc(r.grade)}</div><div><b>${esc(r.domain)}</b><br><span class="note">${r.score}/100 · ${r.findings.filter(f => f.sev === 'high').length} ${T('serious', 'graves')} · ${r.queries} ${T('DNS queries', 'consultas DNS')}</span></div></div>`;
+    if (c) h += `<div class="btns"><button class="ghost" type="button" id="ics">${T('Add an expiry reminder to my calendar (.ics)', 'Agregar un aviso de vencimiento a mi calendario (.ics)')}</button></div>`;
+    h += `</section>`;
+    h += `<section class="card"><table>${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table></section>`;
+    h += `<section class="card"><b>${T('Findings and fixes', 'Hallazgos y arreglos')}</b>`;
+    if (!r.findings.length) h += `<p>${T('No findings. Nice work.', 'Sin hallazgos. Bien hecho.')}</p>`;
+    for (const f of r.findings) h += `<div class="f ${f.sev}"><span class="sev">${esc(f.sev)}</span><b>${esc(f.area)}</b> — ${esc(f.msg[lang])}${f.fix ? `<div class="fix">${T('Fix', 'Arreglo')}: ${esc(f.fix[lang])}</div>` : ''}</div>`;
+    if (r.suggestedCaa) {
+      const v = r.suggestedCaa.lines.join('\n');
+      h += `<p><b>${T('Suggested CAA records', 'Registros CAA sugeridos')}</b> <span class="note">(${r.suggestedCaa.note === 'merge' ? T('compare with yours; include every CA your host or CDN uses', 'compáralos con los tuyos; incluye todas las CA que usa tu hosting o CDN') : T('built from the CAs that issued your recent certificates; include every CA your host or CDN uses', 'armados con las CA que emitieron tus certificados recientes; incluye todas las CA que usa tu hosting o CDN')})</span> <button class="ghost" type="button" data-copy="${esc(v)}">${T('Copy', 'Copiar')}</button></p><pre>${esc(v)}</pre>`;
+    }
+    if (!r.securityTxt.present || r.findings.some(f => f.area === 'security.txt' && f.sev !== 'info')) {
+      h += `<p><b>${T('security.txt template', 'Plantilla de security.txt')}</b> <span class="note">(${T('save as /.well-known/security.txt', 'guárdala como /.well-known/security.txt')})</span> <button class="ghost" type="button" data-copy="${esc(r.securityTxtTemplate)}">${T('Copy', 'Copiar')}</button></p><pre>${esc(r.securityTxtTemplate)}</pre>`;
+    }
+    h += `</section><p class="note">${T('Share this check:', 'Comparte esta revisión:')} <a href="?d=${encodeURIComponent(r.domain)}">?d=${esc(r.domain)}</a> · ${T('Certificate Transparency shows what was issued, not what your server sends; if in doubt, look at the padlock in your browser.', 'Certificate Transparency muestra lo que se emitió, no lo que envía tu servidor; si tienes dudas, mira el candado en tu navegador.')}</p>`;
+    $('out').innerHTML = h;
+    $('out').querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => {
+      const v = b.getAttribute('data-copy');
+      (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => { b.textContent = T('Copied', 'Copiado'); }, () => { b.textContent = T('Select and copy', 'Selecciona y copia'); });
+    }));
+    const ics = $('ics');
+    if (ics) ics.addEventListener('click', () => {
+      const blob = new Blob([Candado.icsReminder(r.domain, c.notAfter, new Date())], { type: 'text/calendar' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'candado-' + r.domain + '.ics'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    });
+  }
+
+  $('form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const domain = Candado.normalizeDomain($('domain').value);
+    if (!domain) { $('out').innerHTML = `<p class="card err">${T('That does not look like a domain. Example: yourbusiness.com', 'Eso no parece un dominio. Ejemplo: tunegocio.cl')}</p>`; return; }
+    $('go').disabled = true; $('out').innerHTML = `<p class="card note">${T('Asking public DNS and Certificate Transparency… (crt.sh can take up to a minute)', 'Consultando el DNS público y Certificate Transparency… (crt.sh puede tardar hasta un minuto)')}</p>`;
+    try {
+      const pasted = $('sectxt').value.trim();
+      const opts = pasted ? { securityTxt: pasted } : { fetchSecurityTxt: async (url) => { let res; try { res = await fetch(url, { mode: 'cors', redirect: 'follow' }); } catch (e) { throw new Error('blocked'); } if (res.status === 404 || res.status === 410) return ''; if (!res.ok) throw new Error('blocked'); return await res.text(); } };
+      opts.ct = Candado.crtshSource({ timeoutMs: 45000 });
+      last = await Candado.analyze(domain, opts);
+      render(last);
+      try { history.replaceState(null, '', '?d=' + encodeURIComponent(domain)); } catch (e) { /* ignore */ }
+    } catch (e) {
+      last = null;
+      $('out').innerHTML = `<p class="card err">${esc(e.code === 'DNS_FAILED' ? T('Could not reach public DNS from this browser (blocked network or extension). Nothing was checked; try again or use the CLI.', 'No se pudo consultar el DNS público desde este navegador (red o extensión que lo bloquea). No se revisó nada; vuelve a intentarlo o usa la versión de terminal.') : e.message)}</p>`;
+    } finally { $('go').disabled = false; }
+  });
+
+  applyLang();
+  if ($('domain').value) $('form').requestSubmit();
+})();
+</script>
+</body>
+</html>

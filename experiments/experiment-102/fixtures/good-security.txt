@@ -1,0 +1,5 @@
+# security.txt for example.org
+Contact: mailto:security@example.org
+Expires: 2027-09-30T00:00:00.000Z
+Preferred-Languages: es, en
+Canonical: https://example.org/.well-known/security.txt

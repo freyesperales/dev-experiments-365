@@ -183,5 +183,10 @@
     "n": 101,
     "slug": "vigia",
     "hook": "wordpress.org closes plugins for security issues and WordPress never tells you. Paste your Site Health info: Vigía shows which plugins are vulnerable, actively exploited (CISA KEV), closed or abandoned, and what to do. In your browser, no account, your versions never leave your computer."
+  },
+  {
+    "n": 102,
+    "slug": "candado",
+    "hook": "Let's Encrypt no longer emails you before your certificate expires, and certificates will last 47 days by 2029. Type your domain: Candado shows when your padlock expires, whether renewal is stuck, and whether your CAA or DNSSEC will make the next renewal fail. In your browser, no account."
   }
 ]

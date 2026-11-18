@@ -1,0 +1,5 @@
+Contact: security@example.com
+Expires: 2026-06-30T00:00:00.000Z
+Expires: 2026-07-30T00:00:00.000Z
+Canonical: https://another-agency.example/.well-known/security.txt
+this line is broken

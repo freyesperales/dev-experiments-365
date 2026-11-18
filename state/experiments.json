@@ -1,5 +1,5 @@
 {
-  "last_number": 101,
+  "last_number": 102,
   "entries": [
     {
       "n": 1,
@@ -869,6 +869,20 @@
       "research_links": 23,
       "minutes": 13,
       "depth_check": "pass (13 min, 23 links, 15 primary, 11/11 tests, demo checked headless with Playwright)"
+    },
+    {
+      "n": 102,
+      "date": "2026-11-18",
+      "title": "Candado — type your domain: certificate expiry and stuck renewals from Certificate Transparency, CAA records checked against the CCADB list (typos like actalis.com, extra quotes, critical tags) and cross-checked against the CA that issued your current certificate, broken DNSSEC (DS left at the registrar) via SERVFAIL vs cd=1, security.txt (RFC 9116), lifetime warning for the 200/100/47-day CA/B schedule, .ics expiry reminder; English/Spanish; browser demo (DNS-over-HTTPS + crt.sh) + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "web hygiene (TLS certificates, CAA, DNSSEC, security.txt)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-102",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-102/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 30,
+      "minutes": 15,
+      "depth_check": "pass (15 min, 30 links (27 re-requested HTTP 200), 18 primary, 15/15 tests, demo checked headless in Edge via Playwright on 2 real domains)"
     }
   ]
 }

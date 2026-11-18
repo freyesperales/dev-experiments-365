@@ -1,0 +1,19 @@
+{
+  "shop.example.com": {
+    "A": ["192.0.2.20"]
+  },
+  "example.com": {
+    "A": ["192.0.2.21"],
+    "CAA": ["0 issue \"\\\"letsencrypt.org\\\"\"", "0 issue \"actalis.com\"", "0 issuewild \";\"", "128 tbs \"unknown\""]
+  },
+  "broken.example.net": {
+    "_bogus": "EDE(9): DNSKEY Missing no SEP matching the DS found for broken.example.net.",
+    "A": ["192.0.2.30"],
+    "DS": ["12345 13 2 0011223344556677889900aabbccddeeff00112233445566778899aabbccddee"]
+  },
+  "unlinked.example.net": {
+    "A": ["192.0.2.40"],
+    "DNSKEY": ["257 3 13 mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ=="]
+  },
+  "gone.example.net": "NXDOMAIN"
+}
