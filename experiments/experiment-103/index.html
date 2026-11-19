@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trasluz — what your AI reads that you don't see</title>
+<meta name="description" content="Paste a web page or an email: see the hidden text an AI assistant reads and a person never sees, and the instructions hidden in it. Runs in your browser; nothing is uploaded.">
+<style>
+:root{--bg:#fff;--fg:#17202a;--mut:#5b6773;--card:#f4f6f8;--bd:#d5dbe1;--hi:#b3261e;--me:#9a5b00;--lo:#2b5fa5;--ac:#0b6b4f;--mark:#fff3c4}
+@media(prefers-color-scheme:dark){:root{--bg:#10151a;--fg:#e7ecf0;--mut:#9aa7b3;--card:#1a2129;--bd:#2f3a45;--hi:#ff8a80;--me:#ffc266;--lo:#8ab4f8;--ac:#5fd3a5;--mark:#3d3518}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:980px;margin:0 auto;padding:16px}h1{margin:.2em 0}p.s{color:var(--mut);margin-top:0}h2{font-size:1.1em;margin:1.2em 0 .4em}
+textarea{width:100%;min-height:190px;font:13px/1.4 ui-monospace,monospace;padding:8px;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:6px}
+textarea.drag{outline:3px dashed var(--ac)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;align-items:center}
+button,select{font:inherit;padding:6px 12px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.v{font-size:28px;font-weight:700;margin-right:12px}.v.high{color:var(--hi)}.v.medium{color:var(--me)}.v.low{color:var(--lo)}.v.clean{color:var(--ac)}
+.f{padding:8px 10px;margin:6px 0;border-left:4px solid var(--bd);background:var(--card);border-radius:4px;overflow-wrap:anywhere}
+.f.high{border-color:var(--hi)}.f.medium{border-color:var(--me)}.f.low{border-color:var(--lo)}.tag{font-size:12px;font-weight:700;text-transform:uppercase;margin-right:6px}
+.ev{display:block;font:12px/1.4 ui-monospace,monospace;color:var(--mut);margin-top:4px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.cols{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;max-height:340px;overflow:auto}
+.hid{background:var(--mark);border-radius:4px;padding:4px 6px;margin:0 0 6px;display:block}.hid small{display:block;color:var(--mut);font-size:12px}
+code{font-size:13px;overflow-wrap:anywhere}.note{color:var(--mut);font-size:14px}a{color:var(--ac)}
+</style></head><body><main>
+<h1>Trasluz</h1>
+<p class="s" id="sub"></p>
+<label for="in"><b id="lblIn"></b></label>
+<p class="note" id="how"></p>
+<textarea id="in" spellcheck="false" placeholder="<html>… or Return-Path: … (.eml)"></textarea>
+<div class="row"><input type="file" id="file" accept=".eml,.html,.htm,.txt,.mht,message/rfc822,text/html,text/plain"></div>
+<div class="row">
+<button class="p" id="go"></button><button id="s1"></button><button id="s2"></button><button id="s3"></button><button id="s4"></button>
+<label><span id="lblLang"></span> <select id="lang"><option value="en">English</option><option value="es">Español</option></select></label>
+</div>
+<div id="out" aria-live="polite"></div>
+<h2 id="hWhy"></h2>
+<p class="note" id="why"></p>
+<p class="note" id="lim"></p>
+<p class="note">Daily Security Lab · Experiment 103 — built by an AI agent directed by Francisco Reyes (farp.dev) · <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-103">code</a></p>
+</main>
+<script src="trasluz.js"></script>
+<script src="samples.js"></script>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var S=window.TRASLUZ_SAMPLES||{};
+var T={en:{sub:"Paste a web page or an email. See the text an AI assistant reads and a person never sees (hidden styles, white-on-white, comments, alt text, invisible characters) and the instructions aimed at the AI inside it. Runs in your browser; nothing is uploaded.",
+lblIn:"Web page HTML, email source (.eml) or text",how:"Page: right-click, View page source, copy all. Gmail: More (three dots), Show original, Download original. Outlook: File, Save As (.eml) or View message source. Or drop the file here.",
+go:"Look through it",s1:"Sample: invoice email",s2:"Sample: shop page",s3:"Sample: résumé",s4:"Sample: clean newsletter",lblLang:"Language",
+verdict:{high:"HIGH RISK",medium:"Review",low:"Minor notes",clean:"No signals"},kind:{html:"web page",email:"email",text:"text"},
+blocks:"hidden blocks",none:"No findings.",see:"What a person sees",ai:"What only an AI reads",noHidden:"No hidden text found.",copy:"Copy the visible text (safer to give your AI)",copied:"Copied",
+hWhy:"Why this matters",why:"AI assistants that summarize email, browse for you or screen résumés read all the text, not just what is on screen. Security researchers have hidden orders in an email with font-size 0 and white text, and the email summarizer followed them. If your website, newsletter or forms carry hidden text, an assistant may tell your customers something you never wrote. Check your own pages and templates, and check suspicious emails before you let an assistant act on them.",
+lim:"Limits: Trasluz reads the HTML you give it. It does not run scripts, load external style sheets or render the page, so text hidden by JavaScript, images or complex CSS selectors can slip through. Phrase rules cover English and Spanish. A clean result is not a guarantee, and instructions in plain sight can also work: the real defense is to never let an assistant send, pay or delete because of what it read."},
+es:{sub:"Pega una página web o un correo. Verás el texto que lee un asistente de IA y que una persona nunca ve (estilos ocultos, letra blanca sobre blanco, comentarios, texto alternativo, caracteres invisibles) y las instrucciones para la IA escondidas ahí. Todo corre en tu navegador; nada se sube.",
+lblIn:"HTML de la página, código fuente del correo (.eml) o texto",how:"Página: clic derecho, Ver código fuente, copiar todo. Gmail: Más (tres puntos), Mostrar original, Descargar original. Outlook: Archivo, Guardar como (.eml) o Ver origen del mensaje. O arrastra el archivo aquí.",
+go:"Mirar a trasluz",s1:"Ejemplo: correo de factura",s2:"Ejemplo: página de tienda",s3:"Ejemplo: currículum",s4:"Ejemplo: boletín limpio",lblLang:"Idioma",
+verdict:{high:"RIESGO ALTO",medium:"Revisar",low:"Detalles menores",clean:"Sin señales"},kind:{html:"página web",email:"correo",text:"texto"},
+blocks:"bloques ocultos",none:"Sin hallazgos.",see:"Lo que ve una persona",ai:"Lo que solo lee una IA",noHidden:"No se encontró texto oculto.",copy:"Copiar el texto visible (más seguro para dárselo a tu IA)",copied:"Copiado",
+hWhy:"Por qué importa",why:"Los asistentes de IA que resumen correos, navegan por ti o filtran currículums leen todo el texto, no solo lo que está en pantalla. Unos investigadores escondieron órdenes en un correo con letra de tamaño 0 y color blanco, y el resumidor de correo las siguió. Si tu web, tu boletín o tus formularios llevan texto oculto, un asistente puede decirles a tus clientes algo que tú nunca escribiste. Revisa tus páginas y plantillas, y revisa los correos sospechosos antes de dejar que un asistente actúe sobre ellos.",
+lim:"Límites: Trasluz lee el HTML que le das. No ejecuta scripts, no carga hojas de estilo externas ni dibuja la página, así que el texto oculto con JavaScript, imágenes o selectores CSS complejos puede pasar. Las reglas de frases cubren inglés y español. Un resultado limpio no es una garantía, y las instrucciones a la vista también pueden funcionar: la defensa real es no dejar nunca que un asistente envíe, pague o borre por lo que leyó."}};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var last=null;
+function run(){
+ var lang=$('lang').value,t=T[lang],r=Trasluz.analyze($('in').value,{lang:lang});last=r;
+ if(!r.ok){$('out').innerHTML='<p class="f high">'+esc(r.message)+'</p>';return}
+ var h='<div class="row"><span class="v '+r.verdict+'">'+t.verdict[r.verdict]+'</span><span>'+t.kind[r.kind]+(r.subject?' · <b>'+esc(r.subject)+'</b>':'')+' · '+r.stats.hiddenBlocks+' '+t.blocks+' · high '+r.counts.high+' · medium '+r.counts.medium+' · low '+r.counts.low+'</span></div>';
+ if(!r.findings.length)h+='<p>'+t.none+'</p>';
+ r.findings.forEach(function(f){h+='<div class="f '+f.severity+'"><span class="tag">'+f.severity+'</span><code>'+esc(f.where)+'</code><br>'+esc(f.message)+(f.evidence?'<span class="ev">'+esc(f.evidence)+'</span>':'')+'</div>'});
+ h+='<div class="cols"><div><h2>'+t.see+'</h2><div class="box">'+esc(r.visibleText)+'</div><div class="row"><button id="cp">'+t.copy+'</button></div></div><div><h2>'+t.ai+'</h2><div class="box">';
+ if(!r.hidden.length)h+=esc(t.noHidden);
+ r.hidden.forEach(function(x){h+='<span class="hid"><small>'+(lang==='es'?'línea ':'line ')+x.line+' &lt;'+esc(x.tag)+'&gt; · '+esc(x.reasonText)+'</small>'+esc(x.text)+'</span>'});
+ h+='</div></div></div>';
+ $('out').innerHTML=h;
+ $('cp').onclick=function(){var b=this;var txt=Trasluz.visibleText($('in').value);var done=function(){b.textContent=t.copied};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,function(){});else{var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(e){}ta.remove()}};
+}
+function setLang(){var t=T[$('lang').value];['sub','lblIn','how','go','s1','s2','s3','s4','lblLang','hWhy','why','lim'].forEach(function(k){$(k).textContent=t[k]});document.documentElement.lang=$('lang').value}
+function load(k){if(S[k]){$('in').value=S[k];run()}}
+$('go').onclick=run;$('s1').onclick=function(){load('email')};$('s2').onclick=function(){load('page')};$('s3').onclick=function(){load('resume')};$('s4').onclick=function(){load('clean')};
+function readFile(f){if(!f)return;var rd=new FileReader();rd.onload=function(){$('in').value=rd.result;run()};rd.readAsText(f)}
+$('file').onchange=function(e){readFile(e.target.files[0])};
+var ta=$('in');
+ta.addEventListener('dragover',function(e){e.preventDefault();ta.classList.add('drag')});
+ta.addEventListener('dragleave',function(){ta.classList.remove('drag')});
+ta.addEventListener('drop',function(e){e.preventDefault();ta.classList.remove('drag');if(e.dataTransfer.files&&e.dataTransfer.files[0])readFile(e.dataTransfer.files[0])});
+$('lang').onchange=function(){setLang();if($('in').value)run()};
+if((navigator.language||'').slice(0,2)==='es')$('lang').value='es';
+setLang();
+})();
+</script></body></html>

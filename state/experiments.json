@@ -1,5 +1,5 @@
 {
-  "last_number": 102,
+  "last_number": 103,
   "entries": [
     {
       "n": 1,
@@ -883,6 +883,20 @@
       "research_links": 30,
       "minutes": 15,
       "depth_check": "pass (15 min, 30 links (27 re-requested HTTP 200), 18 primary, 15/15 tests, demo checked headless in Edge via Playwright on 2 real domains)"
+    },
+    {
+      "n": 103,
+      "date": "2026-11-19",
+      "title": "Trasluz — paste a web page or an email (.eml): see the text an AI assistant reads and a person never sees (font-size 0, white-on-white incl. CSS classes, off-screen, display:none, comments, alt/aria/data attributes, the plain-text MIME part, Unicode Tags decoded, variation-selector smuggling, zero-width word splits) and the instructions aimed at the AI inside it (EN/ES); severity by content so preheaders and screen-reader text are not false alarms; --visible gives only the text a person sees to pass to an LLM; browser demo + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "AI agents (indirect prompt injection hidden in web pages and emails)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-103",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-103/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 21,
+      "minutes": 12,
+      "depth_check": "pass (12 min, 21 links, 10 primary, 5 re-opened by the lead agent, 17/17 tests, demo checked headless via Playwright with 4 samples in EN/ES)"
     }
   ]
 }

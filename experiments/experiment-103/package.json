@@ -1,0 +1,1 @@
+{"name":"trasluz","version":"1.0.0","description":"See the text an AI assistant reads in a web page or email that a person never sees, and the instructions hidden in it. Offline, zero dependencies.","bin":{"trasluz":"trasluz.js"},"scripts":{"test":"node --test test/*.test.js"},"license":"MIT","engines":{"node":">=18"}}

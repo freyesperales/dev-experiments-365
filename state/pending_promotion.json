@@ -188,5 +188,10 @@
     "n": 102,
     "slug": "candado",
     "hook": "Let's Encrypt no longer emails you before your certificate expires, and certificates will last 47 days by 2029. Type your domain: Candado shows when your padlock expires, whether renewal is stuck, and whether your CAA or DNSSEC will make the next renewal fail. In your browser, no account."
+  },
+  {
+    "n": 103,
+    "slug": "trasluz",
+    "hook": "AI assistants that summarize your email or browse for you read all the text, including what is hidden with font size 0 or white on white. Paste a page or an email into Trasluz and see what only the AI reads, and the orders hidden in it. In your browser, nothing uploaded."
   }
 ]
