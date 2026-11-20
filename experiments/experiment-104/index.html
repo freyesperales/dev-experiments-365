@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This policy is the proof that nothing leaves the page: connect-src 'none' blocks every network request from scripts. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Derrame — a key leaked: what is it, how bad, what to do first</title>
+<meta name="description" content="Paste a .env, wp-config.php or git diff. See which keys are in it, which are dangerous, which are public by design, and the order to rotate them. Runs in your browser; nothing is uploaded.">
+<style>
+  :root { --bg:#f6f4ef; --card:#fffdf9; --ink:#1d1b16; --soft:#5f5a4e; --line:#ddd6c6; --accent:#9a3412; --high:#b42318; --high-bg:#fdecea; --med:#a15c07; --med-bg:#fdf3dc; --low:#3f6212; --low-bg:#eef6e0; --info:#475467; --info-bg:#eef0f3; --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16140f; --card:#1f1c16; --ink:#f1ede3; --soft:#b0a998; --line:#3a352a; --accent:#fb923c; --high:#ff8a80; --high-bg:#3b1512; --med:#f5c462; --med-bg:#3a2a0c; --low:#b6d98a; --low-bg:#1f2b12; --info:#b8c0cc; --info-bg:#252a31; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 28px 16px 56px; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.02em; }
+  h1 span { color: var(--accent); }
+  .hook { margin: 0 0 18px; color: var(--soft); max-width: 62ch; }
+  h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+  button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .lang { display:flex; gap:6px; flex:none; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin: 10px 0; }
+  .row small { color: var(--soft); }
+  textarea { width:100%; min-height: 210px; resize: vertical; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: 13.5px/1.5 var(--mono); }
+  .private { font-size: .9rem; color: var(--soft); margin: 6px 0 0; }
+  .verdict { margin-top: 22px; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); display:flex; flex-wrap:wrap; gap: 6px 16px; align-items: baseline; }
+  .verdict strong { font-size: 1.25rem; }
+  .verdict.act { border-color: var(--high); background: var(--high-bg); } .verdict.act strong { color: var(--high); }
+  .verdict.review { border-color: var(--med); background: var(--med-bg); } .verdict.review strong { color: var(--med); }
+  .verdict.minor, .verdict.clear { border-color: var(--low); background: var(--low-bg); } .verdict.minor strong, .verdict.clear strong { color: var(--low); }
+  .finding { border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; background: var(--card); padding: 12px 14px; margin: 10px 0; }
+  .finding.high { border-left-color: var(--high); } .finding.medium { border-left-color: var(--med); } .finding.low { border-left-color: var(--low); } .finding.info { border-left-color: var(--info); }
+  .top { display:flex; flex-wrap:wrap; gap: 6px 10px; align-items: baseline; }
+  .chip { font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
+  .chip.high { color: var(--high); background: var(--high-bg); } .chip.medium { color: var(--med); background: var(--med-bg); } .chip.low { color: var(--low); background: var(--low-bg); } .chip.info { color: var(--info); background: var(--info-bg); }
+  .name { font-family: var(--mono); font-size: .92rem; font-weight: 600; overflow-wrap: anywhere; }
+  .where { color: var(--soft); font-size: .88rem; }
+  .masked { font-family: var(--mono); font-size: .86rem; color: var(--soft); overflow-wrap: anywhere; }
+  .finding p { margin: 6px 0 0; }
+  .finding p.note { color: var(--soft); font-size: .93rem; }
+  ol.plan { padding-left: 0; list-style: none; margin: 0; }
+  ol.plan > li { border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 12px 14px; margin: 10px 0; }
+  ol.plan h3 { font-size: 1rem; margin: 0 0 4px; }
+  ol.plan p { margin: 4px 0; color: var(--soft); }
+  ol.plan ul { margin: 6px 0 0; padding-left: 20px; }
+  ol.plan li li { margin: 6px 0; }
+  .prov { border-top: 1px dashed var(--line); margin-top: 10px; padding-top: 10px; }
+  .prov b { display:block; }
+  .prov .keys { font-family: var(--mono); font-size: .84rem; color: var(--soft); overflow-wrap: anywhere; }
+  .prov p { color: var(--ink) !important; }
+  .prov p.warn { color: var(--med) !important; }
+  a { color: var(--accent); overflow-wrap: anywhere; }
+  footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--soft); font-size: .88rem; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1><span>Derrame</span></h1>
+      <p class="hook" id="hook"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">English</button>
+      <button type="button" id="lang-es" aria-pressed="false">Español</button>
+    </div>
+  </header>
+
+  <label for="input" id="label" style="font-weight:600"></label>
+  <textarea id="input" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+  <p class="private" id="private"></p>
+  <div class="row">
+    <small id="try"></small>
+    <button type="button" data-sample="env">.env</button>
+    <button type="button" data-sample="wpconfig">wp-config.php</button>
+    <button type="button" data-sample="diff">git diff</button>
+    <button type="button" data-sample="clean">.env.example</button>
+    <button type="button" id="clear"></button>
+  </div>
+
+  <section id="out" class="hidden" aria-live="polite">
+    <div id="verdict" class="verdict"></div>
+    <div id="findings"></div>
+    <p class="private" id="skipped"></p>
+    <div id="planwrap" class="hidden">
+      <div class="row" style="justify-content:space-between">
+        <h2 id="plantitle" style="margin:18px 0 0"></h2>
+        <button type="button" id="copy"></button>
+      </div>
+      <ol class="plan" id="plan"></ol>
+      <p class="private" id="source"></p>
+    </div>
+  </section>
+
+  <footer>
+    <p id="limits"></p>
+    <p>Daily Security Lab · Experiment 104 of <a href="https://github.com/freyesperales/dev-experiments-365">dev-experiments-365</a> — built by an AI agent directed by Francisco Reyes (farp.dev) · <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-104">code, tests and sources</a></p>
+  </footer>
+</main>
+
+<script src="derrame.js"></script>
+<script>
+(function () {
+  'use strict';
+  var D = window.Derrame;
+  var UI = {
+    en: {
+      hook: 'A key leaked, or you are not sure. Paste the file here: see which keys are in it, whose they are, which ones are dangerous, and what to do first.',
+      label: 'Paste a .env, a wp-config.php, a git diff or the text where the key appeared',
+      private: 'Nothing leaves this page. It makes no network request (the page forbids them to itself), and key values are shown masked.',
+      try: 'Or try a sample with fake keys:', clear: 'Clear', copy: 'Copy the plan', copied: 'Copied',
+      found: function (n) { return n + ' key' + (n === 1 ? '' : 's') + ' found'; },
+      line: 'line', by: 'in', providerLink: 'Official instructions',
+      limits: 'Limits: it knows the key formats of about 20 providers and the variable names that look like secrets; a key in an unknown format under a neutral name goes unnoticed. It cannot tell whether a key still works, and it does not replace revoking it.'
+    },
+    es: {
+      hook: 'Se filtró una clave, o no estás seguro. Pega el archivo aquí: verás qué claves tiene, de quién son, cuáles son peligrosas y qué hacer primero.',
+      label: 'Pega un .env, un wp-config.php, un diff de git o el texto donde apareció la clave',
+      private: 'Nada sale de esta página. No hace ninguna petición de red (la página se lo prohíbe a sí misma) y los valores de las claves se muestran enmascarados.',
+      try: 'O prueba una muestra con claves falsas:', clear: 'Limpiar', copy: 'Copiar el plan', copied: 'Copiado',
+      found: function (n) { return n + ' clave' + (n === 1 ? '' : 's') + ' encontrada' + (n === 1 ? '' : 's'); },
+      line: 'línea', by: 'en', providerLink: 'Instrucciones oficiales',
+      limits: 'Límites: conoce los formatos de clave de unos 20 proveedores y los nombres de variable que parecen secretos; una clave en formato desconocido bajo un nombre neutro pasa inadvertida. No sabe si una clave sigue funcionando y no reemplaza revocarla.'
+    }
+  };
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  var qs = new URLSearchParams(location.search);
+  var lang = qs.get('lang') === 'es' || (!qs.get('lang') && /^es/i.test(navigator.language || '')) ? 'es' : 'en';
+  var last = null;
+
+  function linkify(parent, text) {
+    var parts = String(text).split(/(https:\/\/[^\s)]+)/g);
+    parts.forEach(function (p) {
+      if (/^https:\/\//.test(p)) { var a = el('a', null, p); a.href = p; a.rel = 'noopener noreferrer'; a.target = '_blank'; parent.appendChild(a); }
+      else parent.appendChild(document.createTextNode(p));
+    });
+  }
+
+  function chrome() {
+    var u = UI[lang];
+    document.documentElement.lang = lang;
+    $('hook').textContent = u.hook; $('label').textContent = u.label; $('private').textContent = u.private;
+    $('try').textContent = u.try; $('clear').textContent = u.clear; $('copy').textContent = u.copy; $('limits').textContent = u.limits;
+    $('lang-en').setAttribute('aria-pressed', String(lang === 'en'));
+    $('lang-es').setAttribute('aria-pressed', String(lang === 'es'));
+  }
+
+  function draw() {
+    chrome();
+    var text = $('input').value;
+    if (!text.trim()) { $('out').classList.add('hidden'); last = null; return; }
+    var r = D.analyze(text), t = D.T[lang], u = UI[lang];
+    last = r;
+    $('out').classList.remove('hidden');
+
+    var v = $('verdict'); v.className = 'verdict ' + r.verdict; v.textContent = '';
+    v.appendChild(el('strong', null, t.verdict[r.verdict]));
+    v.appendChild(el('span', null, [u.found(r.findings.length) + ' ' + u.by + ' ' + t.kind[r.kind]].concat(['high', 'medium', 'low', 'info'].filter(function (s) { return r.counts[s]; }).map(function (s) { return t.sev[s] + ' ' + r.counts[s]; })).join(' · ')));
+
+    var box = $('findings'); box.textContent = '';
+    if (!r.findings.length) box.appendChild(el('p', null, t.none));
+    r.findings.forEach(function (f) {
+      var d = D.describe(f, lang);
+      var card = el('div', 'finding ' + f.severity);
+      var top = el('div', 'top');
+      top.appendChild(el('span', 'chip ' + f.severity, t.sev[f.severity]));
+      if (f.name) top.appendChild(el('span', 'name', f.name));
+      top.appendChild(el('span', 'where', f.providerName + ' · ' + u.line + ' ' + f.line + (f.repeats ? ' · ×' + f.repeats : '')));
+      card.appendChild(top);
+      card.appendChild(el('div', 'masked', f.masked));
+      card.appendChild(el('p', null, d.level));
+      d.notes.forEach(function (n) { card.appendChild(el('p', 'note', n)); });
+      box.appendChild(card);
+    });
+    $('skipped').textContent = r.placeholdersSkipped ? t.skipped(r.placeholdersSkipped) : '';
+
+    var wrap = $('planwrap');
+    if (!r.plan.needed) { wrap.classList.add('hidden'); $('plan').textContent = ''; return; }
+    wrap.classList.remove('hidden');
+    $('plantitle').textContent = t.planTitle;
+    $('source').textContent = t.source + ' ' + t.masked;
+    var ol = $('plan'); ol.textContent = '';
+    t.steps.forEach(function (step, i) {
+      var li = el('li'); li.appendChild(el('h3', null, step[0]));
+      if (step[1]) li.appendChild(el('p', null, step[1]));
+      if (i === 0) r.plan.providers.forEach(function (p) {
+        var P = D.PROVIDERS[p.id], b = el('div', 'prov');
+        b.appendChild(el('b', null, P.name));
+        b.appendChild(el('div', 'keys', p.keys.map(function (k) { return (k.name ? k.name + ' ' : '') + '(' + u.line + ' ' + k.line + ')'; }).join(', ')));
+        b.appendChild(el('p', null, P.how[lang]));
+        if (P.warn) { var w = el('p', 'warn'); linkify(w, t.warn + ': ' + P.warn[lang]); b.appendChild(w); }
+        var lp = el('p'), a = el('a', null, u.providerLink + ': ' + P.link); a.href = P.link; a.rel = 'noopener noreferrer'; a.target = '_blank'; lp.appendChild(a); b.appendChild(lp);
+        li.appendChild(b);
+      });
+      var list = i === 3 ? t.clean : i === 4 ? t.prevent : null;
+      if (list) { var ul = el('ul'); list.forEach(function (c) { ul.appendChild(el('li', null, c)); }); li.appendChild(ul); }
+      ol.appendChild(li);
+    });
+  }
+
+  var timer = null;
+  $('input').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(draw, 150); });
+  $('lang-en').addEventListener('click', function () { lang = 'en'; draw(); });
+  $('lang-es').addEventListener('click', function () { lang = 'es'; draw(); });
+  $('clear').addEventListener('click', function () { $('input').value = ''; draw(); $('input').focus(); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sample]'), function (b) {
+    b.addEventListener('click', function () { $('input').value = D.samples()[b.getAttribute('data-sample')]; draw(); });
+  });
+  $('copy').addEventListener('click', function () {
+    if (!last) return;
+    var text = D.planText(last, lang).join('\n'), done = function () { $('copy').textContent = UI[lang].copied; setTimeout(function () { $('copy').textContent = UI[lang].copy; }, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () {});
+    else { var ta = el('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} ta.remove(); }
+  });
+  draw();
+})();
+</script>
+</body>
+</html>

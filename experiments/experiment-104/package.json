@@ -1,0 +1,1 @@
+{"name":"derrame","version":"1.0.0","description":"Leaked-key triage for small businesses: paste a .env, wp-config.php or git diff and see which keys are in it, which are dangerous, and the order to rotate them. Offline, zero dependencies.","bin":{"derrame":"derrame.js"},"scripts":{"test":"node --test test/*.test.js"},"license":"MIT","engines":{"node":">=18"}}

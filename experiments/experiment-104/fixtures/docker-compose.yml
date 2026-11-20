@@ -1,0 +1,9 @@
+# A compose file that reads every secret from the environment: nothing to rotate.
+services:
+  web:
+    image: example/shop:1.4.2
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      PUBLIC_KEY_PATH: /run/secrets/public.pem

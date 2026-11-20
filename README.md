@@ -11,7 +11,7 @@ En español: herramientas gratuitas de seguridad defensiva para pymes y para qui
 
 **Safety promise:** defensive only. Nothing is tested against third-party systems; tests use local fixtures.
 
-Latest weekly report: none yet (first one is written on a Friday). Open-source contributions: [yfinance#3045](https://github.com/ranaroussi/yfinance/pull/3045) (2026-11-14, docs install fix, [notes](experiments/experiment-098/)).
+Latest weekly report: [2026-W47](reports/weekly/2026-W47.md). Open-source contributions: [yfinance#3045](https://github.com/ranaroussi/yfinance/pull/3045) (2026-11-14, docs install fix, [notes](experiments/experiment-098/)).
 
 ## Security tools (experiment 086 onward)
 
@@ -35,6 +35,7 @@ Latest weekly report: none yet (first one is written on a Friday). Open-source c
 | 101 | 2026-11-17 | Vigía — paste your WordPress plugin list (Site Health or `wp plugin list`): known vulnerabilities, actively exploited CVEs (CISA KEV), plugins closed on wordpress.org, abandoned plugins and insecure core, with the fix for each; only slugs leave your computer (English/Spanish); browser demo + zero-dep Node CLI | [vigia](experiments/experiment-101/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-101/)) | monorepo |
 | 102 | 2026-11-18 | Candado — type your domain: when your certificate expires and whether renewal is stuck (Certificate Transparency), CAA records that would block the CA that renews you (typos, extra quotes, checked against the official CCADB list), broken DNSSEC and security.txt, with the fix for each and a calendar reminder (English/Spanish); browser demo + zero-dep Node CLI | [candado](experiments/experiment-102/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-102/)) | monorepo |
 | 103 | 2026-11-19 | Trasluz — paste a web page or an email: see the text an AI assistant reads and you never see (font size 0, white on white, off-screen, comments, alt text, invisible Unicode, the plain-text part) and the orders hidden in it for the AI, plus a visible-text-only copy that is safer to give your AI (English/Spanish); browser demo + zero-dep Node CLI | [trasluz](experiments/experiment-103/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-103/)) | monorepo |
+| 104 | 2026-11-20 | Derrame — a key leaked, or you are not sure: paste a `.env`, a `wp-config.php` or a git diff and see which keys are in it, which are dangerous and which are public by design, and the order to rotate them with each provider's official link; values stay masked and nothing is uploaded (English/Spanish); browser demo + zero-dep Node CLI | [derrame](experiments/experiment-104/) ([demo](https://freyesperales.github.io/dev-experiments-365/experiments/experiment-104/)) | monorepo |
 
 ## Archive (2026-07 → 2026-10, general R&D)
 

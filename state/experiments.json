@@ -1,5 +1,5 @@
 {
-  "last_number": 103,
+  "last_number": 104,
   "entries": [
     {
       "n": 1,
@@ -897,6 +897,20 @@
       "research_links": 21,
       "minutes": 12,
       "depth_check": "pass (12 min, 21 links, 10 primary, 5 re-opened by the lead agent, 17/17 tests, demo checked headless via Playwright with 4 samples in EN/ES)"
+    },
+    {
+      "n": 104,
+      "date": "2026-11-20",
+      "title": "Derrame — paste a .env, a wp-config.php or a git diff: which keys are in it and whose they are (about 20 providers by format, WordPress password and salts, secrets by variable name), which are dangerous and which are public by design (Stripe and Supabase publishable keys, restrictable Google keys), secrets shipped to the browser under NEXT_PUBLIC_/VITE_/REACT_APP_, keys removed in a diff that stay in the history, and the order to rotate them following GitHub's remediation guide with each provider's official link and warnings (Stripe 7-day grace, AWS quarantine policy, Shopify revoke-first); values always masked, page blocks its own network access; English/Spanish; browser demo + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "secrets in repos and supply chain (leaked-key triage and rotation order)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-104",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-104/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 47,
+      "minutes": 14,
+      "depth_check": "pass (14 min, 47 links, 39 primary, 32 re-requested by the lead agent with HTTP 200 and the fact read, 23/23 tests, demo checked headless via Playwright with 4 samples in EN/ES and network blocked by CSP); weekly report 2026-W47 written"
     }
   ]
 }

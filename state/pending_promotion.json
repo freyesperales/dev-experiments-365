@@ -193,5 +193,10 @@
     "n": 103,
     "slug": "trasluz",
     "hook": "AI assistants that summarize your email or browse for you read all the text, including what is hidden with font size 0 or white on white. Paste a page or an email into Trasluz and see what only the AI reads, and the orders hidden in it. In your browser, nothing uploaded."
+  },
+  {
+    "n": 104,
+    "slug": "derrame",
+    "hook": "You pushed a .env by mistake or got the \"we found your key exposed\" email. Paste the file into Derrame: it tells you which keys are in it, which are dangerous and which are public by design, and the order to rotate them with each provider's official link. In your browser, nothing uploaded."
   }
 ]
