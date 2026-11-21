@@ -1,0 +1,22 @@
+Reproduction run on 2026-11-21 (Windows 11, Git Bash, curl). better-sqlite3 master @ e6f92bf.
+
+== BEFORE: link in docs/api.md line 441 ==
+$ curl -s -o /dev/null -w '%{http_code}\n' https://www.sqlite.org/c3ref
+404
+$ curl ... -A '<browser user agent>' https://www.sqlite.org/c3ref/     (same result with a trailing slash and a browser user agent)
+404
+
+== AFTER: link proposed in the PR ==
+$ curl -s -o /dev/null -w '%{http_code}\n' https://www.sqlite.org/c3ref/intro.html
+200
+
+== Discarded: a link that only looks broken ==
+$ curl -s -o /dev/null -w '%{http_code}\n' https://github.com/JoshuaWise/better-sqlite3/issues/534     (curl's default user agent)
+404
+$ curl ... -A '<browser user agent>' -H 'Accept: text/html' (same URL)
+301 -> https://github.com/WiseLibs/better-sqlite3/issues/534
+   (a person clicking the link is redirected to the current repository, so it was left alone)
+
+== Link sweep ==
+98 distinct external URLs in README.md and docs/*.md requested once each (curl -L): all 200 except the two above.
+Relative links and heading anchors across the 13 Markdown files: none broken.

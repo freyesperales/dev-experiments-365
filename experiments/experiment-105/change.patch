@@ -1,0 +1,29 @@
+From 289954e9a315a2de640d015db3829a1edfaa2a8c Mon Sep 17 00:00:00 2001
+From: Francisco Reyes <21211939+freyesperales@users.noreply.github.com>
+Date: Sat, 21 Nov 2026 11:48:55 +0100
+Subject: [PATCH] docs: fix broken link to the SQLite C API reference
+
+https://www.sqlite.org/c3ref returns 404 because that directory has no
+index page. Link to the reference's introduction page instead.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ docs/api.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/docs/api.md b/docs/api.md
+index bb50d38..7474e8f 100644
+--- a/docs/api.md
++++ b/docs/api.md
+@@ -438,7 +438,7 @@ An object representing a single SQL statement.
+ - [Statement#toString()](#tostring---string)
+ - [Properties](#properties-1)
+ 
+-> NOTE: If you've used the [SQLite C API](https://www.sqlite.org/c3ref), you might expect there to be a ["finalize"](https://www.sqlite.org/c3ref/finalize.html) method, but `better-sqlite3` automatically handles this during garbage collection (or when the associated database is closed).
++> NOTE: If you've used the [SQLite C API](https://www.sqlite.org/c3ref/intro.html), you might expect there to be a ["finalize"](https://www.sqlite.org/c3ref/finalize.html) method, but `better-sqlite3` automatically handles this during garbage collection (or when the associated database is closed).
+ 
+ ### .run([*...bindParameters*]) -> *object*
+ 
+-- 
+2.56.1.windows.1
+

@@ -198,5 +198,10 @@
     "n": 104,
     "slug": "derrame",
     "hook": "You pushed a .env by mistake or got the \"we found your key exposed\" email. Paste the file into Derrame: it tells you which keys are in it, which are dangerous and which are public by design, and the order to rotate them with each provider's official link. In your browser, nothing uploaded."
+  },
+  {
+    "n": 105,
+    "slug": "oss-better-sqlite3-docs-link",
+    "hook": "Saturday open-source contribution: a one-line fix for a dead link in the better-sqlite3 docs, plus the lesson from a link that looked dead and was not (always confirm a 404 with a browser user agent)."
   }
 ]

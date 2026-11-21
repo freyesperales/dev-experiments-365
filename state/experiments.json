@@ -1,5 +1,5 @@
 {
-  "last_number": 104,
+  "last_number": 105,
   "entries": [
     {
       "n": 1,
@@ -911,6 +911,21 @@
       "research_links": 47,
       "minutes": 14,
       "depth_check": "pass (14 min, 47 links, 39 primary, 32 re-requested by the lead agent with HTTP 200 and the fact read, 23/23 tests, demo checked headless via Playwright with 4 samples in EN/ES and network blocked by CSP); weekly report 2026-W47 written"
+    },
+    {
+      "n": 105,
+      "date": "2026-11-21",
+      "title": "Saturday OSS — better-sqlite3 docs link fix: the 'SQLite C API' link in docs/api.md pointed to sqlite.org/c3ref (404); now points to c3ref/intro.html; 98 external links and all anchors checked, a second suspected dead link discarded because it redirects for real browsers; PR WiseLibs/better-sqlite3#1536",
+      "kind": "oss-contribution",
+      "theme": "open-source contribution (docs, Node.js dependency Francisco uses)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-105",
+      "demo_url": null,
+      "pr_url": "https://github.com/WiseLibs/better-sqlite3/pull/1536",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 15,
+      "minutes": 7,
+      "depth_gate": "PASS on content; time gate FAIL: 15 sources requested in this run, 9 primary; last week's shortlist re-verified by the main agent (no scouts); one shortlisted 'dead link' discarded as a false positive (404 for curl, 301 for browsers); reproduction 404 before / 200 after; PR open, 1 file, 1 line. Elapsed 7 min by the lab clock (rule: under 10 is wrong). Not looped back: the research that mattered was the re-verification, which removed half of the planned patch, and a Saturday has no build step; logged honestly."
     }
   ]
 }
