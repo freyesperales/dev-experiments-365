@@ -1,0 +1,26 @@
+{
+ "parked.example": {
+  "TXT": ["v=spf1 -all"]
+ },
+ "_dmarc.parked.example": {
+  "TXT": ["v=DMARC1; p=none"]
+ },
+ "locked.example": {
+  "MX": ["0 ."],
+  "TXT": ["v=spf1 -all"]
+ },
+ "_dmarc.locked.example": {
+  "TXT": ["v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s"]
+ },
+ "example.com": {
+  "MX": ["10 mx.example.com."],
+  "TXT": ["v=spf1 ip4:192.0.2.10 -all"]
+ },
+ "_dmarc.example.com": {
+  "TXT": ["v=DMARC1; p=reject; sp=none; adkim=s; aspf=s; rua=mailto:dmarc@example.com"]
+ },
+ "news.mail.shop.example.com": {
+  "MX": ["10 mx.example.com."],
+  "TXT": ["v=spf1 ip4:192.0.2.10 -all"]
+ }
+}

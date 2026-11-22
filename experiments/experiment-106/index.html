@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remitente — email authentication check</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='12' y='2' rx='2' fill='%232457d6'/%3E%3Cpath d='M1 3l7 6 7-6' stroke='white' fill='none' stroke-width='1.5'/%3E%3C/svg%3E">
+<meta name="description" content="Check SPF, DMARC (RFC 9989), DKIM, MTA-STS and TLS-RPT of a domain from your browser, including domains that send no mail, with fixes in English and Spanish. Free, no account.">
+<style>
+:root{--bg:#f7f7f4;--card:#fff;--ink:#1b1d21;--mute:#5d6470;--line:#dfe1e5;--accent:#2457d6;--high:#c62828;--medium:#b26a00;--low:#4a6fa5;--info:#6b7280;--ok:#1d7a46;--code:#f0f1f3}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--card:#1b1e23;--ink:#e8eaee;--mute:#a1a8b3;--line:#2c3038;--accent:#7aa2ff;--high:#ff6b6b;--medium:#f0a73a;--low:#8fb0e6;--info:#9aa3af;--ok:#4cc38a;--code:#23272e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:900px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0 0 4px;font-size:1.9rem;letter-spacing:-.01em}
+.lead{margin:0 0 16px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
+label{font-weight:600;display:block;margin:0 0 6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input[type=text]{flex:1 1 260px;min-width:0;padding:10px 12px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+textarea{width:100%;min-height:90px;padding:10px;font:13px/1.4 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+button{padding:10px 18px;font:inherit;font-weight:600;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line);padding:6px 10px;font-weight:500}
+button:disabled{opacity:.6;cursor:wait}
+details summary{cursor:pointer;color:var(--mute);margin-top:10px}
+.note{font-size:.9rem;color:var(--mute)}
+.grade{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.badge{font-size:2.4rem;font-weight:800;width:84px;height:84px;border-radius:12px;display:grid;place-items:center;color:#fff}
+.g-Aplus,.g-A{background:var(--ok)}.g-B{background:#5b8c2a}.g-C{background:var(--medium)}.g-D,.g-F{background:var(--high)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{width:110px;color:var(--mute);font-weight:600}
+code,pre{font-family:ui-monospace,Consolas,monospace;font-size:.85rem;background:var(--code);border-radius:6px}
+code{padding:1px 5px;word-break:break-all}
+pre{padding:10px;white-space:pre-wrap;word-break:break-all;margin:6px 0 0}
+.f{border-left:4px solid var(--info);padding:8px 12px;margin:10px 0;background:var(--bg);border-radius:0 8px 8px 0}
+.f.high{border-color:var(--high)}.f.medium{border-color:var(--medium)}.f.low{border-color:var(--low)}
+.sev{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-right:6px}
+.high .sev{color:var(--high)}.medium .sev{color:var(--medium)}.low .sev{color:var(--low)}.info .sev{color:var(--info)}
+.fix{margin-top:4px;font-size:.92rem}
+.req span{display:inline-block;margin:2px 8px 2px 0}
+.yes{color:var(--ok);font-weight:700}.no{color:var(--high);font-weight:700}.unk{color:var(--mute);font-weight:700}
+.tree{white-space:pre;overflow-x:auto}
+.err{color:var(--high);font-weight:600}
+footer{margin-top:32px;font-size:.85rem;color:var(--mute)}
+a{color:var(--accent)}
+.lang{float:right}
+.lock td:first-child{white-space:nowrap;font-weight:700}
+.lock .name{word-break:break-all}
+</style>
+</head>
+<body>
+<main>
+  <button class="ghost lang" id="lang" type="button">Español</button>
+  <h1>Remitente <span class="note" style="font-size:1rem;font-weight:500">1.1</span></h1>
+  <p class="lead" data-en="Is your domain's email set up so Gmail, Outlook and Yahoo trust it, and so nobody can send mail pretending to be you? Type the domain and get the exact DNS fixes." data-es="¿Tu correo está configurado para que Gmail, Outlook y Yahoo confíen en él, y para que nadie pueda enviar correos haciéndose pasar por ti? Escribe el dominio y obtén los arreglos exactos de DNS."></p>
+
+  <form class="card" id="form">
+    <label for="domain" data-en="Domain (or an email address)" data-es="Dominio (o una dirección de correo)"></label>
+    <div class="row">
+      <input id="domain" type="text" placeholder="yourbusiness.com" autocomplete="off" spellcheck="false" required>
+      <button id="go" type="submit" data-en="Check" data-es="Revisar"></button>
+    </div>
+    <details>
+      <summary data-en="Optional: find your DKIM key (paste an email's headers)" data-es="Opcional: encontrar tu clave DKIM (pega las cabeceras de un correo)"></summary>
+      <p class="note" data-en="Open an email you sent, choose &quot;Show original&quot; (Gmail) or &quot;View message source&quot; (Outlook) and paste the headers. Only the DKIM-Signature line is read, here in your browser." data-es="Abre un correo que hayas enviado, elige «Mostrar original» (Gmail) o «Ver código fuente del mensaje» (Outlook) y pega las cabeceras. Solo se lee la línea DKIM-Signature, aquí en tu navegador."></p>
+      <textarea id="headers" spellcheck="false" placeholder="DKIM-Signature: v=1; a=rsa-sha256; d=yourbusiness.com; s=google; ..."></textarea>
+    </details>
+    <details>
+      <summary data-en="Optional: paste your MTA-STS policy file" data-es="Opcional: pega tu archivo de política MTA-STS"></summary>
+      <p class="note" data-en="Browsers usually cannot read https://mta-sts.yourdomain/.well-known/mta-sts.txt directly (CORS). Open it in a new tab and paste it here." data-es="Los navegadores normalmente no pueden leer https://mta-sts.tudominio/.well-known/mta-sts.txt directamente (CORS). Ábrelo en otra pestaña y pégalo aquí."></p>
+      <textarea id="policy" spellcheck="false" placeholder="version: STSv1&#10;mode: enforce&#10;mx: *.yourprovider.com&#10;max_age: 604800"></textarea>
+    </details>
+    <p class="note" data-en="Privacy: your browser asks public DNS (Cloudflare DNS-over-HTTPS, Google as fallback) for the domain's records. Nothing else is sent anywhere, there is no server and no account." data-es="Privacidad: tu navegador pregunta los registros del dominio al DNS público (DNS sobre HTTPS de Cloudflare, Google como respaldo). No se envía nada más a ningún sitio: no hay servidor ni cuenta."></p>
+  </form>
+
+  <div id="out" aria-live="polite"></div>
+
+  <footer>
+    <p data-en="Checks: SPF 10-lookup and void-lookup limits (RFC 7208), DMARC tags as of RFC 9989 (May 2026: pct, rf and ri removed; np, t and psd added), DKIM key size, MTA-STS (RFC 8461) and TLS-RPT (RFC 8460), plus the Gmail, Yahoo and Outlook sender requirements that can be seen in DNS. New in 1.1: subdomains are resolved with the RFC 9989 tree walk, domains that send no mail get a lockdown checklist (RFC 7505, M3AAWG, GOV.UK), and records damaged by copy and paste or published at the wrong name are explained." data-es="Revisa: límites de 10 consultas y de consultas vacías de SPF (RFC 7208), etiquetas DMARC según el RFC 9989 (mayo de 2026: se eliminan pct, rf y ri; se agregan np, t y psd), tamaño de la clave DKIM, MTA-STS (RFC 8461) y TLS-RPT (RFC 8460), además de los requisitos de Gmail, Yahoo y Outlook que se ven en el DNS. Nuevo en la 1.1: los subdominios se resuelven con el recorrido del árbol del RFC 9989, los dominios que no envían correo reciben una lista de cierre (RFC 7505, M3AAWG, GOV.UK) y se explican los registros dañados al copiar y pegar o publicados en el nombre equivocado."></p>
+    <p><a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-106">Source, CLI and tests</a> · Daily Security Lab · Experiment 106 of dev-experiments-365 — built by an AI agent directed by Francisco Reyes (farp.dev). MIT.</p>
+  </footer>
+</main>
+<script src="remitente.js"></script>
+<script>
+(function () {
+  'use strict';
+  let lang = /^es\b/i.test(navigator.language || '') ? 'es' : 'en';
+  let last = null;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const T = (en, es) => (lang === 'es' ? es : en);
+  try { const saved = localStorage.getItem('remitente-lang'); if (saved === 'es' || saved === 'en') lang = saved; } catch (e) { /* storage blocked */ }
+  try { const q = new URLSearchParams(location.search).get('d'); if (q) $('domain').value = q; } catch (e) { /* ignore */ }
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-en]').forEach(el => { el.textContent = el.getAttribute('data-' + lang); });
+    $('lang').textContent = lang === 'es' ? 'English' : 'Español';
+    if (last) render(last);
+  }
+  $('lang').addEventListener('click', () => { lang = lang === 'es' ? 'en' : 'es'; try { localStorage.setItem('remitente-lang', lang); } catch (e) { /* ignore */ } applyLang(); });
+
+  function yn(v) { return v === true ? `<span class="yes">✓</span>` : v === false ? `<span class="no">✗</span>` : `<span class="unk">?</span>`; }
+
+  function treeText(node, indent) {
+    let s = '';
+    for (const c of node.children) {
+      s += `${indent}${c.via}:${c.domain}  [${1 + c.cost}]${c.notes.includes('no-spf') ? T('  (no SPF)', '  (sin SPF)') : ''}\n`;
+      s += treeText(c, indent + '  ');
+    }
+    return s;
+  }
+
+  function walkHtml(r) {
+    const w = r.dmarc.walk || [];
+    if (w.length < 2) return '';
+    const steps = w.map(x => `_dmarc.${esc(x.name)} ${x.records === 1 ? '<span class="yes">✓</span>' : x.records > 1 ? `<span class="no">×${x.records}</span>` : '<span class="unk">–</span>'}`).join(' → ');
+    const eff = r.dmarc.effective ? `<br><b>${T('Policy for this subdomain', 'Política para este subdominio')}: ${esc(r.dmarc.effective.policy)}</b> (${esc(r.dmarc.effective.from)}=)` : '';
+    return `<div class="note">${T('Where receivers look, in order (RFC 9989 tree walk)', 'Dónde miran los receptores, en orden (recorrido del árbol, RFC 9989)')}: ${steps}${eff}</div>`;
+  }
+
+  function lockHtml(r) {
+    const L = r.lockdown;
+    if (!L) return '';
+    const title = L.declared ? T('Domain that sends no mail: lockdown checklist', 'Dominio que no envía correo: lista de cierre') : T('If this domain never sends mail, publish these records', 'Si este dominio nunca envía correo, publica estos registros');
+    const warn = L.declared ? '' : `<div class="note"><b>${T('Do not do this if anyone sends mail from this domain, replies included: it would block that mail.', 'No lo hagas si alguien envía correo desde este dominio, ni siquiera respuestas: bloquearía ese correo.')}</b></div>`;
+    const rows = L.records.map(x => `<tr><td>${x.optional ? `<span class="unk">${T('optional', 'opcional')}</span>` : x.ok ? `<span class="yes">✓ OK</span>` : `<span class="no">${T('add', 'falta')}</span>`}</td><td class="name"><code>${esc(x.name)}</code></td><td>${x.type}</td><td><code>${esc(x.value)}</code></td></tr>`).join('');
+    const all = L.records.filter(x => !x.optional && !x.ok).map(x => x.name + '  ' + x.type + '  ' + x.value).join(String.fromCharCode(10));
+    return `<div class="lock"><p><b>${title}</b>${all ? ` <button class="ghost" type="button" data-copy="${esc(all)}">${T('Copy what is missing', 'Copiar lo que falta')}</button>` : ''}</p>${warn}<table>${rows}</table><div class="note">${T('Optional rows: the wildcard SPF covers subdomains that have no records of their own. GOV.UK recommends the empty wildcard DKIM key; M3AAWG says a parked domain needs no DKIM record. Either is fine.', 'Filas opcionales: el SPF comodín cubre los subdominios que no tienen registros propios. GOV.UK recomienda la clave DKIM comodín vacía; M3AAWG dice que un dominio aparcado no necesita registro DKIM. Las dos opciones valen.')}</div></div>`;
+  }
+
+  function render(r) {
+    const gcls = 'g-' + r.grade.replace('+', 'plus');
+    const rq = r.requirements;
+    const noMail = !!(r.lockdown && r.lockdown.declared);
+    const rows = [
+      ['MX', r.mx.hosts.length ? r.mx.hosts.map(h => esc(h.pref + ' ' + h.host)).join('<br>') : (r.mx.nullMx ? 'null MX' : T('none', 'ninguno'))],
+      ['SPF', r.spf.record ? `<code>${esc(r.spf.record)}</code><br><span class="note">${T('DNS lookups', 'Consultas DNS')}: <b>${r.spf.lookups}/10</b> · ${T('void', 'vacías')}: ${r.spf.voids}/2</span>${r.spf.tree.children.length ? `<pre class="tree">${esc(treeText(r.spf.tree, ''))}</pre>` : ''}` : T('none', 'ninguno')],
+      ['DMARC', (r.dmarc.record ? `<code>${esc(r.dmarc.record)}</code>${r.dmarc.inheritedFrom ? ` <span class="note">(${T('from', 'de')} ${esc(r.dmarc.inheritedFrom)})</span>` : ''}` : T('none', 'ninguno')) + walkHtml(r)],
+      ['DKIM', noMail && !r.dkim.length ? T('not needed: this domain sends no mail', 'no hace falta: este dominio no envía correo') : r.dkim.length ? r.dkim.map(k => `${esc(k.selector)} — ${k.revoked ? T('revoked', 'revocada') : k.k === 'rsa' ? (k.bits ? k.bits + ' bit RSA' : 'RSA ?') : esc(k.k)}`).join('<br>') : T('not found on the selectors checked', 'no encontrado en los selectores revisados')],
+      ['MTA-STS', r.mtaSts.records.length ? `<code>${esc(r.mtaSts.records[0])}</code>${r.mtaSts.policy ? ' · mode: ' + esc(r.mtaSts.policy.mode) : ''}` : T('none', 'ninguno')],
+      ['TLS-RPT', r.mtaSts.tlsrpt.length ? `<code>${esc(r.mtaSts.tlsrpt[0])}</code>` : T('none', 'ninguno')]
+    ];
+    let h = `<section class="card"><div class="grade"><div class="badge ${gcls}">${esc(r.grade)}</div><div><b>${esc(r.domain)}</b><br><span class="note">${r.score}/100 · ${r.findings.filter(f => f.sev === 'high').length} ${T('serious', 'graves')} · ${r.queries} ${T('DNS queries', 'consultas DNS')}</span></div></div></section>`;
+    if (noMail) h += `<section class="card req"><b>${T('This domain declares that it sends no mail', 'Este dominio declara que no envía correo')}</b><div class="note">${T('Its SPF is "v=spf1 -all", so the Gmail, Yahoo and Outlook sender requirements do not apply. What matters is that nobody else can use the name: see the checklist below.', 'Su SPF es «v=spf1 -all», así que los requisitos de Gmail, Yahoo y Outlook para remitentes no aplican. Lo que importa es que nadie más pueda usar el nombre: mira la lista de abajo.')}</div></section>`;
+    else h += `<section class="card req"><b>${T('Gmail / Yahoo / Outlook requirements', 'Requisitos de Gmail / Yahoo / Outlook')}</b><br>
+      <span>${T('Every sender: SPF or DKIM', 'Todo remitente: SPF o DKIM')} ${yn(rq.allSenders.ok)}</span><br>
+      <span>${T('Bulk senders (over 5,000 a day):', 'Envío masivo (más de 5.000 al día):')}</span><span>SPF ${yn(rq.bulkSenders.spf)}</span><span>DKIM ${yn(rq.bulkSenders.dkim)}</span><span>DMARC ${yn(rq.bulkSenders.dmarc)}</span><span>${T('reports', 'informes')} (rua) ${yn(rq.bulkSenders.rua)}</span>
+      <div class="note">${T('Alignment, one-click unsubscribe and spam rate cannot be seen in DNS. "?" = DKIM not found on common selectors: paste a DKIM-Signature to check yours.', 'La alineación, la baja en un clic y la tasa de spam no se ven en el DNS. «?» = DKIM no encontrado en los selectores comunes: pega una cabecera DKIM-Signature para revisar el tuyo.')}</div></section>`;
+    h += `<section class="card"><table>${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table></section>`;
+    h += `<section class="card"><b>${T('Findings and fixes', 'Hallazgos y arreglos')}</b>`;
+    if (!r.findings.length) h += `<p>${T('No findings. Nice work.', 'Sin hallazgos. Bien hecho.')}</p>`;
+    for (const f of r.findings) {
+      h += `<div class="f ${f.sev}"><span class="sev">${esc(f.sev)}</span><b>${esc(f.area)}</b> — ${esc(f.msg[lang])}${f.fix ? `<div class="fix">${T('Fix', 'Arreglo')}: ${esc(f.fix[lang])}</div>` : ''}</div>`;
+    }
+    h += lockHtml(r);
+    if (r.dmarc.suggested) h += `<p><b>${T('Suggested DMARC record', 'Registro DMARC sugerido')}</b> (TXT ${T('at', 'en')} <code>_dmarc.${esc(r.dmarc.inheritedFrom || r.domain)}</code>) <button class="ghost" type="button" data-copy="${esc(r.dmarc.suggested)}">${T('Copy', 'Copiar')}</button></p><pre>${esc(r.dmarc.suggested)}</pre>`;
+    h += `</section><p class="note">${T('Share this check:', 'Comparte esta revisión:')} <a href="?d=${encodeURIComponent(r.domain)}">?d=${esc(r.domain)}</a></p>`;
+    $('out').innerHTML = h;
+    $('out').querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => {
+      const v = b.getAttribute('data-copy');
+      (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => { b.textContent = T('Copied', 'Copiado'); }, () => { b.textContent = T('Select and copy', 'Selecciona y copia'); });
+    }));
+  }
+
+  $('form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const domain = Remitente.normalizeDomain($('domain').value);
+    if (!domain) { $('out').innerHTML = `<p class="card err">${T('That does not look like a domain. Example: yourbusiness.com', 'Eso no parece un dominio. Ejemplo: tunegocio.cl')}</p>`; return; }
+    $('go').disabled = true; $('out').innerHTML = `<p class="card note">${T('Asking public DNS…', 'Consultando el DNS público…')}</p>`;
+    try {
+      const policy = $('policy').value.trim() || undefined;
+      const fetchPolicy = policy ? undefined : async (url) => { const res = await fetch(url, { redirect: 'error', mode: 'cors' }); if (!res.ok) throw new Error('HTTP ' + res.status); return res.text(); };
+      last = await Remitente.analyze(domain, { headers: $('headers').value, policy, fetchPolicy });
+      render(last);
+      try { history.replaceState(null, '', '?d=' + encodeURIComponent(domain)); } catch (e) { /* ignore */ }
+    } catch (e) {
+      last = null;
+      $('out').innerHTML = `<p class="card err">${esc(e.code === 'DNS_FAILED' ? T('Could not reach public DNS from this browser (blocked network or extension). Nothing was checked; try again or use the CLI.', 'No se pudo consultar el DNS público desde este navegador (red o extensión que lo bloquea). No se revisó nada; vuelve a intentarlo o usa la versión de terminal.') : e.message)}</p>`;
+    } finally { $('go').disabled = false; }
+  });
+
+  applyLang();
+  if ($('domain').value) $('form').requestSubmit();
+})();
+</script>
+</body>
+</html>

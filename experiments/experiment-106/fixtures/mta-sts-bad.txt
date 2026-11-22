@@ -1,0 +1,4 @@
+version: STSv1
+mode: enforce
+mx: *.mailhost.example.org
+max_age: 3600

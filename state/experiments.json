@@ -1,5 +1,5 @@
 {
-  "last_number": 105,
+  "last_number": 106,
   "entries": [
     {
       "n": 1,
@@ -926,6 +926,20 @@
       "research_links": 15,
       "minutes": 7,
       "depth_gate": "PASS on content; time gate FAIL: 15 sources requested in this run, 9 primary; last week's shortlist re-verified by the main agent (no scouts); one shortlisted 'dead link' discarded as a false positive (404 for curl, 301 for browsers); reproduction 404 before / 200 after; PR open, 1 file, 1 line. Elapsed 7 min by the lab clock (rule: under 10 is wrong). Not looped back: the research that mattered was the re-verification, which removed half of the planned patch, and a Saturday has no build step; logged honestly."
+    },
+    {
+      "n": 106,
+      "date": "2026-11-22",
+      "title": "Remitente 1.1 — maintenance: DMARC for subdomains now follows the RFC 9989 DNS Tree Walk (1.0 stopped two labels up and reported deep subdomains as unprotected) and shows the policy the subdomain really gets (sp/p, inherited strict alignment); lockdown checklist for domains that send no mail (SPF -all is not enough without DMARC reject; null MX per RFC 7505; M3AAWG and GOV.UK records, optional wildcards); DMARC published at the wrong name (bare domain or doubled by the DNS panel); copy-paste damage in SPF/DMARC (line break after -all, curly quotes, v=spf1 twice, include with a space, all glued to an IP); null MX mixed with real MX; 32 tests; browser demo + zero-dep Node CLI",
+      "kind": "maintenance",
+      "theme": "email authentication (DMARC tree walk, non-sending domains), Sunday maintenance of experiment 100",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-106",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-106/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 60,
+      "minutes": 17,
+      "depth_check": "pass (17 min, 60 links, 54 primary rows, 16 re-requested by the lead agent with HTTP 200 and the fact read, incl. RFC 9989 4.10, RFC 7505 3, the M3AAWG PDF and GOV.UK; 3 scouts in parallel; 32/32 tests (16 before); demo checked headless via Playwright with 4 domains in EN/ES, DNS-over-HTTPS intercepted and answered from local fixtures, 0 console errors, 0 external requests; that check caught a syntax error in the page before publishing)"
     }
   ]
 }

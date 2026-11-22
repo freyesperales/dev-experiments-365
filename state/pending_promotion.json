@@ -203,5 +203,10 @@
     "n": 105,
     "slug": "oss-better-sqlite3-docs-link",
     "hook": "Saturday open-source contribution: a one-line fix for a dead link in the better-sqlite3 docs, plus the lesson from a link that looked dead and was not (always confirm a 404 with a browser user agent)."
+  },
+  {
+    "n": 106,
+    "slug": "remitente-1.1",
+    "hook": "Do you own domains that never send email (the .com next to your .cl, an old brand)? \"v=spf1 -all\" alone does not stop someone from forging them. Remitente 1.1 checks the three records that do, shows which DMARC policy your subdomains really get under RFC 9989, and explains records broken by copy and paste. In your browser, no account."
   }
 ]

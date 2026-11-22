@@ -1,0 +1,82 @@
+{
+ "example.com": {
+  "MX": [
+   "10 mx.mailhost.example.net.",
+   "20 backup.example.com."
+  ],
+  "TXT": [
+   "v=spf1 a mx include:spf.crm.example.net include:spf.news.example.net include:spf.helpdesk.example.net include:spf.shop.example.net include:spf.crm.example.net ptr ~all",
+   "v=spf1 ip:203.0.113.5 ~all"
+  ]
+ },
+ "backup.example.com": {
+  "A": [
+   "203.0.113.7"
+  ]
+ },
+ "spf.crm.example.net": {
+  "TXT": [
+   "v=spf1 include:a.crm.example.net include:b.crm.example.net include:c.crm.example.net ~all"
+  ]
+ },
+ "a.crm.example.net": {
+  "TXT": [
+   "v=spf1 ip4:198.51.100.1 ~all"
+  ]
+ },
+ "b.crm.example.net": {
+  "TXT": [
+   "v=spf1 ip4:198.51.100.2 ~all"
+  ]
+ },
+ "c.crm.example.net": {
+  "TXT": [
+   "v=spf1 ip4:198.51.100.3 ~all"
+  ]
+ },
+ "spf.news.example.net": {
+  "TXT": [
+   "v=spf1 include:old.news.example.net include:gone.news.example.net ~all"
+  ]
+ },
+ "old.news.example.net": {
+  "TXT": [
+   "some-other-verification=1"
+  ]
+ },
+ "spf.helpdesk.example.net": {
+  "TXT": [
+   "v=spf1 mx:nomail.example.net a:nohost.example.net ~all"
+  ]
+ },
+ "nomail.example.net": {
+  "TXT": [
+   "x"
+  ]
+ },
+ "spf.shop.example.net": {
+  "TXT": [
+   "v=spf1 ip4:198.51.100.40 ~all"
+  ]
+ },
+ "_dmarc.example.com": {
+  "TXT": [
+   "v=DMARC1; p=none; pct=50; rf=afrf; ri=86400; rua=mailto:reports@dmarc.example.org; aspf=x"
+  ]
+ },
+ "old._domainkey.example.com": {
+  "TXT": [
+   "v=DKIM1; k=rsa; p=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAMR2RUeQ3O6FJ9tzGR7YH1a3Sldl6XqYrYSeTRvXi3fZYYrcq5Us5PS/z8LSidYHagkGWquZOyu4C3wjs+YmH/0CAwEAAQ=="
+  ]
+ },
+ "legacy._domainkey.example.com": {
+  "TXT": [
+   "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDg97+fCrlknEsc5zAGowlTuhYAeklyyl+NzTpVS3sBLlNojEKiuZUz2JPXZe8AOPo7kXBPEe+p8YmuSx1j71tCr24sLzC/a5uCsM6P1v8iOcBg47Q8cKD5Km9Zd3urDWl6CnI5wEzXNIwLeqhlPZJng9uGQfc1rYVBoncBsC+hJQIDAQAB"
+  ]
+ },
+ "_mta-sts.example.com": {
+  "TXT": [
+   "v=STSv1; id=bad-id!"
+  ]
+ }
+}

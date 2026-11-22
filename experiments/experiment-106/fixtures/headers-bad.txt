@@ -1,0 +1,5 @@
+Received: from mx.mailhost.example.net
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com;
+ s=old; t=1763290000; h=from:to:subject:date;
+ bh=AAAA; b=BBBB
+From: Tienda <ventas@example.com>
