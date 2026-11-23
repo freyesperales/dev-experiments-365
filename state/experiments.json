@@ -1,5 +1,5 @@
 {
-  "last_number": 106,
+  "last_number": 107,
   "entries": [
     {
       "n": 1,
@@ -940,6 +940,20 @@
       "research_links": 60,
       "minutes": 17,
       "depth_check": "pass (17 min, 60 links, 54 primary rows, 16 re-requested by the lead agent with HTTP 200 and the fact read, incl. RFC 9989 4.10, RFC 7505 3, the M3AAWG PDF and GOV.UK; 3 scouts in parallel; 32/32 tests (16 before); demo checked headless via Playwright with 4 domains in EN/ES, DNS-over-HTTPS intercepted and answered from local fixtures, 0 console errors, 0 external requests; that check caught a syntax error in the page before publishing)"
+    },
+    {
+      "n": 107,
+      "date": "2026-11-23",
+      "title": "Recuento — drop the DMARC aggregate reports that arrive by email (.xml, .xml.gz, .zip, the saved .eml; gzip twice, trailing bytes and zips named .gz included): who sends mail as your domain grouped by sender instead of by IP (services that send for you but authenticate as themselves, Google Workspace or Microsoft 365 signing with their default domain, forwarding, your own broken signature, mail with no proof), one verdict per domain (own mail being blocked, fix first, identify first, keep collecting, ready for quarantine/reject, protected) and the steps in order; reads the RFC 7489 format and the RFC 9990 format of May 2026 (np, testing, discovery_method, disposition pass; t=y instead of pct); built-in inflate with an output limit and an XML reader that never expands DOCTYPE entities; English/Spanish; browser demo that blocks its own network access + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "email authentication (reading DMARC aggregate reports, RFC 9990)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-107",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-107/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 43,
+      "minutes": 20,
+      "depth_check": "pass (20 min, 43 links in 41 rows, 14 primary, 16 rows where the lead agent downloaded the page with HTTP 200 and read the fact, incl. RFC 9990 Appendix A/B and sections 3.5.2 and 8.1, RFC 9989 A.6 and RFC 7489 Appendix C; 3 scouts in parallel; 32/32 tests; demo checked headless via Playwright with 16 checks: 4 samples in EN/ES, real fixture files through the file input, a dropped .gz in the RFC 9990 format, fetch blocked by the page CSP, 375px without horizontal scroll, 0 console errors other than the deliberate CSP block, 0 external requests)"
     }
   ]
 }

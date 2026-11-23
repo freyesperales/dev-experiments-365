@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This policy is the proof that nothing leaves the page: connect-src 'none' blocks every network request from scripts. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Recuento — read your DMARC reports: who sends mail as your domain</title>
+<meta name="description" content="Drop the DMARC report files you get by email (.xml, .gz, .zip). See in plain words who sends mail as your domain, what to fix, and whether you can move to quarantine or reject. Runs in your browser; nothing is uploaded.">
+<style>
+  :root { --bg:#f3f5f4; --card:#fcfdfc; --ink:#17201c; --soft:#56635d; --line:#d3dbd6; --accent:#0f6b4f; --fix:#b42318; --fix-bg:#fdecea; --check:#955607; --check-bg:#fdf3dc; --ok:#2f6b1d; --ok-bg:#eaf5e3; --info:#475467; --info-bg:#eceff2; --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111614; --card:#19201d; --ink:#e9efec; --soft:#a3b0aa; --line:#2f3a35; --accent:#5fd0a8; --fix:#ff8a80; --fix-bg:#3b1512; --check:#f5c462; --check-bg:#3a2a0c; --ok:#a8d98a; --ok-bg:#1c2b14; --info:#b8c0cc; --info-bg:#242a30; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 28px 16px 56px; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.02em; color: var(--accent); }
+  .hook { margin: 0 0 18px; color: var(--soft); max-width: 64ch; }
+  h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+  h2.domain { font-size: 1.35rem; margin-top: 34px; overflow-wrap: anywhere; }
+  button, .pick { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover, .pick:hover { border-color: var(--accent); }
+  button:focus-visible, .pick:focus-within, .drop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .lang { display:flex; gap:6px; flex:none; }
+  .drop { border: 2px dashed var(--line); border-radius: 12px; background: var(--card); padding: 26px 16px; text-align: center; }
+  .drop.over { border-color: var(--accent); background: var(--ok-bg); }
+  .drop strong { display:block; font-size: 1.1rem; margin-bottom: 4px; }
+  .drop p { margin: 0 0 12px; color: var(--soft); }
+  .pick input { position:absolute; width:1px; height:1px; opacity:0; }
+  .pick { display:inline-block; position:relative; font-weight:600; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin: 12px 0; }
+  .row small, .private { color: var(--soft); font-size: .9rem; }
+  .private { margin: 8px 0 0; }
+  .verdict { margin-top: 12px; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  .verdict strong { font-size: 1.3rem; display:block; }
+  .verdict p { margin: 4px 0 0; }
+  .verdict.fix { border-color: var(--fix); background: var(--fix-bg); } .verdict.fix strong { color: var(--fix); }
+  .verdict.check { border-color: var(--check); background: var(--check-bg); } .verdict.check strong { color: var(--check); }
+  .verdict.ok { border-color: var(--ok); background: var(--ok-bg); } .verdict.ok strong { color: var(--ok); }
+  .facts { color: var(--soft); margin: 10px 0 0; font-size: .95rem; }
+  .facts b { color: var(--ink); }
+  .bar { display:flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 12px 0 4px; background: var(--line); }
+  .bar span { display:block; height: 100%; min-width: 2px; }
+  .bar .ok { background: var(--ok); } .bar .fix { background: var(--fix); } .bar .check { background: var(--check); } .bar .info { background: var(--info); }
+  .group { border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; background: var(--card); padding: 12px 14px; margin: 10px 0; }
+  .group.fix { border-left-color: var(--fix); } .group.check { border-left-color: var(--check); } .group.ok { border-left-color: var(--ok); } .group.info { border-left-color: var(--info); }
+  .top { display:flex; flex-wrap:wrap; gap: 6px 10px; align-items: baseline; }
+  .chip { font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
+  .chip.fix { color: var(--fix); background: var(--fix-bg); } .chip.check { color: var(--check); background: var(--check-bg); } .chip.ok { color: var(--ok); background: var(--ok-bg); } .chip.info { color: var(--info); background: var(--info-bg); }
+  .title { font-weight: 600; overflow-wrap: anywhere; }
+  .count { color: var(--soft); font-size: .92rem; font-variant-numeric: tabular-nums; }
+  .group p { margin: 6px 0 0; }
+  .group p.detail { color: var(--soft); font-size: .88rem; font-family: var(--mono); overflow-wrap: anywhere; }
+  ol.steps, ul.notes, ul.files { margin: 0; padding-left: 22px; }
+  ol.steps li, ul.notes li, ul.files li { margin: 6px 0; overflow-wrap: anywhere; }
+  ul.notes li, ul.files li { color: var(--soft); }
+  a { color: var(--accent); overflow-wrap: anywhere; }
+  footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--soft); font-size: .88rem; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Recuento</h1>
+      <p class="hook" id="hook"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">English</button>
+      <button type="button" id="lang-es" aria-pressed="false">Español</button>
+    </div>
+  </header>
+
+  <div class="drop" id="drop" tabindex="0">
+    <strong id="drop-title"></strong>
+    <p id="drop-help"></p>
+    <label class="pick"><input type="file" id="file" multiple><span id="pick"></span></label>
+  </div>
+  <p class="private" id="private"></p>
+  <div class="row">
+    <small id="try"></small>
+    <button type="button" data-sample="shop" id="s-shop"></button>
+    <button type="button" data-sample="ready" id="s-ready"></button>
+    <button type="button" data-sample="blocked" id="s-blocked"></button>
+    <button type="button" data-sample="week" id="s-week"></button>
+    <button type="button" id="clear"></button>
+  </div>
+
+  <section id="out" class="hidden" aria-live="polite"></section>
+
+  <footer>
+    <p id="limits"></p>
+    <p>Daily Security Lab · Experiment 107 of <a href="https://github.com/freyesperales/dev-experiments-365">dev-experiments-365</a> — built by an AI agent directed by Francisco Reyes (farp.dev) · <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-107">code, tests and sources</a></p>
+  </footer>
+</main>
+
+<script src="recuento.js"></script>
+<script>
+(function () {
+  'use strict';
+  var R = window.Recuento;
+  var UI = {
+    en: {
+      hook: 'Those emails with a .zip or .gz from Google, Microsoft or Yahoo titled "Report domain" are DMARC reports. Drop them here: see who sends mail as your domain, what to fix, and whether you can tighten your policy.',
+      dropTitle: 'Drop the report files here', dropHelp: 'The .xml, .xml.gz or .zip attachments, or the saved email (.eml). As many as you have: a month of reports gives a real answer.',
+      pick: 'Choose files', private: 'Nothing leaves this page. It makes no network request (the page forbids them to itself); the files are read in your browser.',
+      try: 'Or try invented reports:', sShop: 'Shop with a newsletter', sReady: 'Ready to tighten', sBlocked: 'Own mail being blocked', sWeek: 'Only one week', clear: 'Clear',
+      what: 'Who is sending as', files: 'Files', reading: 'Reading…',
+      limits: 'Limits: a report says which servers sent mail and how it authenticated, not what the messages said. The names of sending services come from a short built-in list; an unlisted service appears as a domain to identify. The verdict is a rule of thumb (nothing of yours failing over 30 days), not a guarantee: mail you send once a quarter may not be in the reports yet. It reads DMARC aggregate reports only, not failure reports or TLS reports.'
+    },
+    es: {
+      hook: 'Esos correos con un .zip o .gz de Google, Microsoft o Yahoo titulados «Report domain» son informes DMARC. Suéltalos aquí: verás quién envía correo con tu dominio, qué arreglar y si ya puedes endurecer tu política.',
+      dropTitle: 'Suelta aquí los archivos de los informes', dropHelp: 'Los adjuntos .xml, .xml.gz o .zip, o el correo guardado (.eml). Todos los que tengas: con un mes de informes la respuesta es real.',
+      pick: 'Elegir archivos', private: 'Nada sale de esta página. No hace ninguna petición de red (la página se lo prohíbe a sí misma); los archivos se leen en tu navegador.',
+      try: 'O prueba con informes inventados:', sShop: 'Tienda con boletín', sReady: 'Lista para endurecer', sBlocked: 'Correo propio bloqueado', sWeek: 'Solo una semana', clear: 'Limpiar',
+      what: 'Quién envía como', files: 'Archivos', reading: 'Leyendo…',
+      limits: 'Límites: un informe dice qué servidores enviaron correo y cómo se autenticó, no qué decían los mensajes. Los nombres de los servicios de envío salen de una lista corta incluida; un servicio que no esté aparece como un dominio por identificar. El veredicto es una regla práctica (nada tuyo fallando durante 30 días), no una garantía: el correo que envías una vez por trimestre puede no estar todavía en los informes. Lee solo informes agregados DMARC, no informes de fallos ni informes TLS.'
+    }
+  };
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  var qs = new URLSearchParams(location.search);
+  var lang = qs.get('lang') === 'es' || (!qs.get('lang') && /^es/i.test(navigator.language || '')) ? 'es' : 'en';
+  var inputs = [], last = null;
+  var VCLASS = { 'no-data': 'check', blocking: 'fix', 'fix-first': 'fix', 'check-first': 'check', 'more-data': 'ok', ready: 'ok', 'protected': 'ok' };
+
+  function chrome() {
+    var u = UI[lang];
+    document.documentElement.lang = lang;
+    $('hook').textContent = u.hook; $('drop-title').textContent = u.dropTitle; $('drop-help').textContent = u.dropHelp; $('pick').textContent = u.pick;
+    $('private').textContent = u.private; $('try').textContent = u.try; $('clear').textContent = u.clear; $('limits').textContent = u.limits;
+    $('s-shop').textContent = u.sShop; $('s-ready').textContent = u.sReady; $('s-blocked').textContent = u.sBlocked; $('s-week').textContent = u.sWeek;
+    $('lang-en').setAttribute('aria-pressed', String(lang === 'en'));
+    $('lang-es').setAttribute('aria-pressed', String(lang === 'es'));
+  }
+
+  function draw() {
+    chrome();
+    var out = $('out'); out.textContent = '';
+    if (!last) { out.classList.add('hidden'); return; }
+    out.classList.remove('hidden');
+    var t = R.T[lang], u = UI[lang], res = last;
+    if (!res.domains.length) { var none = el('div', 'verdict check'); none.appendChild(el('strong', null, t.nothing)); out.appendChild(none); }
+    else out.appendChild(el('p', 'private', t.legit));
+
+    res.domains.forEach(function (d) {
+      out.appendChild(el('h2', 'domain', d.domain));
+      out.appendChild(el('p', 'facts', t.head(d)));
+      var v = el('div', 'verdict ' + VCLASS[d.verdict]);
+      v.appendChild(el('strong', null, t.verdict[d.verdict]));
+      v.appendChild(el('p', null, t.verdictWhy(d, res)));
+      out.appendChild(v);
+      out.appendChild(el('p', 'facts', t.policyLine(d)));
+      out.appendChild(el('p', 'facts', t.totals(d)));
+
+      var bar = el('div', 'bar'); bar.setAttribute('role', 'img'); bar.setAttribute('aria-label', t.totals(d));
+      ['ok', 'fix', 'check', 'info'].forEach(function (s) {
+        var n = d.groups.filter(function (g) { return g.status === s; }).reduce(function (a, g) { return a + g.count; }, 0);
+        if (n) { var seg = el('span', s); seg.style.width = (100 * n / d.totals.messages) + '%'; seg.title = t.status[s] + ' ' + R.num(n, lang); bar.appendChild(seg); }
+      });
+      if (d.totals.messages) out.appendChild(bar);
+
+      out.appendChild(el('h2', null, u.what + ' ' + d.domain));
+      d.groups.forEach(function (g) {
+        var card = el('div', 'group ' + g.status), top = el('div', 'top');
+        top.appendChild(el('span', 'chip ' + g.status, t.status[g.status]));
+        top.appendChild(el('span', 'title', t.title(g, d)));
+        top.appendChild(el('span', 'count', R.num(g.count, lang) + ' · ' + R.pc(g.share, lang) + (g.kind === 'ok' ? ' · ' + t.how(g) : '')));
+        card.appendChild(top);
+        if (!(g.kind === 'ok' && !g.spfOnly)) t.explain(g, d).map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (x) { card.appendChild(el('p', null, x)); });
+        if (g.kind !== 'ok') {
+          if (g.seenAs.length) card.appendChild(el('p', 'detail', t.authAs + ': ' + g.seenAs.map(function (s) { return s.what; }).join('; ')));
+          card.appendChild(el('p', 'detail', t.seen + ': ' + g.ips.map(function (i) { return i.ip + ' (' + R.num(i.count, lang) + ')'; }).join(', ') + (g.ipCount > g.ips.length ? ' ' + t.more(g.ipCount - g.ips.length) : '')));
+        }
+        out.appendChild(card);
+      });
+
+      var steps = t.nextSteps(d, res);
+      if (steps.length) { out.appendChild(el('h2', null, t.nextTitle)); var ol = el('ol', 'steps'); steps.forEach(function (s) { ol.appendChild(el('li', null, s)); }); out.appendChild(ol); }
+      if (d.notes.length) { out.appendChild(el('h2', null, t.notesTitle)); var ul = el('ul', 'notes'); d.notes.forEach(function (n) { ul.appendChild(el('li', null, t.note(n, d))); }); out.appendChild(ul); }
+      out.appendChild(el('p', 'facts', t.receivers + ': ' + d.reporters.map(function (r) { return r.org + ' (' + r.reports + ', ' + R.num(r.messages, lang) + ')'; }).join(' · ')));
+    });
+
+    out.appendChild(el('h2', null, u.files));
+    out.appendChild(el('p', 'facts', t.files(res.files, res)));
+    var fl = el('ul', 'files');
+    res.files.skipped.forEach(function (s) { fl.appendChild(el('li', null, s.name + ': ' + R.skipText(s, lang))); });
+    res.files.notes.forEach(function (n) { fl.appendChild(el('li', null, n.name + ' ' + t.fileNote[n.note])); });
+    res.files.warnings.forEach(function (w) { fl.appendChild(el('li', null, w.name + ' ' + t.warn[w.warning])); });
+    if (fl.children.length) out.appendChild(fl);
+  }
+
+  function analyze() { last = inputs.length ? R.read(inputs) : null; draw(); }
+
+  function addFiles(list) {
+    var files = Array.prototype.slice.call(list || []);
+    if (!files.length) return;
+    $('drop-title').textContent = UI[lang].reading;
+    Promise.all(files.map(function (f) {
+      return f.arrayBuffer().then(function (buf) { return { name: f.name, data: new Uint8Array(buf) }; }, function () { return { name: f.name, data: new Uint8Array(0) }; });
+    })).then(function (read) { inputs = inputs.concat(read); analyze(); });
+  }
+
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { addFiles(e.dataTransfer && e.dataTransfer.files); });
+  drop.addEventListener('keydown', function (e) { if (e.target === drop && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('file').click(); } });
+  // A file dropped outside the box would make the browser open it and leave the page.
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });
+  window.addEventListener('drop', function (e) { e.preventDefault(); });
+  $('file').addEventListener('change', function () { addFiles(this.files); this.value = ''; });
+  document.addEventListener('paste', function (e) {
+    var cd = e.clipboardData; if (!cd) return;
+    if (cd.files && cd.files.length) { addFiles(cd.files); return; }
+    var text = cd.getData('text');
+    if (text && /<feedback[\s>]/i.test(text)) { inputs.push({ name: 'pasted.xml', data: text }); analyze(); }
+  });
+  $('lang-en').addEventListener('click', function () { lang = 'en'; draw(); });
+  $('lang-es').addEventListener('click', function () { lang = 'es'; draw(); });
+  $('clear').addEventListener('click', function () { inputs = []; analyze(); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sample]'), function (b) {
+    b.addEventListener('click', function () { inputs = R.samples()[b.getAttribute('data-sample')]; analyze(); });
+  });
+  draw();
+})();
+</script>
+</body>
+</html>
