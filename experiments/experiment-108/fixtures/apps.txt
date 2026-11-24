@@ -1,0 +1,4 @@
+# Apps installed in the invented shop, one per line
+Judge.me Product Reviews
+Resenas Ejemplo
+Stock Sync (admin only)

@@ -213,5 +213,10 @@
     "n": 107,
     "slug": "recuento",
     "hook": "Do you get a daily email from Google or Microsoft titled \"Report domain\" with a .zip nobody opens? It is not a scam: it is the DMARC report of your domain. Recuento reads a whole month of them in your browser and tells you who is sending as you, which service to fix, and whether you can move to quarantine or reject. No account, nothing uploaded."
+  },
+  {
+    "n": 108,
+    "slug": "trastienda",
+    "hook": "Paste the page source of your Shopify store and see who can run code in it: apps, old script tags that stop on 1 March 2027, hand-pasted scripts and imitation addresses. Nothing is uploaded."
   }
 ]

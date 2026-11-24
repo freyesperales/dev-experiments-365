@@ -1,0 +1,12 @@
+<!doctype html>
+<html>
+<head>
+  {% render 'meta-tags' %}
+  {% render 'old-popup-app' %}
+  {% capture header %}{{ content_for_header }}{% endcapture %}
+  {{ header | remove: '"https:\/\/cdn.example.net\/popup.js?shop=tienda-ejemplo.myshopify.com",' }}
+  <script src="{{ 'global.js' | asset_url }}" defer></script>
+  <script src="https://cdn.example.org/chat-widget.js" async></script>
+</head>
+<body>{{ content_for_layout }}</body>
+</html>

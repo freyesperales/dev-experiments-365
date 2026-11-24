@@ -1,5 +1,5 @@
 {
-  "last_number": 107,
+  "last_number": 108,
   "entries": [
     {
       "n": 1,
@@ -954,6 +954,20 @@
       "research_links": 43,
       "minutes": 20,
       "depth_check": "pass (20 min, 43 links in 41 rows, 14 primary, 16 rows where the lead agent downloaded the page with HTTP 200 and read the fact, incl. RFC 9990 Appendix A/B and sections 3.5.2 and 8.1, RFC 9989 A.6 and RFC 7489 Appendix C; 3 scouts in parallel; 32/32 tests; demo checked headless via Playwright with 16 checks: 4 samples in EN/ES, real fixture files through the file input, a dropped .gz in the RFC 9990 format, fetch blocked by the page CSP, 375px without horizontal scroll, 0 console errors other than the deliberate CSP block, 0 external requests)"
+    },
+    {
+      "n": 108,
+      "date": "2026-11-24",
+      "title": "Trastienda — paste the page source of your Shopify store (View page source) or theme.liquid: every party that can run code in it under an owner (Shopify, theme files, each app that comes through a theme app extension by its shopify://apps comment and cdn.shopify.com/extensions address, each legacy script tag from the asyncLoad list, services loaded from theme code, code typed into the theme), what an app block loads from outside servers, script tags dated against the 1 March 2027 shutdown, imitation addresses (jsdeliver.cloud for jsdelivr.net, known names on odd endings, bare IPs, http, polyfill.io), warning signs in inline code (scrambled code, decode-then-run, a handler that cancels the checkout click and leaves the site), the published indicators of the October 2026 checkout hijack, edited content_for_header in theme source, match against your list of installed apps, and a saved inventory to see what is new next time; says plainly that code arriving after page load cannot be seen; English/Spanish; browser demo that blocks its own network access + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "CMS and e-commerce: Shopify (ISO week 48, even) — storefront script inventory, app supply chain, script tag shutdown",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-108",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-108/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 42,
+      "minutes": 17,
+      "depth_check": "pass: 17 min elapsed, 42 distinct links in RESEARCH.md (27 fetched by the lead agent, 13 of those primary), 29/29 tests, demo checked in headless Edge via Playwright"
     }
   ]
 }

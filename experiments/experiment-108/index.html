@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This policy is the proof that nothing leaves the page: connect-src 'none' blocks every network request from scripts. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Trastienda — who can run code in your Shopify store</title>
+<meta name="description" content="Paste the page source of your Shopify store. See every app, legacy script tag and hand-pasted script that can run code in it, imitation domains, and what stops working on 1 March 2027. Runs in your browser; nothing is uploaded.">
+<style>
+  :root { --bg:#f5f4f1; --card:#fdfdfb; --ink:#1c1b18; --soft:#5f5b52; --line:#d9d5cb; --accent:#7a3e12; --fix:#b42318; --fix-bg:#fdecea; --check:#8a5206; --check-bg:#fdf3dc; --ok:#2f6b1d; --ok-bg:#eaf5e3; --info:#475467; --info-bg:#eceff2; --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#151412; --card:#1e1c19; --ink:#efece6; --soft:#b0aa9d; --line:#38342d; --accent:#f0a86b; --fix:#ff8a80; --fix-bg:#3b1512; --check:#f5c462; --check-bg:#3a2a0c; --ok:#a8d98a; --ok-bg:#1c2b14; --info:#b8c0cc; --info-bg:#242a30; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 28px 16px 56px; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.02em; color: var(--accent); }
+  .hook { margin: 0 0 14px; color: var(--soft); max-width: 66ch; }
+  h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+  button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .lang { display:flex; gap:6px; flex:none; }
+  ol.how { margin: 0 0 12px; padding-left: 22px; color: var(--soft); }
+  label { display:block; font-weight: 600; margin: 12px 0 4px; }
+  label small { font-weight: 400; color: var(--soft); }
+  textarea { width: 100%; font: 13px/1.45 var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+  textarea.over { border-color: var(--accent); background: var(--ok-bg); }
+  #src { min-height: 170px; } #apps, #saved { min-height: 74px; } #inv { min-height: 110px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin: 10px 0; }
+  .row small, .private { color: var(--soft); font-size: .9rem; }
+  details { margin: 8px 0; } summary { cursor: pointer; color: var(--accent); }
+  .verdict { margin-top: 18px; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  .verdict strong { font-size: 1.3rem; display:block; }
+  .verdict p { margin: 4px 0 0; }
+  .verdict.attack, .verdict.fix { border-color: var(--fix); background: var(--fix-bg); } .verdict.attack strong, .verdict.fix strong { color: var(--fix); }
+  .verdict.check, .verdict.empty { border-color: var(--check); background: var(--check-bg); } .verdict.check strong, .verdict.empty strong { color: var(--check); }
+  .verdict.clean { border-color: var(--ok); background: var(--ok-bg); } .verdict.clean strong { color: var(--ok); }
+  .facts { color: var(--soft); margin: 10px 0 0; font-size: .95rem; overflow-wrap: anywhere; }
+  .group { border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; background: var(--card); padding: 12px 14px; margin: 10px 0; }
+  .group.fix { border-left-color: var(--fix); } .group.check { border-left-color: var(--check); } .group.ok { border-left-color: var(--ok); } .group.info { border-left-color: var(--info); }
+  .top { display:flex; flex-wrap:wrap; gap: 6px 10px; align-items: baseline; }
+  .chip { font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
+  .chip.fix { color: var(--fix); background: var(--fix-bg); } .chip.check { color: var(--check); background: var(--check-bg); } .chip.ok { color: var(--ok); background: var(--ok-bg); } .chip.info { color: var(--info); background: var(--info-bg); }
+  .title { font-weight: 600; overflow-wrap: anywhere; }
+  .count { color: var(--soft); font-size: .92rem; }
+  .group p { margin: 6px 0 0; }
+  .group p.warn { font-weight: 600; }
+  .group p.detail, .group p.code { color: var(--soft); font-size: .88rem; font-family: var(--mono); overflow-wrap: anywhere; }
+  ol.steps, ul.notes { margin: 0; padding-left: 22px; }
+  ol.steps li, ul.notes li { margin: 6px 0; overflow-wrap: anywhere; }
+  ul.notes li { color: var(--soft); }
+  a { color: var(--accent); overflow-wrap: anywhere; }
+  footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--soft); font-size: .88rem; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Trastienda</h1>
+      <p class="hook" id="hook"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">English</button>
+      <button type="button" id="lang-es" aria-pressed="false">Español</button>
+    </div>
+  </header>
+
+  <ol class="how" id="how"></ol>
+
+  <label for="src" id="l-src"></label>
+  <textarea id="src" spellcheck="false" autocomplete="off"></textarea>
+
+  <details>
+    <summary id="s-apps"></summary>
+    <label for="apps" id="l-apps"></label>
+    <textarea id="apps" spellcheck="false" autocomplete="off"></textarea>
+    <label for="saved" id="l-saved"></label>
+    <textarea id="saved" spellcheck="false" autocomplete="off"></textarea>
+  </details>
+
+  <div class="row">
+    <button type="button" class="primary" id="go"></button>
+    <button type="button" id="clear"></button>
+    <small id="try"></small>
+    <button type="button" data-demo="shop" id="d-shop"></button>
+    <button type="button" data-demo="clean" id="d-clean"></button>
+    <button type="button" data-demo="liquid" id="d-liquid"></button>
+  </div>
+  <p class="private" id="private"></p>
+
+  <section id="out" aria-live="polite"></section>
+
+  <footer>
+    <p id="foot"></p>
+    <p>Daily Security Lab · Experiment 108 of <a href="https://github.com/freyesperales/dev-experiments-365">dev-experiments-365</a> — built by an AI agent directed by Francisco Reyes (farp.dev) · <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-108">source, tests and research</a></p>
+  </footer>
+</main>
+
+<script src="trastienda.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.Trastienda;
+  var UI = {
+    en: {
+      hook: 'Paste the page source of your Shopify store and see who can run code in it: apps, old script tags, scripts somebody pasted by hand, and addresses that imitate a known service.',
+      how: ['Open your store in the browser, as a visitor.', 'Right click on the page and choose "View page source" (Ctrl+U, or Cmd+Option+U on a Mac). Not "Inspect".', 'Select everything, copy it and paste it below. You can also paste or drop your theme.liquid file.'],
+      lsrc: 'Page source or theme.liquid', lapps: 'Apps you have installed, one per line <small>(optional: it names the owner of each script)</small>', lsaved: 'An inventory you saved earlier <small>(optional: it shows what changed)</small>',
+      sapps: 'Optional: your list of apps and a saved inventory', go: 'Check it', clear: 'Clear', try_: 'or try an invented example:', dshop: 'Shop with leftovers', dclean: 'Tidy shop', dliquid: 'theme.liquid',
+      private_: 'Nothing is uploaded. The page works without a connection, and its security policy blocks every network request it could make.',
+      foot: 'An inventory of who is present and a few clear warning signs. It does not judge what each script does, and it cannot see code that an app downloads after the page loads.',
+      inventory: 'Inventory to keep', invHelp: 'Copy this text and save it in a file. Next time, paste it in "An inventory you saved earlier" to see what changed.', copy: 'Copy', copied: 'Copied',
+      badJson: 'The saved inventory could not be read: it must be the text this page gave you, complete.', notes: 'Notes', count: function (n) { return '×' + n; },
+    },
+    es: {
+      hook: 'Pega el código fuente de tu tienda Shopify y mira quién puede ejecutar código en ella: apps, script tags antiguos, scripts que alguien pegó a mano y direcciones que imitan a un servicio conocido.',
+      how: ['Abre tu tienda en el navegador, como visitante.', 'Haz clic derecho en la página y elige «Ver código fuente de la página» (Ctrl+U, o Cmd+Opción+U en Mac). No «Inspeccionar».', 'Selecciona todo, cópialo y pégalo abajo. También puedes pegar o soltar tu archivo theme.liquid.'],
+      lsrc: 'Código fuente de la página o theme.liquid', lapps: 'Apps que tienes instaladas, una por línea <small>(opcional: sirve para ponerle dueño a cada script)</small>', lsaved: 'Un inventario que guardaste antes <small>(opcional: muestra qué cambió)</small>',
+      sapps: 'Opcional: tu lista de apps y un inventario guardado', go: 'Revisar', clear: 'Limpiar', try_: 'o prueba un ejemplo inventado:', dshop: 'Tienda con restos', dclean: 'Tienda ordenada', dliquid: 'theme.liquid',
+      private_: 'No se sube nada. La página funciona sin conexión y su política de seguridad bloquea cualquier petición de red que pudiera hacer.',
+      foot: 'Un inventario de quién está presente y unas pocas señales claras. No juzga lo que hace cada script y no puede ver el código que una app descarga después de cargar la página.',
+      inventory: 'Inventario para guardar', invHelp: 'Copia este texto y guárdalo en un archivo. La próxima vez, pégalo en «Un inventario que guardaste antes» para ver qué cambió.', copy: 'Copiar', copied: 'Copiado',
+      badJson: 'No se pudo leer el inventario guardado: tiene que ser el texto que te dio esta página, completo.', notes: 'Notas', count: function (n) { return '×' + n; },
+    },
+  };
+  var lang = /[?&]lang=es\b/.test(location.search) || (!/[?&]lang=en\b/.test(location.search) && /^es\b/i.test(navigator.language || '')) ? 'es' : 'en';
+  var last = null;
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function setLabel(node, html) { // labels are fixed strings written in this file; user text never goes through here
+    node.textContent = ''; var m = /^(.*?)<small>(.*)<\/small>$/.exec(html);
+    if (!m) { node.textContent = html; return; }
+    node.appendChild(document.createTextNode(m[1])); node.appendChild(el('small', '', m[2]));
+  }
+  function chrome() {
+    var u = UI[lang]; document.documentElement.lang = lang;
+    $('lang-en').setAttribute('aria-pressed', String(lang === 'en')); $('lang-es').setAttribute('aria-pressed', String(lang === 'es'));
+    $('hook').textContent = u.hook; var how = $('how'); how.textContent = ''; u.how.forEach(function (s) { how.appendChild(el('li', '', s)); });
+    setLabel($('l-src'), u.lsrc); setLabel($('l-apps'), u.lapps); setLabel($('l-saved'), u.lsaved);
+    $('s-apps').textContent = u.sapps; $('go').textContent = u.go; $('clear').textContent = u.clear; $('try').textContent = u.try_;
+    $('d-shop').textContent = u.dshop; $('d-clean').textContent = u.dclean; $('d-liquid').textContent = u.dliquid;
+    $('private').textContent = u.private_; $('foot').textContent = u.foot;
+  }
+  function show() {
+    var out = $('out'); out.textContent = ''; if (!last) return;
+    var u = UI[lang], t = T.T[lang], res = last.res;
+    var v = t.verdict[res.verdict];
+    var box = el('div', 'verdict ' + res.verdict); box.appendChild(el('strong', '', v[0])); box.appendChild(el('p', '', typeof v[1] === 'function' ? v[1](res) : v[1]));
+    out.appendChild(box);
+    if (res.verdict === 'empty') return;
+    out.appendChild(el('p', 'facts', t.storeLine(res.store) + ' · ' + t.summary(res)));
+    if (res.notes.indexOf('not-shopify') >= 0) out.appendChild(el('p', 'facts', t.notShopify));
+    if (res.notes.indexOf('liquid') >= 0) out.appendChild(el('p', 'facts', t.liquidNote));
+    res.entities.forEach(function (e) {
+      var d = T.describe(e, lang, res), g = el('div', 'group ' + d.level), top = el('div', 'top');
+      top.appendChild(el('span', 'chip ' + d.level, d.chip)); top.appendChild(el('span', 'title', d.title));
+      if (d.count > 1) top.appendChild(el('span', 'count', u.count(d.count)));
+      g.appendChild(top);
+      d.flags.forEach(function (f) { g.appendChild(el('p', 'warn', f.text)); if (f.code) g.appendChild(el('p', 'code', f.code)); });
+      d.lines.forEach(function (l) { g.appendChild(el('p', '', l)); });
+      d.detail.forEach(function (l) { g.appendChild(el('p', 'detail', l)); });
+      out.appendChild(g);
+    });
+    var notes = [];
+    if (res.scriptTags) notes.push(t.tagsNote(res.scriptTags));
+    if (res.pixels) notes.push(t.pixels(res.pixels));
+    if (res.liquid.snippets.length) notes.push(t.snippets(res.liquid.snippets));
+    if (res.unusedApps.length) notes.push(t.unused(res.unusedApps));
+    if (last.badJson) notes.push(u.badJson);
+    if (notes.length) { out.appendChild(el('h2', '', u.notes)); var ul = el('ul', 'notes'); notes.forEach(function (n) { ul.appendChild(el('li', '', n)); }); out.appendChild(ul); }
+    if (last.diff) {
+      out.appendChild(el('h2', '', t.diffTitle)); var dl = el('ul', 'notes');
+      if (!last.diff.changed) dl.appendChild(el('li', '', t.diffNone));
+      last.diff.added.forEach(function (a) { dl.appendChild(el('li', '', '+ ' + t.diffAdded + ': ' + a)); });
+      last.diff.newHosts.forEach(function (a) { dl.appendChild(el('li', '', '+ ' + t.diffHosts + ': ' + a)); });
+      last.diff.removed.forEach(function (a) { dl.appendChild(el('li', '', '− ' + t.diffRemoved + ': ' + a)); });
+      out.appendChild(dl);
+    }
+    out.appendChild(el('h2', '', t.nextTitle)); var ol = el('ol', 'steps'); t.next.forEach(function (s) { ol.appendChild(el('li', '', s)); }); out.appendChild(ol);
+    out.appendChild(el('h2', '', t.blindTitle)); var bl = el('ul', 'notes'); t.blind.forEach(function (s) { bl.appendChild(el('li', '', s)); }); out.appendChild(bl);
+    out.appendChild(el('h2', '', u.inventory)); out.appendChild(el('p', 'private', u.invHelp));
+    var ta = el('textarea'); ta.id = 'inv'; ta.readOnly = true; ta.value = JSON.stringify(T.inventory(res), null, 2); out.appendChild(ta);
+    var row = el('div', 'row'), cp = el('button', '', u.copy); cp.type = 'button';
+    cp.addEventListener('click', function () { ta.select(); try { document.execCommand('copy'); cp.textContent = u.copied; } catch (e) { /* the text stays selected for a manual copy */ } });
+    row.appendChild(cp); out.appendChild(row);
+  }
+  function go() {
+    var apps = $('apps').value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(function (s) { return s && s[0] !== '#'; });
+    var res = T.analyze($('src').value, { apps: apps });
+    last = { res: res, diff: null, badJson: false };
+    var saved = $('saved').value.trim();
+    if (saved) { try { var prev = JSON.parse(saved); if (!prev || !Array.isArray(prev.items)) throw new Error('shape'); last.diff = T.diff(prev, res); } catch (e) { last.badJson = true; } }
+    show();
+  }
+  $('go').addEventListener('click', go);
+  $('clear').addEventListener('click', function () { $('src').value = ''; $('apps').value = ''; $('saved').value = ''; last = null; show(); $('src').focus(); });
+  ['shop', 'clean', 'liquid'].forEach(function (d) { $('d-' + d).addEventListener('click', function () { $('src').value = T.demo(d); $('apps').value = ''; $('saved').value = ''; go(); }); });
+  $('lang-en').addEventListener('click', function () { lang = 'en'; chrome(); show(); });
+  $('lang-es').addEventListener('click', function () { lang = 'es'; chrome(); show(); });
+  var src = $('src');
+  src.addEventListener('dragover', function (e) { e.preventDefault(); src.classList.add('over'); });
+  src.addEventListener('dragleave', function () { src.classList.remove('over'); });
+  src.addEventListener('drop', function (e) {
+    e.preventDefault(); src.classList.remove('over');
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+    var r = new FileReader(); r.onload = function () { src.value = String(r.result); go(); }; r.readAsText(f);
+  });
+  chrome();
+})();
+</script>
+</body>
+</html>
