@@ -1,5 +1,5 @@
 {
-  "last_number": 108,
+  "last_number": 109,
   "entries": [
     {
       "n": 1,
@@ -968,6 +968,20 @@
       "research_links": 42,
       "minutes": 17,
       "depth_check": "pass: 17 min elapsed, 42 distinct links in RESEARCH.md (27 fetched by the lead agent, 13 of those primary), 29/29 tests, demo checked in headless Edge via Playwright"
+    },
+    {
+      "n": 109,
+      "date": "2026-11-25",
+      "title": "Aduana — paste the page source of your website: every outside address that loads code into it; mixed content split the way browsers treat it (blocked: scripts, styles, frames, fonts, srcset, http images on bare IPs; upgraded: images, audio, video); http:// links to your own domain, canonical and og:url that Chrome 154's ask-before-HTTP warning now catches; forms posting to http://; Subresource Integrity (pinned CDN files without integrity, @latest addresses, integrity without crossorigin, rejected algorithms; scripts that change by design grouped by vendor; Integrity-Policy suggestion when everything is pinned); polyfill.io-family hosts; inline scripts, handlers and javascript: links with SHA-256 hashes and per-visit tokens detected; your current CSP (pasted or <meta>) checked against the page with a CSP3 source matcher (wildcards, paths, ports, self, nonces, hashes, strict-dynamic, unsafe-inline ignored next to nonces) plus lint; a starter Content-Security-Policy-Report-Only built from the page plus the origins in the vendors' own CSP guides (Google Tag Manager, Analytics, Ads, reCAPTCHA, Turnstile, Stripe.js, Stripe Checkout, Google Fonts; Meta Pixel labelled unofficial), a stricter hash-based policy, nginx/Apache/PHP/Netlify lines; an SRI hash for a dropped file; English/Spanish; browser demo that blocks its own network access + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "web hygiene (Content Security Policy builder, mixed content, Chrome 154 ask-before-HTTP, Subresource Integrity)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-109",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-109/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 66,
+      "minutes": 18,
+      "depth_check": "pass: 18 min elapsed, 66 distinct links in RESEARCH.md (26 source rows fetched by the lead agent, 18 of them primary vendor docs or specs), 28/28 tests, demo checked headless with Playwright (Chromium): 3 samples, server tabs, Spanish, file hash, 0 page errors, 0 network requests"
     }
   ]
 }

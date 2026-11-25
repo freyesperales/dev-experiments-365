@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This policy is the proof that nothing leaves the page: connect-src 'none' blocks every network request from scripts. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Aduana — what crosses into your web page, and a CSP that will not break it</title>
+<meta name="description" content="Paste the page source of your website. See every outside address that loads code into it, mixed content, http:// links Chrome now stops at, scripts without integrity, and get a report-only Content Security Policy built from what the page really uses. Runs in your browser; nothing is uploaded.">
+<style>
+  :root { --bg:#f4f5f3; --card:#fdfdfb; --ink:#1a1c1b; --soft:#5a5f5c; --line:#d5d9d5; --accent:#1f5f5b; --fix:#b42318; --fix-bg:#fdecea; --check:#8a5206; --check-bg:#fdf3dc; --ok:#2f6b1d; --ok-bg:#eaf5e3; --info:#475467; --info-bg:#eceff2; --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121514; --card:#1b1f1e; --ink:#eceeec; --soft:#aab2ae; --line:#323a37; --accent:#7fd1c7; --fix:#ff8a80; --fix-bg:#3b1512; --check:#f5c462; --check-bg:#3a2a0c; --ok:#a8d98a; --ok-bg:#1c2b14; --info:#b8c0cc; --info-bg:#242a30; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 28px 16px 56px; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.02em; color: var(--accent); }
+  .hook { margin: 0 0 14px; color: var(--soft); max-width: 66ch; }
+  h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+  button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, textarea:focus-visible, input:focus-visible, summary:focus-visible, .drop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .lang { display:flex; gap:6px; flex:none; }
+  ol.how { margin: 0 0 12px; padding-left: 22px; color: var(--soft); }
+  label { display:block; font-weight: 600; margin: 12px 0 4px; }
+  textarea { width: 100%; font: 13px/1.45 var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+  textarea.over { border-color: var(--accent); background: var(--ok-bg); }
+  #src { min-height: 170px; } #csp { min-height: 60px; }
+  input[type=text] { font: 14px var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 100%; max-width: 420px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin: 10px 0; }
+  .row small, .private { color: var(--soft); font-size: .9rem; }
+  details { margin: 8px 0; } summary { cursor: pointer; color: var(--accent); }
+  .verdict { margin-top: 18px; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  .verdict strong { font-size: 1.3rem; display:block; }
+  .verdict p { margin: 4px 0 0; }
+  .verdict.fix { border-color: var(--fix); background: var(--fix-bg); } .verdict.fix strong { color: var(--fix); }
+  .verdict.check, .verdict.empty { border-color: var(--check); background: var(--check-bg); } .verdict.check strong, .verdict.empty strong { color: var(--check); }
+  .verdict.clean { border-color: var(--ok); background: var(--ok-bg); } .verdict.clean strong { color: var(--ok); }
+  .facts { color: var(--soft); margin: 10px 0 0; font-size: .95rem; overflow-wrap: anywhere; }
+  .group { border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; background: var(--card); padding: 12px 14px; margin: 10px 0; }
+  .group.fix { border-left-color: var(--fix); } .group.check { border-left-color: var(--check); } .group.ok { border-left-color: var(--ok); } .group.info { border-left-color: var(--info); }
+  .top { display:flex; flex-wrap:wrap; gap: 6px 10px; align-items: baseline; }
+  .chip { font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
+  .chip.fix { color: var(--fix); background: var(--fix-bg); } .chip.check { color: var(--check); background: var(--check-bg); } .chip.ok { color: var(--ok); background: var(--ok-bg); } .chip.info { color: var(--info); background: var(--info-bg); }
+  .title { font-weight: 600; overflow-wrap: anywhere; }
+  .group p { margin: 6px 0 0; }
+  .group p.detail { color: var(--soft); font-size: .88rem; font-family: var(--mono); overflow-wrap: anywhere; }
+  p.detail { color: var(--soft); font-size: .88rem; font-family: var(--mono); overflow-wrap: anywhere; }
+  ul.notes { margin: 0; padding-left: 22px; }
+  ul.notes li { margin: 6px 0; overflow-wrap: anywhere; color: var(--soft); }
+  pre.pol { white-space: pre-wrap; overflow-wrap: anywhere; font: 12.5px/1.5 var(--mono); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 6px 0; }
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center; color: var(--soft); cursor: pointer; }
+  .drop.over { border-color: var(--accent); }
+  a { color: var(--accent); overflow-wrap: anywhere; }
+  footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--soft); font-size: .88rem; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Aduana</h1>
+      <p class="hook" id="hook"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">English</button>
+      <button type="button" id="lang-es" aria-pressed="false">Español</button>
+    </div>
+  </header>
+
+  <ol class="how" id="how"></ol>
+
+  <label for="src" id="l-src"></label>
+  <textarea id="src" spellcheck="false" autocomplete="off"></textarea>
+
+  <details>
+    <summary id="s-more"></summary>
+    <label for="csp" id="l-csp"></label>
+    <textarea id="csp" spellcheck="false" autocomplete="off"></textarea>
+    <label for="origin" id="l-origin"></label>
+    <input type="text" id="origin" spellcheck="false" autocomplete="off" placeholder="https://www.example.com">
+    <label for="tld" id="l-tld"></label>
+    <input type="text" id="tld" spellcheck="false" autocomplete="off" placeholder="cl, es">
+  </details>
+
+  <div class="row">
+    <button type="button" class="primary" id="go"></button>
+    <button type="button" id="clear"></button>
+    <small id="try"></small>
+    <button type="button" id="d-shop"></button>
+    <button type="button" id="d-strict"></button>
+    <button type="button" id="d-clean"></button>
+  </div>
+  <p class="private" id="private"></p>
+
+  <section id="out" aria-live="polite"></section>
+
+  <h2 id="h-sri"></h2>
+  <p class="private" id="p-sri"></p>
+  <div class="drop" id="drop" tabindex="0" role="button"></div>
+  <input type="file" id="file" class="hidden">
+  <pre class="pol hidden" id="sri-out"></pre>
+
+  <footer>
+    <p id="foot"></p>
+    <p>Daily Security Lab · Experiment 109 of <a href="https://github.com/freyesperales/dev-experiments-365">dev-experiments-365</a> — built by an AI agent directed by Francisco Reyes (farp.dev) · <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-109">source, tests and research</a></p>
+  </footer>
+</main>
+
+<script src="aduana.js"></script>
+<script src="samples.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.Aduana;
+  var UI = {
+    en: {
+      hook: 'Paste the page source of your website and see what crosses into it: every outside address that loads code, mixed content, http:// links that Chrome now stops at, and scripts nobody pinned. Then get a Content Security Policy built from what the page really uses, in report-only mode so it cannot break anything.',
+      how: ['Open the page in your browser, as a visitor (the home page first, then the contact and checkout pages).', 'Right click and choose "View page source" (Ctrl+U, or Cmd+Option+U on a Mac). Not "Inspect".', 'Select everything, copy it and paste it below.'],
+      lsrc: 'Page source', smore: 'Optional: your current CSP, your site address, your country', lcsp: 'Your current Content-Security-Policy, if you have one (copy it from the response headers)', lorigin: 'Your site address (only if the page has no canonical link)', ltld: 'Google country domains of your visitors, if you use Google Analytics or Ads (for example: cl, es, mx)',
+      go: 'Check it', clear: 'Clear', try_: 'or try an invented example:', dshop: 'Shop with problems', dstrict: 'Page with a CSP', dclean: 'Tidy page',
+      private_: 'Nothing is uploaded. This page works without a connection, and its own security policy blocks every network request it could make.',
+      foot: 'It reads the HTML you paste. It cannot see what scripts load after the page opens, so the report-only weeks are the real test.',
+      chip: { fix: 'FIX', check: 'CHECK', info: 'INFO', ok: 'OK' },
+      services: 'Services recognised', guide: 'source', policy: 'Your policy', tabs: { header: 'Header', nginx: 'nginx', apache: 'Apache / .htaccess', php: 'PHP', netlify: 'Netlify _headers' },
+      copy: 'Copy', copied: 'Copied', current: 'Your current CSP', hashes: 'Hashes of the inline scripts', tldHint: 'Google asks you to list each country domain one by one: write yours in the field above (for example cl).',
+      hsri: 'Integrity hash for a file', psri: 'Download the exact library file you use (from the address in your page), then drop it here. The hash is computed in this page.', drop: 'Drop a .js or .css file here, or click to choose one', sriErr: 'This browser cannot compute the hash here. Use: openssl dgst -sha384 -binary FILE | openssl base64 -A'
+    },
+    es: {
+      hook: 'Pega el código fuente de tu sitio y mira qué entra en él: cada dirección de afuera que carga código, el contenido mixto, los enlaces http:// en los que Chrome ahora se detiene y los scripts que nadie fijó. Después obtén una Content Security Policy armada con lo que la página usa de verdad, en modo solo informe para que no rompa nada.',
+      how: ['Abre la página en tu navegador, como visitante (primero la portada, después contacto y la página de pago).', 'Haz clic derecho y elige «Ver código fuente de la página» (Ctrl+U, o Cmd+Opción+U en Mac). No «Inspeccionar».', 'Selecciona todo, cópialo y pégalo abajo.'],
+      lsrc: 'Código fuente de la página', smore: 'Opcional: tu CSP actual, la dirección de tu sitio, tu país', lcsp: 'Tu Content-Security-Policy actual, si tienes una (cópiala de las cabeceras de respuesta)', lorigin: 'La dirección de tu sitio (solo si la página no tiene enlace canonical)', ltld: 'Dominios de país de Google de tus visitas, si usas Google Analytics o Ads (por ejemplo: cl, es, mx)',
+      go: 'Revisar', clear: 'Limpiar', try_: 'o prueba un ejemplo inventado:', dshop: 'Tienda con problemas', dstrict: 'Página con CSP', dclean: 'Página ordenada',
+      private_: 'No se sube nada. Esta página funciona sin conexión y su propia política de seguridad bloquea cualquier petición de red que pudiera hacer.',
+      foot: 'Lee el HTML que pegas. No ve lo que los scripts cargan después de abrir la página, por eso las semanas en modo solo informe son la prueba real.',
+      chip: { fix: 'CORREGIR', check: 'REVISAR', info: 'INFO', ok: 'OK' },
+      services: 'Servicios reconocidos', guide: 'fuente', policy: 'Tu política', tabs: { header: 'Cabecera', nginx: 'nginx', apache: 'Apache / .htaccess', php: 'PHP', netlify: 'Netlify _headers' },
+      copy: 'Copiar', copied: 'Copiado', current: 'Tu CSP actual', hashes: 'Hashes de los scripts en la página', tldHint: 'Google pide listar cada dominio de país uno por uno: escribe el tuyo en el campo de arriba (por ejemplo cl).',
+      hsri: 'Hash de integridad de un archivo', psri: 'Descarga el archivo exacto de la librería que usas (desde la dirección que está en tu página) y suéltalo aquí. El hash se calcula en esta página.', drop: 'Suelta aquí un archivo .js o .css, o haz clic para elegirlo', sriErr: 'Este navegador no puede calcular el hash aquí. Usa: openssl dgst -sha384 -binary ARCHIVO | openssl base64 -A'
+    }
+  };
+  var lang = /[?&]lang=es\b/.test(location.search) || (!/[?&]lang=en\b/.test(location.search) && /^es\b/i.test(navigator.language || '')) ? 'es' : 'en';
+  var last = null, tab = 'header', which = 'starter';
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function chrome() {
+    var u = UI[lang]; document.documentElement.lang = lang;
+    $('lang-en').setAttribute('aria-pressed', String(lang === 'en')); $('lang-es').setAttribute('aria-pressed', String(lang === 'es'));
+    $('hook').textContent = u.hook; var how = $('how'); how.textContent = ''; u.how.forEach(function (s) { how.appendChild(el('li', '', s)); });
+    $('l-src').textContent = u.lsrc; $('s-more').textContent = u.smore; $('l-csp').textContent = u.lcsp; $('l-origin').textContent = u.lorigin; $('l-tld').textContent = u.ltld;
+    $('go').textContent = u.go; $('clear').textContent = u.clear; $('try').textContent = u.try_;
+    $('d-shop').textContent = u.dshop; $('d-strict').textContent = u.dstrict; $('d-clean').textContent = u.dclean;
+    $('private').textContent = u.private_; $('foot').textContent = u.foot;
+    $('h-sri').textContent = u.hsri; $('p-sri').textContent = u.psri; $('drop').textContent = u.drop;
+  }
+  function copyBtn(getText) {
+    var u = UI[lang], b = el('button', '', u.copy); b.type = 'button';
+    b.addEventListener('click', function () {
+      var txt = getText(), done = function () { b.textContent = u.copied; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () {});
+      else { var ta = el('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { /* manual copy */ } document.body.removeChild(ta); }
+    });
+    return b;
+  }
+  function show() {
+    var out = $('out'); out.textContent = ''; if (!last) return;
+    var u = UI[lang], t = A.T[lang];
+    var res = A.analyze(last.html, { lang: lang, csp: last.csp, origin: last.origin, googleTld: last.tld });
+    var vt = { fix: [t.vFix, t.vFixP], check: [t.vCheck, t.vCheckP], clean: [t.vClean, t.vCleanP], empty: [t.vEmpty, t.vEmptyP] }[res.verdict];
+    var box = el('div', 'verdict ' + res.verdict); box.appendChild(el('strong', '', vt[0])); box.appendChild(el('p', '', vt[1])); out.appendChild(box);
+    if (res.verdict === 'empty') return;
+    var c = res.counts;
+    out.appendChild(el('p', 'facts', t.origin + ': ' + (res.self || '?') + ' · ' + c.outside + ' ' + t.parties + ' · ' + c.scripts + ' ' + t.scripts + ' · ' + c.inline + ' ' + t.inlineN + ' · ' + c.handlers + ' ' + t.handlers + (c.otherHttpLinks ? ' · ' + c.otherHttpLinks + ' ' + t.otherHttp : '')));
+    res.findings.forEach(function (f) {
+      var g = el('div', 'group ' + f.level), top = el('div', 'top');
+      top.appendChild(el('span', 'chip ' + f.level, u.chip[f.level])); top.appendChild(el('span', 'title', f.title)); g.appendChild(top);
+      if (f.detail) g.appendChild(el('p', '', f.detail));
+      f.items.forEach(function (it) { g.appendChild(el('p', 'detail', it)); });
+      out.appendChild(g);
+    });
+    if (res.vendors.length) {
+      out.appendChild(el('h2', '', u.services)); var ul = el('ul', 'notes');
+      res.vendors.forEach(function (v) { var li = el('li', '', v.name + ' — ' + (v.official ? t.vendorOff : t.vendorUnoff) + ' '); var a = el('a', '', u.guide); a.href = v.doc; a.rel = 'noopener noreferrer'; li.appendChild(a); ul.appendChild(li); });
+      if (!last.tld && res.vendors.some(function (v) { return v.id === 'ga4' || v.id === 'gads'; })) ul.appendChild(el('li', '', u.tldHint));
+      out.appendChild(ul);
+    }
+    out.appendChild(el('h2', '', u.policy));
+    var hasStrict = res.strictPolicy.value !== res.policy.value;
+    if (!hasStrict) which = 'starter';
+    var sw = el('div', 'row');
+    [['starter', t.policyStarter], ['strict', t.policyStrict]].forEach(function (p) {
+      if (p[0] === 'strict' && !hasStrict) return;
+      var b = el('button', '', p[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(which === p[0]));
+      b.addEventListener('click', function () { which = p[0]; show(); }); sw.appendChild(b);
+    });
+    out.appendChild(sw);
+    var pol = which === 'strict' ? res.strictPolicy : res.policy;
+    var snips = A.serverSnippets(pol.value);
+    var tabs = el('div', 'row');
+    Object.keys(u.tabs).forEach(function (k) { var b = el('button', '', u.tabs[k]); b.type = 'button'; b.setAttribute('aria-pressed', String(tab === k)); b.addEventListener('click', function () { tab = k; show(); }); tabs.appendChild(b); });
+    out.appendChild(tabs);
+    out.appendChild(el('pre', 'pol', snips[tab]));
+    var row = el('div', 'row'); row.appendChild(copyBtn(function () { return snips[tab]; })); out.appendChild(row);
+    out.appendChild(el('p', '', t.how)); out.appendChild(el('p', 'private', t.limitAllow));
+    if (res.inlineHashes.length) {
+      var d = el('details'); d.appendChild(el('summary', '', u.hashes + ' (' + res.inlineHashes.length + ')'));
+      res.inlineHashes.forEach(function (h) { d.appendChild(el('p', 'detail', t.line + ' ' + h.line + ": '" + h.hash + "'" + (h.dynamic ? ' — ' + t.dynInline : ''))); });
+      out.appendChild(d);
+    }
+    if (res.current) {
+      out.appendChild(el('h2', '', u.current)); out.appendChild(el('pre', 'pol', res.current.text));
+      if (!res.current.blocked.length) out.appendChild(el('p', '', t.allowedAll));
+    }
+  }
+  function go() { last = { html: $('src').value, csp: $('csp').value.trim(), origin: $('origin').value.trim(), tld: $('tld').value.trim() }; show(); }
+  $('go').addEventListener('click', go);
+  $('clear').addEventListener('click', function () { ['src', 'csp', 'origin', 'tld'].forEach(function (k) { $(k).value = ''; }); last = null; show(); $('src').focus(); });
+  ['shop', 'strict', 'clean'].forEach(function (d) { $('d-' + d).addEventListener('click', function () { $('src').value = window.ADUANA_SAMPLES[d]; $('csp').value = ''; $('origin').value = ''; go(); }); });
+  $('lang-en').addEventListener('click', function () { lang = 'en'; chrome(); show(); });
+  $('lang-es').addEventListener('click', function () { lang = 'es'; chrome(); show(); });
+  var src = $('src');
+  src.addEventListener('dragover', function (e) { e.preventDefault(); src.classList.add('over'); });
+  src.addEventListener('dragleave', function () { src.classList.remove('over'); });
+  src.addEventListener('drop', function (e) {
+    e.preventDefault(); src.classList.remove('over');
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+    var r = new FileReader(); r.onload = function () { src.value = String(r.result); go(); }; r.readAsText(f);
+  });
+  // Integrity hash of a dropped file, computed locally with Web Crypto.
+  var drop = $('drop'), file = $('file'), sriOut = $('sri-out');
+  function hashFile(f) {
+    sriOut.classList.remove('hidden');
+    if (!(window.crypto && crypto.subtle && f.arrayBuffer)) { sriOut.textContent = UI[lang].sriErr; return; }
+    f.arrayBuffer().then(function (buf) { return crypto.subtle.digest('SHA-384', buf); }).then(function (dg) {
+      var bytes = new Uint8Array(dg), s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+      sriOut.textContent = f.name + '\nintegrity="sha384-' + btoa(s) + '" crossorigin="anonymous"';
+    }, function () { sriOut.textContent = UI[lang].sriErr; });
+  }
+  drop.addEventListener('click', function () { file.click(); });
+  drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
+  file.addEventListener('change', function () { if (file.files[0]) hashFile(file.files[0]); });
+  drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+  drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('over'); var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) hashFile(f); });
+  chrome();
+})();
+</script>
+</body>
+</html>

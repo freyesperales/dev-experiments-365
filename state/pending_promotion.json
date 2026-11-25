@@ -218,5 +218,10 @@
     "n": 108,
     "slug": "trastienda",
     "hook": "Paste the page source of your Shopify store and see who can run code in it: apps, old script tags that stop on 1 March 2027, hand-pasted scripts and imitation addresses. Nothing is uploaded."
+  },
+  {
+    "n": 109,
+    "slug": "aduana",
+    "hook": "Paste the page source of your website: see every outside script, mixed content and the http:// links Chrome now stops at, and get a report-only Content Security Policy that will not break Google Tag Manager, Analytics or Stripe. Nothing is uploaded."
   }
 ]
