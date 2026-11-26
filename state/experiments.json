@@ -1,5 +1,5 @@
 {
-  "last_number": 109,
+  "last_number": 110,
   "entries": [
     {
       "n": 1,
@@ -982,6 +982,20 @@
       "research_links": 66,
       "minutes": 18,
       "depth_check": "pass: 18 min elapsed, 66 distinct links in RESEARCH.md (26 source rows fetched by the lead agent, 18 of them primary vendor docs or specs), 28/28 tests, demo checked headless with Playwright (Chromium): 3 samples, server tabs, Spanish, file hash, 0 page errors, 0 network requests"
+    },
+    {
+      "n": 110,
+      "date": "2026-11-26",
+      "title": "Llavero — paste the permissions an AI assistant, automation or app asks for on Google or Microsoft 365 (scope list, consent link or consent-screen text): what it could do in plain words; Google's own class (non-sensitive/sensitive/restricted) and admin high-risk list; Microsoft admin consent and the application meaning of the same name; the narrower scope to ask for (drive.file, gmail.modify, Sites.Selected...); read-plus-send (indirect prompt injection), sharing, offline access and .default findings; how to take the access back; 56 Google Workspace scopes and 45 Microsoft Graph permissions copied from the vendor pages; English/Spanish; browser demo that blocks its own network access + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "AI agents (OAuth scopes that assistants and automations ask for on Google Workspace and Microsoft 365)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-110",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-110/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 28,
+      "minutes": 22,
+      "depth_check": "pass: 22 min elapsed, 28 distinct links in RESEARCH.md (22 source rows, 19 fetched by the lead agent, 17 primary vendor docs, standards or advisories), 25/25 tests, demo checked headless with Playwright (Chromium): 4 samples, English and Spanish, empty and cleared states, 0 page errors, 0 network requests"
     }
   ]
 }

@@ -223,5 +223,10 @@
     "n": 109,
     "slug": "aduana",
     "hook": "Paste the page source of your website: see every outside script, mixed content and the http:// links Chrome now stops at, and get a report-only Content Security Policy that will not break Google Tag Manager, Analytics or Stripe. Nothing is uploaded."
+  },
+  {
+    "n": 110,
+    "slug": "llavero",
+    "hook": "Before you click \"Allow\" on an AI assistant or automation, paste the permissions it asks for on Google or Microsoft 365: see what it could do with your email, files and calendar in plain words, the narrower permission to ask for, and how to take the access back. Nothing is uploaded."
   }
 ]

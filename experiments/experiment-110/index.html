@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This policy is the proof that nothing leaves the page: connect-src 'none' blocks every network request from scripts. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Llavero — what an AI agent can do with your Google or Microsoft account</title>
+<meta name="description" content="Paste the permissions an AI assistant or app asks for on Google or Microsoft 365 (scopes, the consent link or the consent screen text). See what it can do in plain words, the vendor's own class, the narrower permission to ask for, and how to take the access back. Runs in your browser; nothing is uploaded.">
+<style>
+  :root { --bg:#f5f4f1; --card:#fdfcfa; --ink:#1c1b19; --soft:#5d5a54; --line:#d9d5cd; --accent:#6a3d9a; --fix:#b42318; --fix-bg:#fdecea; --check:#8a5206; --check-bg:#fdf3dc; --ok:#2f6b1d; --ok-bg:#eaf5e3; --info:#475467; --info-bg:#eceff2; --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141312; --card:#1d1c1a; --ink:#eeece8; --soft:#b0aba2; --line:#36332e; --accent:#c9a7f0; --fix:#ff8a80; --fix-bg:#3b1512; --check:#f5c462; --check-bg:#3a2a0c; --ok:#a8d98a; --ok-bg:#1c2b14; --info:#b8c0cc; --info-bg:#242a30; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 28px 16px 56px; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.02em; color: var(--accent); }
+  .hook { margin: 0 0 14px; color: var(--soft); max-width: 66ch; }
+  h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+  button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, textarea:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .lang { display:flex; gap:6px; flex:none; }
+  ol.how { margin: 0 0 12px; padding-left: 22px; color: var(--soft); }
+  label { display:block; font-weight: 600; margin: 12px 0 4px; }
+  textarea { width: 100%; min-height: 160px; font: 13px/1.45 var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+  textarea.over { border-color: var(--accent); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin: 10px 0; }
+  .row small, .private { color: var(--soft); font-size: .9rem; }
+  .verdict { margin-top: 18px; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  .verdict strong { font-size: 1.3rem; display:block; }
+  .verdict p { margin: 4px 0 0; }
+  .verdict.fix { border-color: var(--fix); background: var(--fix-bg); } .verdict.fix strong { color: var(--fix); }
+  .verdict.check, .verdict.empty { border-color: var(--check); background: var(--check-bg); } .verdict.check strong, .verdict.empty strong { color: var(--check); }
+  .verdict.clean { border-color: var(--ok); background: var(--ok-bg); } .verdict.clean strong { color: var(--ok); }
+  .plain { margin: 12px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+  .plain ul { margin: 6px 0 0; padding-left: 22px; }
+  .facts { color: var(--soft); margin: 10px 0 0; font-size: .95rem; }
+  .group { border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; background: var(--card); padding: 12px 14px; margin: 10px 0; }
+  .group.fix { border-left-color: var(--fix); } .group.check { border-left-color: var(--check); } .group.ok { border-left-color: var(--ok); } .group.info { border-left-color: var(--info); }
+  .top { display:flex; flex-wrap:wrap; gap: 6px 10px; align-items: baseline; }
+  .chip { font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
+  .chip.fix { color: var(--fix); background: var(--fix-bg); } .chip.check { color: var(--check); background: var(--check-bg); } .chip.ok { color: var(--ok); background: var(--ok-bg); } .chip.info { color: var(--info); background: var(--info-bg); }
+  .title { font-weight: 600; overflow-wrap: anywhere; }
+  .svc { color: var(--soft); font-size: .88rem; }
+  .group p { margin: 6px 0 0; }
+  .mono { font-family: var(--mono); font-size: .86rem; color: var(--soft); overflow-wrap: anywhere; }
+  .alt { margin: 6px 0 0; padding: 6px 10px; border-radius: 8px; background: var(--ok-bg); }
+  ul.notes { margin: 0; padding-left: 22px; }
+  ul.notes li { margin: 6px 0; color: var(--soft); }
+  a { color: var(--accent); overflow-wrap: anywhere; }
+  footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--soft); font-size: .88rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Llavero</h1>
+      <p class="hook" id="hook"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">English</button>
+      <button type="button" id="lang-es" aria-pressed="false">Español</button>
+    </div>
+  </header>
+
+  <ol class="how" id="how"></ol>
+
+  <label for="src" id="l-src"></label>
+  <textarea id="src" spellcheck="false" autocomplete="off"></textarea>
+
+  <div class="row">
+    <button type="button" class="primary" id="go"></button>
+    <button type="button" id="clear"></button>
+    <small id="try"></small>
+    <button type="button" id="d-chatgpt"></button>
+    <button type="button" id="d-n8n"></button>
+    <button type="button" id="d-outlook"></button>
+    <button type="button" id="d-tidy"></button>
+  </div>
+  <p class="private" id="private"></p>
+
+  <section id="out" aria-live="polite"></section>
+
+  <footer>
+    <p id="foot"></p>
+    <p>Daily Security Lab · Experiment 110 of <a href="https://github.com/freyesperales/dev-experiments-365">dev-experiments-365</a> — built by an AI agent directed by Francisco Reyes (farp.dev) · <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-110">source, tests and research</a></p>
+  </footer>
+</main>
+
+<script src="graph-permissions.js"></script>
+<script src="llavero.js"></script>
+<script src="samples.js"></script>
+<script>
+(function () {
+  'use strict';
+  var L = window.Llavero;
+  var UI = {
+    en: {
+      hook: 'Before you connect an AI assistant, an automation or any app to your Google or Microsoft 365 account, paste the permissions it asks for. See what it could do with your email, files and calendar in plain words, what the vendor itself says, the narrower permission to ask for, and how to take the access back.',
+      how: ['Copy the text of the consent screen ("This will allow … to: …"), or', 'copy the address of the consent window (the link starts with accounts.google.com or login.microsoftonline.com), or', 'copy the scope field of your n8n, Make or Zapier credential, or the list the developer gave you. Paste it below.'],
+      lsrc: 'Permissions, consent link or consent screen text',
+      go: 'Check it', clear: 'Clear', try_: 'or try an example:', dchatgpt: 'ChatGPT (published list)', dn8n: 'n8n credential (invented)', doutlook: 'Microsoft 365 agent (invented)', dtidy: 'Narrow app (invented)',
+      private_: 'Nothing is uploaded. This page works without a connection, and its own security policy blocks every network request it could make.',
+      foot: 'A permission is the ceiling of what an app can do, not a prediction of what it will do. Llavero reads only what you paste and knows the common Google Workspace and Microsoft Graph permissions; anything else is listed as unknown.',
+      chip: { fix: 'FIX', check: 'CHECK', info: 'INFO', ok: 'OK' },
+      plainHead: 'In plain words, this app can:', official: 'What the vendor says', source: 'vendor page', notes: 'What to do', removeH: 'How to take the access back', open: 'open', glossH: 'What Google\'s labels mean', scopesH: 'Permission by permission'
+    },
+    es: {
+      hook: 'Antes de conectar un asistente de IA, una automatización o cualquier aplicación a tu cuenta de Google o de Microsoft 365, pega los permisos que pide. Mira en palabras simples qué podría hacer con tu correo, tus archivos y tu calendario, qué dice el propio proveedor, qué permiso más acotado pedir y cómo quitar el acceso.',
+      how: ['Copia el texto de la pantalla de permisos («Esto permitirá que … pueda: …»), o', 'copia la dirección de la ventana de permisos (el enlace empieza con accounts.google.com o login.microsoftonline.com), o', 'copia el campo de permisos (scope) de tu credencial de n8n, Make o Zapier, o la lista que te dio el desarrollador. Pégalo abajo.'],
+      lsrc: 'Permisos, enlace de autorización o texto de la pantalla de permisos',
+      go: 'Revisar', clear: 'Limpiar', try_: 'o prueba un ejemplo:', dchatgpt: 'ChatGPT (lista publicada)', dn8n: 'Credencial de n8n (inventada)', doutlook: 'Agente de Microsoft 365 (inventado)', dtidy: 'Aplicación acotada (inventada)',
+      private_: 'No se sube nada. Esta página funciona sin conexión y su propia política de seguridad bloquea cualquier petición de red que pudiera hacer.',
+      foot: 'Un permiso es el techo de lo que una aplicación puede hacer, no una predicción de lo que hará. Llavero lee solo lo que pegas y conoce los permisos comunes de Google Workspace y Microsoft Graph; lo demás aparece como desconocido.',
+      chip: { fix: 'CORREGIR', check: 'REVISAR', info: 'INFO', ok: 'OK' },
+      plainHead: 'Dicho simple, esta aplicación puede:', official: 'Lo que dice el proveedor (en inglés)', source: 'página del proveedor', notes: 'Qué hacer', removeH: 'Cómo quitar el acceso', open: 'abrir', glossH: 'Qué significan las categorías de Google', scopesH: 'Permiso por permiso'
+    }
+  };
+  var lang = /[?&]lang=es\b/.test(location.search) || (!/[?&]lang=en\b/.test(location.search) && /^es\b/i.test(navigator.language || '')) ? 'es' : 'en';
+  var last = null;
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function link(href, text) { var a = el('a', '', text); a.href = href; a.rel = 'noopener noreferrer'; a.target = '_blank'; return a; }
+  function chrome() {
+    var u = UI[lang]; document.documentElement.lang = lang;
+    $('lang-en').setAttribute('aria-pressed', String(lang === 'en')); $('lang-es').setAttribute('aria-pressed', String(lang === 'es'));
+    $('hook').textContent = u.hook; var how = $('how'); how.textContent = ''; u.how.forEach(function (s) { how.appendChild(el('li', '', s)); });
+    $('l-src').textContent = u.lsrc; $('go').textContent = u.go; $('clear').textContent = u.clear; $('try').textContent = u.try_;
+    ['chatgpt', 'n8n', 'outlook', 'tidy'].forEach(function (d) { $('d-' + d).textContent = u['d' + d]; });
+    $('private').textContent = u.private_; $('foot').textContent = u.foot;
+  }
+  function show() {
+    var out = $('out'); out.textContent = ''; if (last === null) return;
+    var u = UI[lang], t = L.T[lang];
+    var res = L.analyze(last, { lang: lang });
+    var vt = { fix: [t.vFix, t.vFixP], check: [t.vCheck, t.vCheckP], clean: [t.vClean, t.vCleanP], empty: [t.vEmpty, t.vEmptyP] }[res.verdict];
+    var box = el('div', 'verdict ' + res.verdict); box.appendChild(el('strong', '', vt[0])); box.appendChild(el('p', '', vt[1])); out.appendChild(box);
+    if (res.verdict === 'empty') return;
+    out.appendChild(el('p', 'facts', res.scopes.length + ' ' + t.scopesFound + ' · ' + t.google + ' ' + res.counts.google + ' · ' + t.microsoft + ' ' + res.counts.microsoft + (res.counts.unknown ? ' · ? ' + res.counts.unknown : '')));
+    var pl = el('div', 'plain');
+    if (res.plain.length) { pl.appendChild(el('strong', '', u.plainHead)); var ul = el('ul'); res.plain.forEach(function (p) { ul.appendChild(el('li', '', p)); }); pl.appendChild(ul); }
+    else pl.appendChild(el('p', '', t.plainNone));
+    out.appendChild(pl);
+    function card(s) {
+      var g = el('div', 'group ' + s.level), top = el('div', 'top');
+      top.appendChild(el('span', 'chip ' + s.level, u.chip[s.level])); top.appendChild(el('span', 'title', s.short.replace('https://www.googleapis.com/auth/', '')));
+      top.appendChild(el('span', 'svc', s.service + ' · ' + t.rating + ': ' + s.powerText)); g.appendChild(top);
+      g.appendChild(el('p', '', s.plain));
+      if (s.official) { var o = el('p', 'svc', u.official + ': "' + s.official + '"' + (s.how === 'text' ? ' — ' + t.fromText : '') + ' · '); o.appendChild(link(s.doc, u.source)); g.appendChild(o); }
+      s.notes.forEach(function (n) { g.appendChild(el('p', 'svc', n)); });
+      s.alternatives.forEach(function (a) { g.appendChild(el('p', 'alt', t.alt + ': ' + a.scope.replace('https://www.googleapis.com/auth/', '') + ' — ' + a.plain)); });
+      out.appendChild(g);
+    }
+    res.scopes.filter(function (s) { return s.level === 'fix'; }).forEach(card);
+    res.findings.forEach(function (f) {
+      var g = el('div', 'group ' + f.level), top = el('div', 'top');
+      top.appendChild(el('span', 'chip ' + f.level, u.chip[f.level])); top.appendChild(el('span', 'title', f.title)); g.appendChild(top);
+      g.appendChild(el('p', '', f.detail));
+      f.items.forEach(function (it) { g.appendChild(el('p', 'mono', it)); });
+      if (f.doc) { var p = el('p', 'svc'); p.appendChild(link(f.doc, u.source)); g.appendChild(p); }
+      out.appendChild(g);
+    });
+    if (res.scopes.some(function (s) { return s.level !== 'fix'; })) out.appendChild(el('h2', '', u.scopesH));
+    res.scopes.filter(function (s) { return s.level !== 'fix'; }).forEach(card);
+    if (res.glossary) { out.appendChild(el('h2', '', u.glossH)); out.appendChild(el('p', '', res.glossary)); }
+    out.appendChild(el('h2', '', u.removeH));
+    var rl = el('ul', 'notes');
+    res.remove.forEach(function (r) { var li = el('li', '', r.text + ' '); li.appendChild(link(r.link, u.open)); rl.appendChild(li); });
+    if (res.agentNote) rl.appendChild(el('li', '', res.agentNote));
+    out.appendChild(rl);
+  }
+  function go() { last = $('src').value; show(); }
+  $('go').addEventListener('click', go);
+  $('clear').addEventListener('click', function () { $('src').value = ''; last = null; show(); $('src').focus(); });
+  ['chatgpt', 'n8n', 'outlook', 'tidy'].forEach(function (d) { $('d-' + d).addEventListener('click', function () { $('src').value = window.LLAVERO_SAMPLES[d]; go(); }); });
+  $('lang-en').addEventListener('click', function () { lang = 'en'; chrome(); show(); });
+  $('lang-es').addEventListener('click', function () { lang = 'es'; chrome(); show(); });
+  var src = $('src');
+  src.addEventListener('dragover', function (e) { e.preventDefault(); src.classList.add('over'); });
+  src.addEventListener('dragleave', function () { src.classList.remove('over'); });
+  src.addEventListener('drop', function (e) {
+    e.preventDefault(); src.classList.remove('over');
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+    var r = new FileReader(); r.onload = function () { src.value = String(r.result); go(); }; r.readAsText(f);
+  });
+  chrome();
+})();
+</script>
+</body>
+</html>
