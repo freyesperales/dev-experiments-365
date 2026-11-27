@@ -1,5 +1,5 @@
 {
-  "last_number": 110,
+  "last_number": 111,
   "entries": [
     {
       "n": 1,
@@ -996,6 +996,21 @@
       "research_links": 28,
       "minutes": 22,
       "depth_check": "pass: 22 min elapsed, 28 distinct links in RESEARCH.md (22 source rows, 19 fetched by the lead agent, 17 primary vendor docs, standards or advisories), 25/25 tests, demo checked headless with Playwright (Chromium): 4 samples, English and Spanish, empty and cleared states, 0 page errors, 0 network requests"
+    },
+    {
+      "n": 111,
+      "date": "2026-11-27",
+      "title": "Equipaje — paste a list of files (git ls-files, every file in the folder, npm pack --dry-run, or your hosting public folder) plus your .gitignore, .dockerignore, .npmignore, package.json, Dockerfile or .htaccess: which of 17 kinds of secret-bearing files (.env, SSH and TLS keys, Firebase/Google service accounts, FTP/SFTP settings, wp-config backups, database dumps, .git folder...) would be committed, published to npm, copied into a Docker image or served on the website, with the exact ignore line per destination; five traps from the vendor docs (.npmignore replaces .gitignore, .dockerignore lines are root-relative, .gitignore does not untrack, rm after COPY stays in the layer, ARG/ENV secrets persist); reads names, never contents; English/Spanish; browser demo that blocks its own network access + zero-dep Node CLI",
+      "kind": "tool",
+      "theme": "secrets in repos and supply chain (secret-bearing files that leave through Git, npm pack, Docker build context or the public web folder)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-111",
+      "demo_url": "https://freyesperales.github.io/dev-experiments-365/experiments/experiment-111/",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 28,
+      "minutes": 17,
+      "depth_check": "pass: 17 min elapsed, 28 distinct links in RESEARCH.md (10 primary sources re-opened by the lead agent: git-scm, Docker docs, moby/patternmatcher, npm docs, GitHub docs, StepSecurity advisory; 18 more opened by 3 scouts), 15/15 tests, demo checked headless with Playwright (Chromium): 4 samples, English and Spanish, clean state, network blocked by its CSP, 0 page errors; smoke run on the repo's own 588 tracked files: 0 false positives",
+      "weekly_report": "reports/weekly/2026-W48.md"
     }
   ]
 }

@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This policy is the proof that nothing leaves the page: connect-src 'none' blocks every network request from scripts. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Equipaje — which secret files leave with your code, your package, your Docker image or your website</title>
+<meta name="description" content="Paste a list of files (git ls-files, a folder listing, npm pack --dry-run or your hosting public folder) and your .gitignore, .dockerignore, .npmignore or Dockerfile. See which files that usually hold passwords and keys would be committed, published, baked into an image or served on your website, and the exact line that stops each one. Runs in your browser; nothing is uploaded.">
+<style>
+  :root { --bg:#f5f4f1; --card:#fdfcfa; --ink:#1c1b19; --soft:#5d5a54; --line:#d9d5cd; --accent:#1f5f8b; --fix:#b42318; --fix-bg:#fdecea; --check:#8a5206; --check-bg:#fdf3dc; --ok:#2f6b1d; --ok-bg:#eaf5e3; --info:#475467; --info-bg:#eceff2; --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141312; --card:#1d1c1a; --ink:#eeece8; --soft:#b0aba2; --line:#36332e; --accent:#8cc4ec; --fix:#ff8a80; --fix-bg:#3b1512; --check:#f5c462; --check-bg:#3a2a0c; --ok:#a8d98a; --ok-bg:#1c2b14; --info:#b8c0cc; --info-bg:#242a30; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 28px 16px 56px; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.02em; color: var(--accent); }
+  .hook { margin: 0 0 14px; color: var(--soft); max-width: 66ch; }
+  h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+  button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, textarea:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .lang { display:flex; gap:6px; flex:none; }
+  ol.how { margin: 0 0 12px; padding-left: 22px; color: var(--soft); }
+  label { display:block; font-weight: 600; margin: 12px 0 4px; }
+  textarea { width: 100%; min-height: 160px; font: 13px/1.45 var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+  textarea.over { border-color: var(--accent); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin: 10px 0; }
+  .row small, .private { color: var(--soft); font-size: .9rem; }
+  .verdict { margin-top: 18px; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  .verdict strong { font-size: 1.3rem; display:block; }
+  .verdict p { margin: 4px 0 0; }
+  .verdict.fix { border-color: var(--fix); background: var(--fix-bg); } .verdict.fix strong { color: var(--fix); }
+  .verdict.check, .verdict.empty { border-color: var(--check); background: var(--check-bg); } .verdict.check strong, .verdict.empty strong { color: var(--check); }
+  .verdict.clean { border-color: var(--ok); background: var(--ok-bg); } .verdict.clean strong { color: var(--ok); }
+  .plain { margin: 12px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+  .plain ul { margin: 6px 0 0; padding-left: 22px; }
+  .facts { color: var(--soft); margin: 10px 0 0; font-size: .95rem; }
+  .group { border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; background: var(--card); padding: 12px 14px; margin: 10px 0; }
+  .group.fix { border-left-color: var(--fix); } .group.check { border-left-color: var(--check); } .group.ok { border-left-color: var(--ok); } .group.info { border-left-color: var(--info); }
+  .top { display:flex; flex-wrap:wrap; gap: 6px 10px; align-items: baseline; }
+  .chip { font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
+  .chip.fix { color: var(--fix); background: var(--fix-bg); } .chip.check { color: var(--check); background: var(--check-bg); } .chip.ok { color: var(--ok); background: var(--ok-bg); } .chip.info { color: var(--info); background: var(--info-bg); }
+  .title { font-weight: 600; overflow-wrap: anywhere; }
+  .svc { color: var(--soft); font-size: .88rem; }
+  .group p { margin: 6px 0 0; }
+  .mono { font-family: var(--mono); font-size: .86rem; color: var(--soft); overflow-wrap: anywhere; }
+  .alt { margin: 6px 0 0; padding: 6px 10px; border-radius: 8px; background: var(--ok-bg); }
+  ul.notes { margin: 0; padding-left: 22px; }
+  ul.notes li { margin: 6px 0; color: var(--soft); }
+  a { color: var(--accent); overflow-wrap: anywhere; }
+  footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--soft); font-size: .88rem; }
+  fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin: 10px 0; }
+  fieldset label { display:inline-flex; gap:6px; align-items:center; font-weight: 500; margin: 4px 14px 4px 0; }
+  details { margin: 10px 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--card); }
+  details summary { cursor: pointer; font-weight: 600; }
+  details textarea { min-height: 90px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 14px; }
+  pre.lines { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--card); border: 1px solid var(--line); font: 13px/1.5 var(--mono); overflow-x: auto; }
+  ul.fx { margin: 6px 0 0; padding-left: 20px; } ul.fx li { margin: 3px 0; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Equipaje</h1>
+      <p class="hook" id="hook"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">English</button>
+      <button type="button" id="lang-es" aria-pressed="false">Español</button>
+    </div>
+  </header>
+
+  <ol class="how" id="how"></ol>
+
+  <fieldset>
+    <legend id="l-from"></legend>
+    <label><input type="radio" name="from" value="folder" checked> <span id="f-folder"></span></label>
+    <label><input type="radio" name="from" value="git"> <span id="f-git"></span></label>
+    <label><input type="radio" name="from" value="npm"> <span id="f-npm"></span></label>
+    <label><input type="radio" name="from" value="web"> <span id="f-web"></span></label>
+  </fieldset>
+
+  <label for="list" id="l-list"></label>
+  <textarea id="list" spellcheck="false" autocomplete="off"></textarea>
+
+  <details id="more">
+    <summary id="l-more"></summary>
+    <div class="grid">
+      <div><label for="gitignore">.gitignore</label><textarea id="gitignore" spellcheck="false"></textarea></div>
+      <div><label for="dockerignore">.dockerignore</label><textarea id="dockerignore" spellcheck="false"></textarea></div>
+      <div><label for="npmignore">.npmignore</label><textarea id="npmignore" spellcheck="false"></textarea></div>
+      <div><label for="packageJson">package.json</label><textarea id="packageJson" spellcheck="false"></textarea></div>
+      <div><label for="dockerfile">Dockerfile</label><textarea id="dockerfile" spellcheck="false"></textarea></div>
+      <div><label for="webconf" id="l-webconf"></label><textarea id="webconf" spellcheck="false"></textarea></div>
+    </div>
+  </details>
+
+  <div class="row">
+    <button type="button" class="primary" id="go"></button>
+    <button type="button" id="clear"></button>
+    <small id="try"></small>
+    <button type="button" id="d-folder"></button>
+    <button type="button" id="d-git"></button>
+    <button type="button" id="d-npm"></button>
+    <button type="button" id="d-web"></button>
+  </div>
+  <p class="private" id="private"></p>
+
+  <section id="out" aria-live="polite"></section>
+
+  <footer>
+    <p id="foot"></p>
+    <p>Daily Security Lab · Experiment 111 of <a href="https://github.com/freyesperales/dev-experiments-365">dev-experiments-365</a> — built by an AI agent directed by Francisco Reyes (farp.dev) · <a href="https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-111">source, tests and research</a></p>
+  </footer>
+</main>
+<script src="equipaje.js"></script>
+<script>
+(function () {
+  'use strict';
+  var E = window.Equipaje;
+  var FIELDS = ['list', 'gitignore', 'dockerignore', 'npmignore', 'packageJson', 'dockerfile', 'webconf'];
+  var UI = {
+    en: {
+      hook: 'Before you push, publish or deploy, paste the list of files that are leaving. See which ones usually hold passwords and keys (.env, SSH keys, Firebase service accounts, FTP settings, database dumps, wp-config backups) and where they would end up: your Git history, your npm package, your Docker image or your public website. Get the exact line that stops each one.',
+      how: ['Git: run git ls-files (what is already committed), or list every file in the folder (dir /s /b on Windows, find . -type f on Mac or Linux).', 'npm: run npm pack --dry-run and paste what it prints.', 'Website: copy the file list from your hosting file manager, or run ls -la in public_html.', 'Optional: open the box below the list and paste your .gitignore, .dockerignore, .npmignore, package.json, Dockerfile or .htaccess.'],
+      from: 'Where does this list come from?', ffolder: 'every file in my folder', fgit: 'git ls-files (already committed)', fnpm: 'npm pack --dry-run', fweb: 'my website public folder',
+      llist: 'File list (one per line, any of the formats above). You can also drop files here: only their names are read.', more: 'Your ignore files and Dockerfile (optional, makes the answer exact)', webconf: '.htaccess or nginx rules',
+      go: 'Check it', clear: 'Clear', try_: 'or try an example:', dfolder: 'App folder (invented)', dgit: 'Repository (invented)', dnpm: 'npm pack (invented)', dweb: 'WordPress hosting (invented)',
+      private_: 'Nothing is uploaded. Equipaje reads file names, never file contents, and this page blocks every network request it could make.',
+      foot: 'Equipaje follows the matching rules in the Git, Docker and npm documentation. It cannot see inside files: a password written in src/config.js does not show up here.',
+      chip: { high: 'FIX', medium: 'CHECK', low: 'NOTE' }, traps: 'Traps in your rules', nothing: 'Nothing secret ends up here.', rules: 'rules', lines: 'Lines to add', limits: 'What Equipaje cannot see', files: 'files read', secret: 'secret-bearing files', line: 'Dockerfile line', rule: 'rule'
+    },
+    es: {
+      hook: 'Antes de subir, publicar o desplegar, pega la lista de archivos que salen. Mira cuáles suelen guardar contraseñas y claves (.env, claves SSH, cuentas de servicio de Firebase, configuración de FTP, volcados de base de datos, copias de wp-config) y adónde llegarían: tu historial de Git, tu paquete de npm, tu imagen de Docker o tu sitio web. Recibe la línea exacta que detiene cada uno.',
+      how: ['Git: ejecuta git ls-files (lo que ya está en un commit), o lista todos los archivos de la carpeta (dir /s /b en Windows, find . -type f en Mac o Linux).', 'npm: ejecuta npm pack --dry-run y pega lo que muestra.', 'Sitio web: copia la lista de archivos del administrador de archivos de tu hosting, o ejecuta ls -la en public_html.', 'Opcional: abre el recuadro bajo la lista y pega tu .gitignore, .dockerignore, .npmignore, package.json, Dockerfile o .htaccess.'],
+      from: '¿De dónde sale esta lista?', ffolder: 'todos los archivos de mi carpeta', fgit: 'git ls-files (ya en un commit)', fnpm: 'npm pack --dry-run', fweb: 'la carpeta pública de mi sitio',
+      llist: 'Lista de archivos (uno por línea, en cualquiera de los formatos de arriba). También puedes soltar archivos aquí: solo se leen sus nombres.', more: 'Tus archivos de exclusión y Dockerfile (opcional, hace la respuesta exacta)', webconf: 'Reglas de .htaccess o nginx',
+      go: 'Revisar', clear: 'Limpiar', try_: 'o prueba un ejemplo:', dfolder: 'Carpeta de una app (inventada)', dgit: 'Repositorio (inventado)', dnpm: 'npm pack (inventado)', dweb: 'Hosting con WordPress (inventado)',
+      private_: 'No se sube nada. Equipaje lee nombres de archivo, nunca su contenido, y esta página bloquea cualquier petición de red que pudiera hacer.',
+      foot: 'Equipaje sigue las reglas de coincidencia de la documentación de Git, Docker y npm. No puede ver dentro de los archivos: una contraseña escrita en src/config.js no aparece aquí.',
+      chip: { high: 'ARREGLA', medium: 'REVISA', low: 'NOTA' }, traps: 'Trampas en tus reglas', nothing: 'Nada secreto llega aquí.', rules: 'reglas', lines: 'Líneas para agregar', limits: 'Lo que Equipaje no puede ver', files: 'archivos leídos', secret: 'archivos con secretos', line: 'línea del Dockerfile', rule: 'regla'
+    }
+  };
+  var lang = /[?&]lang=es\b/.test(location.search) || (!/[?&]lang=en\b/.test(location.search) && /^es\b/i.test(navigator.language || '')) ? 'es' : 'en';
+  var shown = false;
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function from() { var r = document.querySelector('input[name="from"]:checked'); return r ? r.value : 'folder'; }
+  var lvl = { high: 'fix', medium: 'check', low: 'info' };
+  function chrome() {
+    var u = UI[lang]; document.documentElement.lang = lang;
+    $('lang-en').setAttribute('aria-pressed', String(lang === 'en')); $('lang-es').setAttribute('aria-pressed', String(lang === 'es'));
+    $('hook').textContent = u.hook; var how = $('how'); how.textContent = ''; u.how.forEach(function (s) { how.appendChild(el('li', '', s)); });
+    $('l-from').textContent = u.from; ['folder', 'git', 'npm', 'web'].forEach(function (k) { $('f-' + k).textContent = u['f' + k]; $('d-' + k).textContent = u['d' + k]; });
+    $('l-list').textContent = u.llist; $('l-more').textContent = u.more; $('l-webconf').textContent = u.webconf;
+    $('go').textContent = u.go; $('clear').textContent = u.clear; $('try').textContent = u.try_;
+    $('private').textContent = u.private_; $('foot').textContent = u.foot;
+  }
+  function show() {
+    var out = $('out'); out.textContent = ''; if (!shown) return;
+    var u = UI[lang], t = E.T[lang];
+    var input = { source: from() }; FIELDS.forEach(function (f) { var v = $(f).value; if (v.trim()) input[f] = v; });
+    var res = E.analyze(input, { lang: lang });
+    var box = el('div', 'verdict ' + res.verdict); box.appendChild(el('strong', '', t.verdict[res.verdict])); box.appendChild(el('p', '', t.verdictText[res.verdict])); out.appendChild(box);
+    if (res.verdict === 'empty') return;
+    res.notes.forEach(function (n) { out.appendChild(el('p', 'facts', '! ' + n)); });
+    out.appendChild(el('p', 'facts', t.sources[res.source] + ' · ' + res.files + ' ' + u.files + ' · ' + res.secretFiles + ' ' + u.secret));
+    if (res.traps.length) {
+      out.appendChild(el('h2', '', u.traps));
+      res.traps.forEach(function (x) {
+        var g = el('div', 'group ' + lvl[x.sev]), top = el('div', 'top');
+        top.appendChild(el('span', 'chip ' + lvl[x.sev], u.chip[x.sev])); top.appendChild(el('span', 'title', x.title)); g.appendChild(top);
+        g.appendChild(el('p', '', x.detail));
+        (x.paths || []).forEach(function (p) { g.appendChild(el('p', 'mono', p)); });
+        if (x.fix) g.appendChild(el('p', 'alt', '→ ' + x.fix));
+        out.appendChild(g);
+      });
+    }
+    res.destinations.forEach(function (d) {
+      out.appendChild(el('h2', '', d.title));
+      out.appendChild(el('p', 'facts', u.rules + ': ' + d.rules));
+      if (!d.items.length) { var ok = el('div', 'group ok'); ok.appendChild(el('p', '', u.nothing)); out.appendChild(ok); return; }
+      d.items.forEach(function (i) {
+        var g = el('div', 'group ' + lvl[i.sev]), top = el('div', 'top');
+        top.appendChild(el('span', 'chip ' + lvl[i.sev], u.chip[i.sev])); top.appendChild(el('span', 'title', i.path));
+        if (i.line) top.appendChild(el('span', 'svc', u.line + ' ' + i.line));
+        g.appendChild(top);
+        g.appendChild(el('p', '', i.what + ' — ' + i.status + '.'));
+        if (i.blockedBy) g.appendChild(el('p', 'mono', u.rule + ': ' + i.blockedBy));
+        var ul = el('ul', 'fx'); i.fixes.forEach(function (f) { ul.appendChild(el('li', '', f)); }); g.appendChild(ul);
+        out.appendChild(g);
+      });
+    });
+    var fl = res.fixLines;
+    if (fl.gitignore.length || fl.dockerignore.length || fl.npmignore.length) {
+      out.appendChild(el('h2', '', u.lines));
+      ['gitignore', 'dockerignore', 'npmignore'].forEach(function (k) {
+        if (!fl[k].length) return;
+        out.appendChild(el('p', 'title', '.' + k)); out.appendChild(el('pre', 'lines', fl[k].join('\n')));
+      });
+    }
+    out.appendChild(el('h2', '', u.limits));
+    var ln = el('ul', 'notes'); t.limits.forEach(function (l) { ln.appendChild(el('li', '', l)); }); out.appendChild(ln);
+  }
+  function go() { shown = true; show(); }
+  $('go').addEventListener('click', go);
+  $('clear').addEventListener('click', function () { FIELDS.forEach(function (f) { $(f).value = ''; }); shown = false; show(); $('list').focus(); });
+  ['folder', 'git', 'npm', 'web'].forEach(function (k) {
+    $('d-' + k).addEventListener('click', function () {
+      var s = E.SAMPLES[k]; FIELDS.forEach(function (f) { $(f).value = s[f] || ''; });
+      document.querySelector('input[name="from"][value="' + s.source + '"]').checked = true;
+      $('more').open = FIELDS.slice(1).some(function (f) { return !!s[f]; });
+      go();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="from"]'), function (r) { r.addEventListener('change', function () { if (shown) show(); }); });
+  $('lang-en').addEventListener('click', function () { lang = 'en'; chrome(); show(); });
+  $('lang-es').addEventListener('click', function () { lang = 'es'; chrome(); show(); });
+  var list = $('list');
+  list.addEventListener('dragover', function (e) { e.preventDefault(); list.classList.add('over'); });
+  list.addEventListener('dragleave', function () { list.classList.remove('over'); });
+  list.addEventListener('drop', function (e) {
+    e.preventDefault(); list.classList.remove('over');
+    var fs = e.dataTransfer && e.dataTransfer.files; if (!fs || !fs.length) return;
+    // Dropping files lists their names only; their contents are never read.
+    var names = []; for (var i = 0; i < fs.length; i++) names.push(fs[i].webkitRelativePath || fs[i].name);
+    list.value = (list.value ? list.value.replace(/\s*$/, '\n') : '') + names.join('\n'); go();
+  });
+  chrome();
+})();
+</script>
+</body>
+</html>
