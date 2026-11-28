@@ -1,0 +1,24 @@
+# Test log - experiment 112 (2026-11-28T18:18:19Z)
+## Before: link under Official Resources in en/guides/cms/spinal.mdx
+404 https://spinalcms.com/resources/astro-documentation-theme-with-tailwind-css/
+## Section index also gone
+404 https://spinalcms.com/resources/
+## Template repo the page pointed to (GitHub API)
+{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/repos#get-a-repository","status":"404"}gh: Not Found (HTTP 404)
+## After: every external link left in the file
+200 https://spinalcms.com/cms-for-astro/
+200 https://spinalcms.com/signup/
+## CMS guides in en/ without an Official Resources section
+21 of 46
+## Diff
+diff --git a/src/content/docs/en/guides/cms/spinal.mdx b/src/content/docs/en/guides/cms/spinal.mdx
+index 7e2b2cd..addd112 100644
+--- a/src/content/docs/en/guides/cms/spinal.mdx
++++ b/src/content/docs/en/guides/cms/spinal.mdx
+@@ -23,6 +23,3 @@ import { Steps } from '@astrojs/starlight/components';
+ </Steps>
+ 
+ All Markdown content from the selected folder will be imported into your Spinal account and is ready to be edited.
+-
+-## Official Resources
+-- [Documentation theme built for Astro with Tailwind CSS](https://spinalcms.com/resources/astro-documentation-theme-with-tailwind-css/)

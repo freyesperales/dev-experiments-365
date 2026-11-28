@@ -1,5 +1,5 @@
 {
-  "last_number": 111,
+  "last_number": 112,
   "entries": [
     {
       "n": 1,
@@ -1011,6 +1011,21 @@
       "minutes": 17,
       "depth_check": "pass: 17 min elapsed, 28 distinct links in RESEARCH.md (10 primary sources re-opened by the lead agent: git-scm, Docker docs, moby/patternmatcher, npm docs, GitHub docs, StepSecurity advisory; 18 more opened by 3 scouts), 15/15 tests, demo checked headless with Playwright (Chromium): 4 samples, English and Spanish, clean state, network blocked by its CSP, 0 page errors; smoke run on the repo's own 588 tracked files: 0 false positives",
       "weekly_report": "reports/weekly/2026-W48.md"
+    },
+    {
+      "n": 112,
+      "date": "2026-11-28",
+      "title": "Saturday OSS — Astro docs: removed the dead 'Official Resources' link in the Spinal CMS guide (theme page 404, its GitHub repo gone; Wayback shows it alive until July 2026); PR withastro/docs#15000. Two stronger findings not sent automatically because the projects require human-written PR text: Next.js deploying docs link Docker's retired Next.js/React guides (404 since 2026-11-19) and sharp's electron-builder link (404, docs now on v27 alpha); prepared for Francisco",
+      "kind": "oss-contribution",
+      "theme": "open-source contribution (docs, Astro, used in Francisco's web projects)",
+      "repo_url": "https://github.com/freyesperales/dev-experiments-365/tree/main/experiments/experiment-112",
+      "demo_url": null,
+      "pr_url": "https://github.com/withastro/docs/pull/15000",
+      "mode": "monorepo",
+      "status": "completed",
+      "research_links": 24,
+      "minutes": 21,
+      "depth_gate": "PASS: 24 sources requested in this run, 15+ primary (repo files, contributing guides, AI policies, merged PRs, GitHub API, Wayback CDX); 3 scouts in parallel plus re-verification by the main agent; reproduction 404 before / remaining links 200 after; PR open, 1 file, 3 lines removed; elapsed 21 min."
     }
   ]
 }

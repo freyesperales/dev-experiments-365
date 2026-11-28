@@ -233,5 +233,10 @@
     "n": 111,
     "slug": "equipaje",
     "hook": "Before you push, publish or deploy, paste the list of files that are leaving: see which ones usually hold passwords and keys (.env, SSH keys, Firebase service accounts, FTP settings, backups) and whether they end up in Git, your npm package, your Docker image or your public website, with the exact line that stops each one. Nothing is uploaded."
+  },
+  {
+    "n": 112,
+    "slug": "astro-docs-spinal-link",
+    "hook": "Saturday open-source fix: the Astro docs guide for Spinal CMS pointed to a theme that no longer exists; the dead link is now removed in a pull request to withastro/docs."
   }
 ]

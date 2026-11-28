@@ -1,0 +1,27 @@
+From ea6a515645da539d0eee3e5adbfaf70bdfd14dac Mon Sep 17 00:00:00 2001
+From: Francisco Reyes <21211939+freyesperales@users.noreply.github.com>
+Date: Sat, 28 Nov 2026 19:18:38 +0100
+Subject: [PATCH] Remove dead link from Spinal CMS guide
+
+The "Official Resources" link to the Spinal documentation theme returns
+404 and the theme's repository no longer exists.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ src/content/docs/en/guides/cms/spinal.mdx | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/src/content/docs/en/guides/cms/spinal.mdx b/src/content/docs/en/guides/cms/spinal.mdx
+index 7e2b2cd..addd112 100644
+--- a/src/content/docs/en/guides/cms/spinal.mdx
++++ b/src/content/docs/en/guides/cms/spinal.mdx
+@@ -23,6 +23,3 @@ import { Steps } from '@astrojs/starlight/components';
+ </Steps>
+ 
+ All Markdown content from the selected folder will be imported into your Spinal account and is ready to be edited.
+-
+-## Official Resources
+-- [Documentation theme built for Astro with Tailwind CSS](https://spinalcms.com/resources/astro-documentation-theme-with-tailwind-css/)
+-- 
+2.56.1.windows.1
+
